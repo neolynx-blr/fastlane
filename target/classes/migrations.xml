@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+	<changeSet id="1" author="codahale">
+		<createTable tableName="people">
+			<column name="id" type="bigint" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="fullName" type="varchar(255)">
+				<constraints nullable="false" />
+			</column>
+			<column name="jobTitle" type="varchar(255)" />
+		</createTable>
+	</changeSet>
+
+
+	<changeSet id="2" author="Inventory">
+		<createTable tableName="product">
+			<column name="id" type="bigint" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="name" type="varchar(256)">
+				<constraints nullable="false" />
+			</column>
+
+			<column name="barcode" type="varchar(128)">
+				<constraints nullable="false" />
+			</column>
+
+			<column name="tagLine" type="varchar(256)" />
+			<column name="description" type="varchar(2048)" />
+
+			<column name="imageURLJSON" type="varchar(512)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+	
+	<changeSet author="Inventory" id="3">
+    <insert tableName="product">
+        <column name="name" value="Zespri Kiwi - Green"/>
+        <column name="barcode" value="1234567890"/>
+        <column name="tagLine" value="Zespri Kiwi - Green, 1 pc"/>
+        <column name="description" value="Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals." />
+        <column name="imageURLJSON" value="http://bigbasket.com/media/uploads/p/l/40024625_1-zespri-kiwi-green.jpg"/>
+    </insert>
+    <insert tableName="product">
+        <column name="name" value="Fresho Apple - Washington"/>
+        <column name="barcode" value="1234567891"/>
+        <column name="tagLine" value="Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)"/>
+        <column name="description" value="Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent &quot;heart disease&quot;, &quot;smoker&quot;s risk&quot; and aid &quot;lung functions&quot;." />
+        <column name="imageURLJSON" value="http://bigbasket.com/media/uploads/p/l/10000008_15-fresho-apple-washington.jpg"/>
+    </insert>
+</changeSet>
+
+
+</databaseChangeLog>
