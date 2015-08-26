@@ -8,7 +8,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.example.helloworld.core.Inventory;
+import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.manager.InventoryEvaluator;
 
 @Path("/inventory")
@@ -25,7 +25,7 @@ public class InventoryResource {
 	@Path("/{vendorId}/{versionId}")
     @GET
     @UnitOfWork
-    public Inventory getInventoryDifferential(@PathParam(value="vendorId") Long vendorId, @PathParam(value="dataVersionId") String dataVersionId) {
+    public InventoryResponse getInventoryDifferential(@PathParam(value="vendorId") Long vendorId, @PathParam(value="dataVersionId") String dataVersionId) {
     	return evaluator.getInventoryDifferential(vendorId, dataVersionId);
     }
 

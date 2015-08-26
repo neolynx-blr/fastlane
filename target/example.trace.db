@@ -1,3 +1,15 @@
-08-23 11:25:38 jdbc[3]: exception
+08-26 19:19:40 jdbc[3]: exception
 org.h2.jdbc.JdbcSQLException: Table "DATABASECHANGELOGLOCK" not found; SQL statement:
 select count(*) from PUBLIC.DATABASECHANGELOGLOCK [42102-187]
+08-26 19:38:48 jdbc[11]: exception
+org.h2.jdbc.JdbcSQLException: Table "ITEMCORE" not found; SQL statement:
+/* dynamic native SQL query */ select  pc.* ,  id.* ,  ic.*   from ItemCore ic, ItemDetail id, ProductCore pc  where id.vendorId = ?  and id.versionId = (select max(versionId) from ItemDetail where vendorId = ?)  and ic.id = id.itemId  and pc.id = ic.productId [42102-187]
+08-26 19:41:14 jdbc[11]: exception
+org.h2.jdbc.JdbcSQLException: Table "ITEMCORE" not found; SQL statement:
+/* dynamic native SQL query */  from ItemCore ic, ItemDetail id, ProductCore pc  where id.vendorId = ?  and id.versionId = (select max(versionId) from ItemDetail where vendorId = ?)  and ic.id = id.itemId  and pc.id = ic.productId [42102-187]
+08-26 19:48:48 jdbc[11]: exception
+org.h2.jdbc.JdbcSQLException: Table "ITEMCORE" not found; SQL statement:
+/* dynamic native SQL query */ select * from ItemCore ic, ItemDetail id, ProductCore pc  where id.vendorId = ?  and id.versionId = (select max(versionId) from ItemDetail where vendorId = ?)  and ic.id = id.itemId  and pc.id = ic.productId [42102-187]
+08-26 19:55:49 jdbc[11]: exception
+org.h2.jdbc.JdbcSQLException: Table "ITEMCORE" not found; SQL statement:
+/* dynamic native SQL query */ select * from ItemCore ic, ItemDetail id, ProductCore pc  where id.vendorId = ?  and id.versionId = (select max(versionId) from ItemDetail where vendorId = ?)  and ic.id = id.itemId  and pc.id = ic.productId [42102-187]

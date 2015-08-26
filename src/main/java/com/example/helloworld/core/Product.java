@@ -9,6 +9,9 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
+import lombok.Data;
+
+@Data
 @Entity
 @Table(name = "product")
 @NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.Product.findAll", query = "SELECT p FROM Product p") })
@@ -22,7 +25,7 @@ public class Product {
 	private String name;
 
 	@Column(name = "barcode", nullable = false)
-	private String barcode;
+	private Long barcode;
 
 	@Column(name = "tagLine")
 	private String tagLine;
@@ -36,7 +39,7 @@ public class Product {
 	public Product() {
 	}
 
-	public Product(long id, String name, String barcode, String tagLine,
+	public Product(long id, String name, Long barcode, String tagLine,
 			String description, String imageURLJSON) {
 		super();
 		this.id = id;
@@ -63,11 +66,11 @@ public class Product {
 		this.name = name;
 	}
 
-	public String getBarcode() {
+	public Long getBarcode() {
 		return barcode;
 	}
 
-	public void setBarcode(String barcode) {
+	public void setBarcode(Long barcode) {
 		this.barcode = barcode;
 	}
 
