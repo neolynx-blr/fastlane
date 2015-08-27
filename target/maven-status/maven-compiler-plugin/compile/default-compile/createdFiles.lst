@@ -19,6 +19,7 @@ com/example/helloworld/auth/ExampleAuthorizer.class
 com/example/helloworld/db/InventoryDAO.class
 com/example/helloworld/resources/ViewResource$1.class
 com/example/helloworld/resources/ProtectedResource.class
+com/example/helloworld/core/AllInventory.class
 com/example/helloworld/core/Person.class
 com/example/helloworld/db/ItemCoreDAO.class
 com/example/helloworld/auth/ExampleAuthenticator.class
@@ -42,6 +43,7 @@ com/example/helloworld/api/Saying.class
 com/example/helloworld/resources/PersonResource.class
 com/example/helloworld/health/TemplateHealthCheck.class
 com/example/helloworld/filter/DateRequired.class
+com/example/helloworld/db/AllInventoryDAO.class
 com/example/helloworld/resources/ViewResource$2.class
 com/example/helloworld/HelloWorldConfiguration.class
 com/example/helloworld/HelloWorldApplication$1.class

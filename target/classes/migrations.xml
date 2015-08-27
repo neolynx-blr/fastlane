@@ -28,17 +28,8 @@
 		</createTable>
 
 		<addUniqueConstraint columnNames="name" tableName="discount_type" />
-
-		<insert tableName="discount_type">
-			<column name="name" value="Percentage" />
-			<column name="description" value="Applicable discount is % value over the MRP." />
-		</insert>
-
-		<insert tableName="discount_type">
-			<column name="name" value="Absolute" />
-			<column name="description"
-				value="Applicable discount is absolute amount value over the MRP." />
-		</insert>
+		<loadData file="data/discount_type.csv" tableName="discount_type">
+		</loadData>
 
 		<!-- Vendor details -->
 		<createTable tableName="vendor">
@@ -47,17 +38,12 @@
 			<column name="description" type="varchar(512)" />
 			<column name="address" type="varchar(2048)"><constraints nullable="false" /></column>
 			<column name="created_on" type="timestamp" defaultValueDate="now()" ><constraints nullable="false" /></column>
-			<column name="last_updated_on" type="timestamp" defaultValueDate="now()" ><constraints nullable="false" /></column>
+			<column name="last_modified_on" type="timestamp" defaultValueDate="now()" ><constraints nullable="false" /></column>
 		</createTable>
 
 		<addUniqueConstraint columnNames="name, address" tableName="vendor" />
-
-		<insert tableName="vendor">
-			<column name="id" value="1" />
-			<column name="name" value="Top In Town" />
-			<column name="description" value="Typical kiriyana store." />
-			<column name="address" value="Murgeshpalya." />
-		</insert>
+		<loadData file="data/vendor.csv" tableName="vendor">
+		</loadData>
 
 		<!-- Inventory Details -->
 		<createTable tableName="product_core">
@@ -71,27 +57,8 @@
 		</createTable>
 	
 		<addUniqueConstraint columnNames="barcode" tableName="product_core" />
-		
-		<insert tableName="product_core">
-			<column name="id" value="1" />
-			<column name="vendor_id" value="1" />
-			<column name="name" value="Zespri Kiwi - Green" />
-			<column name="barcode" value="1234567890" />
-			<column name="tag_line" value="Zespri Kiwi - Green, 1 pc" />
-			<column name="description"
-				value="Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals." />
-		</insert>
-	
-		<insert tableName="product_core">
-			<column name="id" value="2" />
-			<column name="vendor_id" value="1" />
-			<column name="name" value="Fresho Apple - Washington" />
-			<column name="barcode" value="1234567891" />
-			<column name="tag_line"
-				value="Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)" />
-			<column name="description"
-				value="Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent &quot;heart disease&quot;, &quot;smoker&quot;s risk&quot; and aid &quot;lung functions&quot;." />
-		</insert>
+		<loadData file="data/product_core.csv" tableName="product_core">
+		</loadData>
 
 		<createTable tableName="item_core">
 			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
@@ -100,18 +67,8 @@
 		</createTable>
 	
 		<addUniqueConstraint columnNames="vendor_id, product_id" tableName="item_core" />
-		
-		<insert tableName="item_core">
-			<column name="id" value="1" />
-			<column name="vendor_id" value="1" />
-			<column name="product_id" value="1" />
-		</insert>
-
-		<insert tableName="item_core">
-			<column name="id" value="2" />
-			<column name="vendor_id" value="1" />
-			<column name="product_id" value="2" />
-		</insert>
+		<loadData file="data/item_core.csv" tableName="item_core">
+		</loadData>		
 
 		<createTable tableName="item_detail">
 			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
@@ -121,29 +78,34 @@
 			<column name="mrp" type="decimal(8, 2)"><constraints nullable="false" /></column>
 			<column name="price" type="decimal(8, 2)"><constraints nullable="false" /></column>
 			<column name="image_json" type="varchar(512)" />
+			<column name="discount_type" type="smallint" />
+			<column name="discount_value" type="decimal(8,2)" />
 		</createTable>
 		
 		<addUniqueConstraint columnNames="item_id, version_id" tableName="item_detail" />
-	
-		<insert tableName="item_detail">
-			<column name="item_id" value="1" />
-			<column name="vendor_id" value="1" />
-			<column name="version_id" value="1" />
-			<column name="mrp" value="2.81" />
-			<column name="price" value="2.63" />
-			<column name="image_json" value="http://bigbasket.com/media/uploads/p/l/40024625_1-zespri-kiwi-green.jpg" />
-		</insert>
+		<loadData file="data/item_detail.csv" tableName="item_detail">
+		</loadData>
 		
-		<insert tableName="item_detail">
-			<column name="item_id" value="2" />
-			<column name="vendor_id" value="1" />
-			<column name="version_id" value="1" />
-			<column name="mrp" value="3.81" />
-			<column name="price" value="3.63" />
-			<column name="image_json" value="http://bigbasket.com/media/uploads/p/l/10000008_15-fresho-apple-washington.jpg" />			
-		</insert>
-		
-		
+		<createTable tableName="all_inventory">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="vendor_id" type="integer"><constraints nullable="false" /></column>
+			<column name="version_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="name" type="varchar(256)"><constraints nullable="false" /></column>
+			<column name="description" type="varchar(1024)"><constraints nullable="false" /></column>
+			<column name="tag_line" type="varchar(256)" />
+			<column name="barcode" type="bigint"><constraints nullable="false" /></column>
+			<column name="mrp" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="price" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="image_json" type="varchar(512)" />
+			<column name="discount_type" type="smallint" />
+			<column name="discount_value" type="decimal(8,2)" />
+			<column name="last_modified_on" type="timestamp" />
+		</createTable>	
+
+		<loadData file="data/all_inventory.csv" tableName="all_inventory">
+			<column name="last_modified_on" header="last_modified_on" type="DATE"/>
+		</loadData>
+
 	</changeSet>
 
 </databaseChangeLog>

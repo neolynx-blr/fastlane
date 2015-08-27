@@ -43,4 +43,9 @@ public class ItemDetail {
 	@Column(name = "image_json")
 	private String imageJSON;
 
+	@Column(name = "discount_type")
+	private int discountType;
+
+	@Column(name = "discount_value")
+	private Double discountValue;
 }

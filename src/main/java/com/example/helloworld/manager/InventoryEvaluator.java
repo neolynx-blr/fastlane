@@ -6,15 +6,18 @@ import java.util.List;
 import com.example.helloworld.core.Inventory;
 import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.core.Product;
+import com.example.helloworld.db.AllInventoryDAO;
 import com.example.helloworld.db.InventoryDAO;
 
 public class InventoryEvaluator {
 
     private	final InventoryDAO inventoryDAO;
+    private	final AllInventoryDAO allInventoryDAO;
 
-    public InventoryEvaluator(InventoryDAO inventoryDAO) {
+    public InventoryEvaluator(InventoryDAO inventoryDAO, AllInventoryDAO allInventoryDAO) {
 		super();
 		this.inventoryDAO = inventoryDAO;
+		this.allInventoryDAO = allInventoryDAO;
 	}
 
 	public InventoryResponse getInventoryDifferential (Long vendorId, String dataVersionId) {
@@ -28,6 +31,8 @@ public class InventoryEvaluator {
 		// For now, just send back everything
 
 		InventoryResponse response = new InventoryResponse();
+		
+		System.out.println("Data::" + this.allInventoryDAO.findById(1L).toString());
 		
 		List<Inventory> inventoryList = inventoryDAO.getLatestInventory(vendorId);
 
@@ -44,6 +49,10 @@ public class InventoryEvaluator {
 		response.setItemsAdded(itemList);
 		
 		return response;
+	}
+	
+	public void setupInventoryVersions() {
+		
 	}
 
 }

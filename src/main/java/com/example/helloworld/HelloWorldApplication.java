@@ -20,6 +20,7 @@ import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import com.example.helloworld.auth.ExampleAuthenticator;
 import com.example.helloworld.auth.ExampleAuthorizer;
 import com.example.helloworld.cli.RenderCommand;
+import com.example.helloworld.core.AllInventory;
 import com.example.helloworld.core.Inventory;
 import com.example.helloworld.core.ItemCore;
 import com.example.helloworld.core.ItemDetail;
@@ -28,6 +29,7 @@ import com.example.helloworld.core.Product;
 import com.example.helloworld.core.ProductCore;
 import com.example.helloworld.core.Template;
 import com.example.helloworld.core.User;
+import com.example.helloworld.db.AllInventoryDAO;
 import com.example.helloworld.db.InventoryDAO;
 import com.example.helloworld.db.PersonDAO;
 import com.example.helloworld.db.ProductDAO;
@@ -49,7 +51,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
     }
 
 	private final HibernateBundle<HelloWorldConfiguration> hibernateBundle = new HibernateBundle<HelloWorldConfiguration>(
-			Person.class, Product.class, ItemCore.class, ItemDetail.class, ProductCore.class, Inventory.class) {
+			Person.class, Product.class, ItemCore.class, ItemDetail.class, ProductCore.class, Inventory.class, AllInventory.class) {
 		@Override
 		public DataSourceFactory getDataSourceFactory(
 				HelloWorldConfiguration configuration) {
@@ -94,9 +96,10 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
         
     	final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
         final ProductDAO productDAO = new ProductDAO(hibernateBundle.getSessionFactory());
+        final AllInventoryDAO allInventoryDAO = new AllInventoryDAO(hibernateBundle.getSessionFactory());
         
         final InventoryDAO inventoryDAO = new InventoryDAO(hibernateBundle.getSessionFactory());
-        final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(inventoryDAO);
+        final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(inventoryDAO, allInventoryDAO);
         
         final Template template = configuration.buildTemplate();
 

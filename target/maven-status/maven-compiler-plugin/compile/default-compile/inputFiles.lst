@@ -10,7 +10,9 @@
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/health/TemplateHealthCheck.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/ItemDetailDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/auth/ExampleAuthorizer.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/AllInventoryDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/cli/RenderCommand.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/AllInventory.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/Person.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/ProductDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/PersonDAO.java
