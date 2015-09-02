@@ -1,4 +1,6 @@
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/InventorySync.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/api/Saying.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/manager/InventoryCurator.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/resources/HelloWorldResource.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/ResponseAudit.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/ProductCoreDAO.java
@@ -41,3 +43,4 @@
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/resources/PersonResource.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/Vendor.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/InventoryResponse.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/InventorySyncDAO.java

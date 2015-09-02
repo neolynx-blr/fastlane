@@ -5,10 +5,10 @@ import lombok.Data;
 @Data
 public class Inventory {
 
-	private Long itemId;
+	private String itemCode;
 	private Long barcode;
 
-	private int vendorId;
+	private Long vendorId;
 	private Long productId;
 
 	private String name;
@@ -20,5 +20,8 @@ public class Inventory {
 	private Long versionId;
 
 	private String imageJSON;
+	
+	private int discountType;
+	private Double discountValue;
 
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="2" failures="0" name="com.example.helloworld.IntegrationTest" time="0.772" errors="0" skipped="0">
+<testsuite tests="2" failures="0" name="com.example.helloworld.IntegrationTest" time="0.741" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home/jre/lib"/>
@@ -63,6 +63,6 @@
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="sun.cpu.isalist" value=""/>
   </properties>
-  <testcase classname="com.example.helloworld.IntegrationTest" name="testPostPerson" time="0.709"/>
-  <testcase classname="com.example.helloworld.IntegrationTest" name="testHelloWorld" time="0.063"/>
+  <testcase classname="com.example.helloworld.IntegrationTest" name="testPostPerson" time="0.669"/>
+  <testcase classname="com.example.helloworld.IntegrationTest" name="testHelloWorld" time="0.072"/>
 </testsuite>

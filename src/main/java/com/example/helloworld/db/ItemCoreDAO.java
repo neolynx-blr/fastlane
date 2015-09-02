@@ -29,4 +29,11 @@ public class ItemCoreDAO extends AbstractDAO<ItemCore> {
 		return list(namedQuery("com.example.helloworld.core.ItemCore.findAll"));
 	}
 
+	public ItemCore findByVendorProduct(Long vendorId, Long productId) {
+		return list(
+				namedQuery(
+						"com.example.helloworld.core.ItemCore.findByVendorProduct")
+						.setParameter("vendorId", vendorId).setParameter(
+								"productId", productId)).get(0);
+	}
 }

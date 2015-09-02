@@ -18,7 +18,11 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "item_detail")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.ItemDetail.findAll", query = "SELECT p FROM ItemDetail p") })
+@NamedQueries(
+		{ 
+			@NamedQuery(name = "com.example.helloworld.core.ItemDetail.findAll", query = "SELECT p FROM ItemDetail p"),
+			@NamedQuery(name = "com.example.helloworld.core.ItemDetail.findByItemCode", query = "SELECT p FROM ItemDetail p where itemId = :itemId")
+		})
 public class ItemDetail {
 
 	@Id
@@ -32,7 +36,7 @@ public class ItemDetail {
 	private Long versionId;
 
 	@Column(name = "vendor_id", nullable = false)
-	private int vendorId;
+	private Long vendorId;
 
 	@Column(name = "mrp", nullable = false)
 	private Double mrp;

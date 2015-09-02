@@ -3,6 +3,7 @@ com/example/helloworld/core/ProductCore.class
 com/example/helloworld/db/DiscountTypeDAO.class
 com/example/helloworld/core/ResponseAudit.class
 com/example/helloworld/core/Inventory.class
+com/example/helloworld/core/InventorySync.class
 com/example/helloworld/db/VendorDAO.class
 com/example/helloworld/db/PersonDAO.class
 com/example/helloworld/filter/DateRequiredFeature.class
@@ -26,6 +27,7 @@ com/example/helloworld/auth/ExampleAuthenticator.class
 com/example/helloworld/resources/ProductResource.class
 com/example/helloworld/db/ProductCoreDAO.class
 com/example/helloworld/views/PersonView$Template.class
+com/example/helloworld/manager/InventoryCurator.class
 com/example/helloworld/db/ProductDAO.class
 com/example/helloworld/resources/HelloWorldResource.class
 com/example/helloworld/core/Product.class
@@ -45,6 +47,7 @@ com/example/helloworld/health/TemplateHealthCheck.class
 com/example/helloworld/filter/DateRequired.class
 com/example/helloworld/db/AllInventoryDAO.class
 com/example/helloworld/resources/ViewResource$2.class
+com/example/helloworld/db/InventorySyncDAO.class
 com/example/helloworld/HelloWorldConfiguration.class
 com/example/helloworld/HelloWorldApplication$1.class
 com/example/helloworld/cli/RenderCommand.class

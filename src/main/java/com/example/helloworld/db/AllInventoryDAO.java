@@ -25,8 +25,15 @@ public class AllInventoryDAO extends AbstractDAO<AllInventory> {
 		return persist(allInventory);
 	}
 
-	public List<AllInventory> findAll() {
-		return list(namedQuery("com.example.helloworld.core.AllInventory.findAll"));
+	public List<AllInventory> getLatestInventoryByVendor(Long vendorId) {
+		return list(namedQuery(
+				"com.example.helloworld.core.AllInventory.findLatestInventoryByVendor")
+				.setParameter("vendorId", vendorId));
 	}
 
+	public List<AllInventory> getRecentInventoryUpdatesByVendor(Long vendorId, Long lastSyncedVersionId) {
+		return list(namedQuery(
+				"com.example.helloworld.core.AllInventory.findRecentInventoryUpdates")
+				.setParameter("vendorId", vendorId).setParameter("lastSyncedVersionId", lastSyncedVersionId));
+	}
 }

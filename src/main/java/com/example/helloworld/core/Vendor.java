@@ -39,7 +39,9 @@ public class Vendor {
 	@Column(name = "created_on", nullable = false)
 	private Date createdOn;
 	
-	@Column(name = "last_updated_on", nullable = false)
-	private Date lastUpdatedOn;
+	@Column(name = "last_inventory_update_on", nullable = false)
+	private Date lastInventoryUpdateOn;
 		
+	@Column(name = "last_updated_on", nullable = false)
+	private Date lastUpdatedOn;		
 }

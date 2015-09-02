@@ -29,4 +29,10 @@ public class ProductCoreDAO extends AbstractDAO<ProductCore> {
 		return list(namedQuery("com.example.helloworld.core.ProductCore.findAll"));
 	}
 
+	public ProductCore findByBarcodeId(Long barcode) {
+		return list(
+				namedQuery(
+						"com.example.helloworld.core.ProductCore.fetchByBarcode")
+						.setParameter("barcode", barcode)).get(0);
+	}
 }

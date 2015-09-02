@@ -29,4 +29,10 @@ public class ItemDetailDAO extends AbstractDAO<ItemDetail> {
 		return list(namedQuery("com.example.helloworld.core.ItemDetail.findAll"));
 	}
 
+	public ItemDetail findByItemCode(Long itemId) {
+		return list(
+				namedQuery(
+						"com.example.helloworld.core.ItemDetail.findByItemCode")
+						.setParameter("itemId", itemId.toString())).get(0);
+	}
 }

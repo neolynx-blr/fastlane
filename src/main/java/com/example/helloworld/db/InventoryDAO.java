@@ -89,7 +89,7 @@ public class InventoryDAO extends AbstractDAO<Inventory>{
 			instance.setImageJSON(row[10].toString());
 			instance.setDescription(row[4].toString());
 			
-			instance.setItemId(Long.parseLong(row[5].toString()));
+			instance.setItemCode(row[5].toString());
 			instance.setBarcode(Long.parseLong(row[2].toString()));
 			instance.setProductId(Long.parseLong(row[0].toString()));
 			instance.setVersionId(Long.parseLong(row[7].toString()));
@@ -97,7 +97,7 @@ public class InventoryDAO extends AbstractDAO<Inventory>{
 			instance.setMrp(Double.parseDouble(row[8].toString()));
 			instance.setPrice(Double.parseDouble(row[9].toString()));
 			
-			instance.setVendorId(Integer.parseInt(row[6].toString()));
+			instance.setVendorId(Long.parseLong(row[6].toString()));
 			
 			
 			inventoryList.add(instance);

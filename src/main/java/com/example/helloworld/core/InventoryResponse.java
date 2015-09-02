@@ -13,11 +13,11 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 public class InventoryResponse extends ResponseAudit {
 
-	private int vendorId;
+	private Long vendorId;
 	private Long dataVersionId;
 	
-	private List<Product> itemsAdded;
-	private List<Product> itemsUpdated;
-	private List<Product> itemsRemoved;
+	private List<Inventory> itemsAdded;
+	private List<Inventory> itemsUpdated;
+	private List<Inventory> itemsRemoved;
 	
 }

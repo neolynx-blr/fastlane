@@ -20,7 +20,22 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "all_inventory")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.AllInventory.findAll", query = "SELECT p FROM AllInventory p") })
+@NamedQueries(
+		{ @NamedQuery(
+				name = "com.example.helloworld.core.AllInventory.findLatestInventoryByVendor", 
+				query = "SELECT p FROM AllInventory p where p.vendorId = :vendorId and p.versionId = (select max(versionId) from AllInventory q where q.vendorId = :vendorId)"), 
+		@NamedQuery(
+				name = "com.example.helloworld.core.AllInventory.findRecentInventoryUpdates", 
+				query = "select p from AllInventory p "
+						+ " where vendorId = :vendorId "
+						+ " and versionId = ("
+							+ "	select max(versionId) from AllInventory "
+							+ " where barcode = p.barcode "
+							+ " and vendorId = :vendorId "
+							+ " and versionId >= :lastSyncedVersionId )  ") 
+		}	
+	)
+
 public class AllInventory {
 	
 	@Id
@@ -28,8 +43,11 @@ public class AllInventory {
 	private long id;
 
 	@Column(name = "vendor_id", nullable = false)
-	private int vendorId;
+	private Long vendorId;
 	
+	@Column(name = "item_code", nullable = false)
+	private String itemCode;
+
 	@Column(name = "version_id", nullable = false)
 	private Long versionId;
 
@@ -60,7 +78,7 @@ public class AllInventory {
 	@Column(name = "discount_value")
 	private Double discountValue;
 	
-	@Column(name = "last_modified_on", nullable = false)
-	private Date lastModifiedOn;
+	@Column(name = "created_on", nullable = false)
+	private Date createdOn;
 
 }

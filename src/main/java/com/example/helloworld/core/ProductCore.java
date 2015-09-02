@@ -18,7 +18,11 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "product_core")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.ProductCore.findAll", query = "SELECT p FROM ProductCore p") })
+@NamedQueries(
+		{ 
+			@NamedQuery(name = "com.example.helloworld.core.ProductCore.findAll", query = "SELECT p FROM ProductCore p"),
+			@NamedQuery(name = "com.example.helloworld.core.ProductCore.fetchByBarcode", query = "SELECT p FROM ProductCore p where barcode = :barcode")
+		})
 public class ProductCore {
 	
 	@Id
@@ -26,7 +30,7 @@ public class ProductCore {
 	private long id;
 
 	@Column(name = "vendor_id", nullable = false)
-	private String vendorId;
+	private Long vendorId;
 
 	@Column(name = "name", nullable = false)
 	private String name;
