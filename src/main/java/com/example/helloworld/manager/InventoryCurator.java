@@ -6,16 +6,14 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
-import com.example.helloworld.core.AllInventory;
-import com.example.helloworld.core.InventorySync;
-import com.example.helloworld.core.ItemCore;
-import com.example.helloworld.core.ItemDetail;
-import com.example.helloworld.core.ProductCore;
-import com.example.helloworld.db.AllInventoryDAO;
-import com.example.helloworld.db.InventorySyncDAO;
-import com.example.helloworld.db.ItemCoreDAO;
-import com.example.helloworld.db.ItemDetailDAO;
-import com.example.helloworld.db.ProductCoreDAO;
+import com.example.helloworld.core.InventoryMaster;
+import com.example.helloworld.core.InventorySyncStatus;
+import com.example.helloworld.core.VendorItemMaster;
+import com.example.helloworld.core.ProductMaster;
+import com.example.helloworld.db.InventoryMasterDAO;
+import com.example.helloworld.db.InventorySyncStatusDAO;
+import com.example.helloworld.db.VendorItemMasterDAO;
+import com.example.helloworld.db.ProductMasterDAO;
 import com.example.helloworld.db.VendorDAO;
 
 /**
@@ -25,40 +23,38 @@ public class InventoryCurator {
 
 	private SessionFactory sessionFactory;
 	private final VendorDAO vendorDAO;
-	private final InventorySyncDAO inventorySyncDAO;
-	private final AllInventoryDAO allInventoryDAO;
-	private final ProductCoreDAO productCoreDAO;
-	private final ItemCoreDAO itemCoreDAO;
-	private final ItemDetailDAO itemDetailDAO;
+	private final InventorySyncStatusDAO inventorySyncDAO;
+	private final InventoryMasterDAO allInventoryDAO;
+	private final ProductMasterDAO productCoreDAO;
+	private final VendorItemMasterDAO itemDetailDAO;
 
 	public InventoryCurator(VendorDAO vendorDAO,
-			InventorySyncDAO inventorySyncDAO, AllInventoryDAO allInventoryDAO,
-			SessionFactory sessionFactory, ProductCoreDAO productCoreDAO, ItemCoreDAO itemCoreDAO, ItemDetailDAO itemDetailDAO) {
+			InventorySyncStatusDAO inventorySyncDAO, InventoryMasterDAO allInventoryDAO,
+			SessionFactory sessionFactory, ProductMasterDAO productCoreDAO, VendorItemMasterDAO itemDetailDAO) {
 		super();
 		this.vendorDAO = vendorDAO;
 		this.inventorySyncDAO = inventorySyncDAO;
 		this.allInventoryDAO = allInventoryDAO;
 		this.sessionFactory = sessionFactory;
 		this.productCoreDAO = productCoreDAO;
-		this.itemCoreDAO = itemCoreDAO;
 		this.itemDetailDAO = itemDetailDAO;
 	}
-
+/*
 	public void prepareInventory() {
 
 		Long currentTime = System.currentTimeMillis();
-		List<InventorySync> inventoryList = this.inventorySyncDAO.findAll();
+		List<InventorySyncStatus> inventoryList = this.inventorySyncDAO.findAll();
 
-		for (InventorySync instance : inventoryList) {
+		for (InventorySyncStatus instance : inventoryList) {
 
 			Long vendorId = instance.getVendorId();
 
 			System.out.println("Processing Vendor:" + vendorId);
-			List<AllInventory> vendorInventoryList = this.allInventoryDAO
+			List<InventoryMaster> vendorInventoryList = this.allInventoryDAO
 					.getRecentInventoryUpdatesByVendor(vendorId,
 							instance.getLastSyncedVersionId());
 			
-			for(AllInventory allInventory : vendorInventoryList) {
+			for(InventoryMaster allInventory : vendorInventoryList) {
 				System.out.println("Data::"+allInventory.toString());
 			}
 
@@ -69,12 +65,12 @@ public class InventoryCurator {
 				System.out.println("IC-Data::" + ic.toString());
 			}
 			
-			List<ProductCore> existingPCq = this.productCoreDAO.findAll();
-			for(ProductCore ic : existingPCq) {
+			List<ProductMaster> existingPCq = this.productCoreDAO.findAll();
+			for(ProductMaster ic : existingPCq) {
 				System.out.println("PC-Data::" + ic.toString());
 			}
 			
-			for (AllInventory instance2 : vendorInventoryList) {
+			for (InventoryMaster instance2 : vendorInventoryList) {
 				Query queryOld = session
 						.createQuery("select count(*) from ItemCore p where vendorId = :vendorId and productId = (select id from ProductCore where barcode = :barcode)");
 				queryOld.setLong("vendorId", vendorId);
@@ -90,9 +86,9 @@ public class InventoryCurator {
 				if (allRowsn.size() > 0) {
 					
 					System.out.println("Need to update existing record");
-					ProductCore existingPC = this.productCoreDAO.findByBarcodeId(instance2.getBarcode());
+					ProductMaster existingPC = this.productCoreDAO.findByBarcodeId(instance2.getBarcode());
 					ItemCore existingIC = this.itemCoreDAO.findByVendorProduct(vendorId, existingPC.getId());
-					ItemDetail existingID = this.itemDetailDAO.findByItemCode(existingIC.getId());
+					VendorItemDetail existingID = this.itemDetailDAO.findByItemCode(existingIC.getId());
 					
 					
 					
@@ -101,7 +97,7 @@ public class InventoryCurator {
 				} else {
 					
 					System.out.println("Inserting New Record");
-					ProductCore productCore = new ProductCore();
+					ProductMaster productCore = new ProductMaster();
 					productCore.setBarcode(instance2.getBarcode());
 					productCore.setDescription(instance2.getDescription());
 					productCore.setName(instance2.getName());
@@ -111,7 +107,7 @@ public class InventoryCurator {
 					ItemCore itemCore = new ItemCore();
 					itemCore.setVendorId(vendorId);
 					
-					ItemDetail itemDetail = new ItemDetail();
+					VendorItemDetail itemDetail = new VendorItemDetail();
 					itemDetail.setDiscountType(instance2.getDiscountType());
 					itemDetail.setDiscountValue(instance2.getDiscountValue());
 					itemDetail.setImageJSON(instance2.getImageJSON());
@@ -134,6 +130,6 @@ public class InventoryCurator {
 
 		}
 
-	}
+	}*/
 
 }

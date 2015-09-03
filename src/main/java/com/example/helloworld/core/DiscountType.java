@@ -17,8 +17,8 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "discount_type")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.DiscountType.findAll", query = "SELECT p FROM discount_type p") })
+@Table(name = "inventory.discount_type")
+@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.DiscountType.findAll", query = "SELECT p FROM DiscountType p") })
 public class DiscountType {
 	
 	@Id

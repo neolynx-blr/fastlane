@@ -21,26 +21,21 @@ import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import com.example.helloworld.auth.ExampleAuthenticator;
 import com.example.helloworld.auth.ExampleAuthorizer;
 import com.example.helloworld.cli.RenderCommand;
-import com.example.helloworld.core.AllInventory;
-import com.example.helloworld.core.Inventory;
-import com.example.helloworld.core.ItemCore;
-import com.example.helloworld.core.ItemDetail;
+import com.example.helloworld.core.InventoryMaster;
+import com.example.helloworld.core.InventorySyncStatus;
+import com.example.helloworld.core.ItemResponse;
 import com.example.helloworld.core.Person;
-import com.example.helloworld.core.Product;
-import com.example.helloworld.core.ProductCore;
+import com.example.helloworld.core.ProductMaster;
 import com.example.helloworld.core.Template;
 import com.example.helloworld.core.User;
-import com.example.helloworld.core.Vendor;
-import com.example.helloworld.core.InventorySync;
-import com.example.helloworld.db.AllInventoryDAO;
-import com.example.helloworld.db.InventoryDAO;
-import com.example.helloworld.db.ItemCoreDAO;
-import com.example.helloworld.db.ItemDetailDAO;
+import com.example.helloworld.core.VendorItemMaster;
+import com.example.helloworld.db.InventoryMasterDAO;
+import com.example.helloworld.db.InventorySyncStatusDAO;
+import com.example.helloworld.db.ItemResponseDAO;
 import com.example.helloworld.db.PersonDAO;
-import com.example.helloworld.db.ProductCoreDAO;
-import com.example.helloworld.db.ProductDAO;
+import com.example.helloworld.db.ProductMasterDAO;
 import com.example.helloworld.db.VendorDAO;
-import com.example.helloworld.db.InventorySyncDAO;
+import com.example.helloworld.db.VendorItemMasterDAO;
 import com.example.helloworld.filter.DateRequiredFeature;
 import com.example.helloworld.health.TemplateHealthCheck;
 import com.example.helloworld.manager.InventoryCurator;
@@ -50,7 +45,6 @@ import com.example.helloworld.resources.HelloWorldResource;
 import com.example.helloworld.resources.InventoryResource;
 import com.example.helloworld.resources.PeopleResource;
 import com.example.helloworld.resources.PersonResource;
-import com.example.helloworld.resources.ProductResource;
 import com.example.helloworld.resources.ProtectedResource;
 import com.example.helloworld.resources.ViewResource;
 
@@ -60,9 +54,8 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 	}
 
 	private final HibernateBundle<HelloWorldConfiguration> hibernateBundle = new HibernateBundle<HelloWorldConfiguration>(
-			Person.class, Product.class, Vendor.class, InventorySync.class,
-			ItemCore.class, ItemDetail.class, ProductCore.class,
-			Inventory.class, AllInventory.class) {
+			Person.class, InventorySyncStatus.class, VendorItemMaster.class, ProductMaster.class,
+			ItemResponse.class, InventoryMaster.class) {
 		@Override
 		public DataSourceFactory getDataSourceFactory(
 				HelloWorldConfiguration configuration) {
@@ -109,31 +102,26 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
 		final VendorDAO vendorDAO = new VendorDAO(
 				hibernateBundle.getSessionFactory());
-		final ProductDAO productDAO = new ProductDAO(
+		final InventoryMasterDAO allInventoryDAO = new InventoryMasterDAO(
 				hibernateBundle.getSessionFactory());
-		final AllInventoryDAO allInventoryDAO = new AllInventoryDAO(
-				hibernateBundle.getSessionFactory());
-		final InventorySyncDAO inventorySyncDAO = new InventorySyncDAO(
+		final InventorySyncStatusDAO inventorySyncDAO = new InventorySyncStatusDAO(
 				hibernateBundle.getSessionFactory());
 
-		final ProductCoreDAO productCoreDAO = new ProductCoreDAO(
+		final ProductMasterDAO productCoreDAO = new ProductMasterDAO(
 				hibernateBundle.getSessionFactory());
-		final ItemCoreDAO itemCoreDAO = new ItemCoreDAO(
-				hibernateBundle.getSessionFactory());
-		final ItemDetailDAO itemDetailDAO = new ItemDetailDAO(
+		final VendorItemMasterDAO itemDetailDAO = new VendorItemMasterDAO(
 				hibernateBundle.getSessionFactory());
 
-		final InventoryDAO inventoryDAO = new InventoryDAO(
+		final ItemResponseDAO inventoryDAO = new ItemResponseDAO(
 				hibernateBundle.getSessionFactory());
 
 		final InventoryCurator inventoryCurator = new InventoryCurator(
 				vendorDAO, inventorySyncDAO, allInventoryDAO,
 				hibernateBundle.getSessionFactory(), productCoreDAO,
-				itemCoreDAO, itemDetailDAO);
+				itemDetailDAO);
 		//inventoryCurator.prepareInventory();
 
-		final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(
-				inventoryDAO, allInventoryDAO);
+		final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(inventoryDAO);
 
 		final Template template = configuration.buildTemplate();
 
@@ -156,8 +144,6 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 
 		environment.jersey().register(new PeopleResource(dao));
 		environment.jersey().register(new PersonResource(dao));
-
-		environment.jersey().register(new ProductResource(productDAO));
 
 		environment.jersey()
 				.register(new InventoryResource(inventoryEvaluator, inventoryCurator));

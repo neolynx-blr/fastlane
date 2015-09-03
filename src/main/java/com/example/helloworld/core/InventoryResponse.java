@@ -16,8 +16,8 @@ public class InventoryResponse extends ResponseAudit {
 	private Long vendorId;
 	private Long dataVersionId;
 	
-	private List<Inventory> itemsAdded;
-	private List<Inventory> itemsUpdated;
-	private List<Inventory> itemsRemoved;
+	private List<ItemResponse> itemsAdded;
+	private List<ItemResponse> itemsUpdated;
+	private List<ItemResponse> itemsRemoved;
 	
 }

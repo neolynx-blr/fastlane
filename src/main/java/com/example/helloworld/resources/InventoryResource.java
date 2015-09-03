@@ -36,7 +36,7 @@ public class InventoryResource {
     @GET
     @UnitOfWork
     public InventoryResponse getLatestInventory(@PathParam(value="vendorId") Long vendorId) {
-		curator.prepareInventory();
+		//curator.prepareInventory();
     	return evaluator.getLatestInventory(vendorId);
     }
 	
