@@ -9,20 +9,17 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.manager.InventoryCurator;
 import com.example.helloworld.manager.InventoryEvaluator;
 
 @Path("/inventory")
 @Produces(MediaType.APPLICATION_JSON)
 public class InventoryResource {
 	
-	private final InventoryCurator curator;
 	private final InventoryEvaluator evaluator;
 	
-    public InventoryResource(InventoryEvaluator evaluator, InventoryCurator curator) {
+    public InventoryResource(InventoryEvaluator evaluator) {
 		super();
 		this.evaluator = evaluator;
-		this.curator = curator;
 	}
 
 	@Path("/{vendorId}/{versionId}")
@@ -36,7 +33,6 @@ public class InventoryResource {
     @GET
     @UnitOfWork
     public InventoryResponse getLatestInventory(@PathParam(value="vendorId") Long vendorId) {
-		//curator.prepareInventory();
     	return evaluator.getLatestInventory(vendorId);
     }
 	

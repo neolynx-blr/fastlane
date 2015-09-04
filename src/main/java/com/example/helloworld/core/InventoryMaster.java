@@ -73,7 +73,7 @@ public class InventoryMaster {
 	private String imageJSON;
 
 	@Column(name = "discount_type")
-	private int discountType;
+	private Integer discountType;
 
 	@Column(name = "discount_value")
 	private Double discountValue;

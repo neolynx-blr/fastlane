@@ -15,7 +15,7 @@ import lombok.Data;
  * Created by nitesh.garg on 25-Aug-2015
  */
 
-@Data
+@Data()
 @Entity
 @Table(name = "product_master")
 @NamedQueries(
@@ -23,6 +23,7 @@ import lombok.Data;
 			@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findAll", query = "SELECT p FROM ProductMaster p"),
 			@NamedQuery(name = "com.example.helloworld.core.ProductMaster.fetchByBarcode", query = "SELECT p FROM ProductMaster p where barcode = :barcode")
 		})
+
 public class ProductMaster {
 	
 	@Id
@@ -30,7 +31,7 @@ public class ProductMaster {
 	private long id;
 
 	@Column(name = "vendor_id", nullable = false)
-	private Long vendorId;
+	private String vendorId;
 
 	@Column(name = "name", nullable = false)
 	private String name;

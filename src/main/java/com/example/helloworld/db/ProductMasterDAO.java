@@ -35,4 +35,5 @@ public class ProductMasterDAO extends AbstractDAO<ProductMaster> {
 						"com.example.helloworld.core.ProductMaster.fetchByBarcode")
 						.setParameter("barcode", barcode)).get(0);
 	}
+
 }
