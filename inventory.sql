@@ -18,8 +18,8 @@ insert into discount_type (name, description) values ('Percentage', 'Applicable 
 insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values (1, 'I0011', 1, 1440654001000, 1234567890, 2.63, 2.47, null, null, null, now());
 insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values (1, 'I0012', 2, 1440654001001, 1234567891, 3.63, 3.47, null, null, null, now());
 
-insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values (1, 'I0001', 1, 21, 1234, 2.63, 2.47, null, null, null, now());
-insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values (1, 'I0004', 2, 4, 1237, 3.63, 3.47, null, null, null, now());
+insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values (1, 'I0001', 3, 21, 1234, 2.63, 2.47, null, null, null, now());
+insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values (1, 'I0004', 6, 4, 1237, 3.63, 3.47, null, null, null, now());
 
 insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values(1,'I0001',1,'X','X-Description','X-Tagline', 1234, 1.2, 1.0, null, null, null, now());
 insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values(1,'I0001',11,'X','X-Description','X-Tagline', 1234, 1.3, 1.1, null, null, null, now());

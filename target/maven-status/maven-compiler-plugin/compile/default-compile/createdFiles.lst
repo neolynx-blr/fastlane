@@ -24,7 +24,6 @@ com/example/helloworld/resources/ProtectedResource.class
 com/example/helloworld/core/Person.class
 com/example/helloworld/auth/ExampleAuthenticator.class
 com/example/helloworld/views/PersonView$Template.class
-com/example/helloworld/manager/InventoryCurator.class
 com/example/helloworld/resources/HelloWorldResource.class
 com/example/helloworld/core/Vendor.class
 com/example/helloworld/core/User.class

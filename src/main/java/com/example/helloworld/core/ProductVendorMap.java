@@ -9,6 +9,8 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Created by nitesh.garg on 04-Sep-2015
  */
@@ -45,6 +47,14 @@ public class ProductVendorMap implements Serializable {
 				vendorIds.add(Long.parseLong(st.nextToken()));
 			}
 		}
+	}
+	
+	public void removeVendor(Long vendorId) {
+		this.vendorIds.remove(vendorId);
+	}
+	
+	public String getVendorsAsStringList() {
+		return StringUtils.join(this.vendorIds, ",");
 	}
 
 }
