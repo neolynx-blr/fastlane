@@ -49,6 +49,9 @@ public class InventorySetup implements Runnable {
 
 			try {
 
+				// Check for new inventory every 'X' seconds.
+				Thread.sleep(6000);
+
 				Session session = sessionFactory.openSession();
 
 				// Look for all new data in inventory_master w.r.t.
@@ -79,12 +82,13 @@ public class InventorySetup implements Runnable {
 					Long barcode = imData.getBarcode();
 					Long productId;
 
-					System.out.println("Looking for product data on barcode:" + imData.getBarcode());
+					System.out.println("Looking for product data on barcode:" + barcode + ", and vendor::" + vendorId);
 
 					// First see if the product for this barcode exists already
 					Query pmQuery = session
-							.createSQLQuery("select pm.* from product_master pm where barcode = :barcode")
-							.addEntity("product_master", ProductMaster.class).setParameter("barcode", barcode);
+							.createSQLQuery("select pm.* from product_master pm where barcode = :barcode and vendor_id ilike :vendorId")
+							.addEntity("product_master", ProductMaster.class).setParameter("barcode", barcode)
+							.setParameter("vendorId", "%" + vendorId.toString() + "%");
 
 					List<ProductMaster> productMasterList = pmQuery.list();
 
@@ -123,6 +127,7 @@ public class InventorySetup implements Runnable {
 						boolean existingNewProductAreSame = productMasterExisting.equals(productMasterNew);
 
 						// Did this product existed in master with this vendor?
+						System.out.println("VendorSet::" + pvMap.getVendorsAsStringList());
 						if (pvMap.getVendorIds().contains(vendorId)) {
 
 							if (!existingNewProductAreSame) {
@@ -133,18 +138,35 @@ public class InventorySetup implements Runnable {
 								 * new entry for this vendor, and remove him
 								 * from existing product entry
 								 */
+								
+								/* But what if the existing entry had only one vendor, the one currently being processed? In that case, no need to create */
+								if(pvMap.getVendorIds().size() == 1) {
 
-								pvMap.removeVendor(vendorId);
-								productMasterExisting.setVendorId(pvMap.getVendorsAsStringList());
+									// Copy everything into existing, and update
+									productMasterExisting.setDescription(imData.getDescription());
+									productMasterExisting.setImageJSON(imData.getImageJSON());
+									productMasterExisting.setName(imData.getName());
+									productMasterExisting.setTagLine(imData.getTagLine());
+									
+									// TODO Need to understand this better
+									session.saveOrUpdate(productMasterExisting);
+									session.merge(productMasterExisting);
 
-								// TODO Need to understand this better
-								session.saveOrUpdate(productMasterExisting);
-								session.merge(productMasterExisting);
+									productId = productMasterExisting.getId();
+									
+								} else {
+									pvMap.removeVendor(vendorId);
+									productMasterExisting.setVendorId(pvMap.getVendorsAsStringList());
 
-								productMasterNew.setId(0);
-								productMasterNew.setVendorId(vendorId.toString());
-								session.save(productMasterNew);
-								productId = productMasterNew.getId();
+									session.saveOrUpdate(productMasterExisting);
+									session.merge(productMasterExisting);
+
+									productMasterNew.setId(0);
+									productMasterNew.setVendorId(vendorId.toString());
+									session.save(productMasterNew);
+									productId = productMasterNew.getId();
+								}
+								
 
 							} else {
 								/*
@@ -236,9 +258,6 @@ public class InventorySetup implements Runnable {
 					}
 
 					session.getTransaction().commit();
-
-					// Check for new inventory every 'X' seconds.
-					Thread.sleep(6000);
 
 				}
 			} catch (InterruptedException e) {
