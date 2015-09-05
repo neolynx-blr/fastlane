@@ -58,6 +58,15 @@ public class VendorItemMaster {
 	@Column(name = "discount_value")
 	private Double discountValue;
 	
+	@Column(name = "name", nullable = false)
+	private String name;
+
+	@Column(name = "description")
+	private String description;
+	
+	@Column(name = "tag_line")
+	private String tagLine;
+	
 	@Column(name = "created_on")
 	private Date createdOn;
 }

@@ -9,6 +9,7 @@
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/resources/PeopleResource.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/HelloWorldConfiguration.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/DiscountType.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/VendorItemHistoryDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/ProductMaster.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/InventoryMasterDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/ProductVendorMap.java
@@ -20,6 +21,7 @@
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/Person.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/PersonDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/filter/DateRequiredFeature.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/VendorItemHistory.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/filter/DateNotSpecifiedFilter.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/resources/ViewResource.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/DiscountTypeDAO.java

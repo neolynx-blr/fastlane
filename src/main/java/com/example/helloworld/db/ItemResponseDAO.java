@@ -26,7 +26,47 @@ public class ItemResponseDAO extends AbstractDAO<ItemResponse>{
 	public ItemResponseDAO(SessionFactory sessionFactory) {
 		super(sessionFactory);
 		this.sessionFactory = sessionFactory;
-	}		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<ItemResponse> getLatestInventoryFast(Long vendorId) {
+		
+		List<ItemResponse> inventoryList = new ArrayList<ItemResponse>();
+		Session session = this.sessionFactory.openSession();
+
+		Query query = session
+				.createSQLQuery(
+						"select vim.* "
+								+ " from vendor_item_master vim where vim.vendor_id = :vendorId ")
+				.addEntity("vim", VendorItemMaster.class)
+				.setLong("vendorId", vendorId);
+		
+		List<VendorItemMaster> vendorItemMasterList = query.list();
+		System.out.println(vendorItemMasterList.size() + " rows found after executing query:" + query.getQueryString());
+		
+		for(VendorItemMaster vimInstance : vendorItemMasterList)
+		{
+
+			ItemResponse irInstance = new ItemResponse();
+			irInstance.setName(vimInstance.getName());
+			irInstance.setTagline(vimInstance.getTagLine());
+			irInstance.setImageJSON(vimInstance.getImageJSON());
+			irInstance.setDescription(vimInstance.getDescription());
+			
+			irInstance.setItemCode(vimInstance.getItemCode());
+			irInstance.setBarcode(vimInstance.getBarcode());
+			irInstance.setProductId(vimInstance.getProductId());
+			irInstance.setVersionId(vimInstance.getVersionId());
+			
+			irInstance.setMrp(vimInstance.getMrp());
+			irInstance.setPrice(vimInstance.getPrice());
+			
+			inventoryList.add(irInstance);
+		}
+		
+		session.close();
+		return inventoryList;
+	}
 	
 	@SuppressWarnings("unchecked")
 	public List<ItemResponse> getLatestInventory(Long vendorId) {

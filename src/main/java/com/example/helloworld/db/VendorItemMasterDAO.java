@@ -26,9 +26,7 @@ public class VendorItemMasterDAO extends AbstractDAO<VendorItemMaster> {
 	}
 
 	public List<VendorItemMaster> findByVendor(Long vendorId) {
-		return list(
-				namedQuery(
-						"com.example.helloworld.core.VendorItemMaster.findByVendor")
-						.setParameter("vendorId", vendorId));
+		return list(namedQuery("com.example.helloworld.core.VendorItemMaster.findByVendor").setParameter("vendorId",
+				vendorId));
 	}
 }

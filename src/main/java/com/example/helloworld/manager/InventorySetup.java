@@ -9,6 +9,7 @@ import org.hibernate.SessionFactory;
 import com.example.helloworld.core.InventoryMaster;
 import com.example.helloworld.core.ProductMaster;
 import com.example.helloworld.core.ProductVendorMap;
+import com.example.helloworld.core.VendorItemHistory;
 import com.example.helloworld.core.VendorItemMaster;
 
 /**
@@ -78,6 +79,9 @@ public class InventorySetup implements Runnable {
 
 					InventoryMaster imData = (InventoryMaster) instance;
 
+					VendorItemHistory vendorItemHistory;
+					VendorItemMaster vendorItemMasterNew = new VendorItemMaster();
+
 					Long vendorId = imData.getVendorId();
 					Long barcode = imData.getBarcode();
 					Long productId;
@@ -86,7 +90,8 @@ public class InventorySetup implements Runnable {
 
 					// First see if the product for this barcode exists already
 					Query pmQuery = session
-							.createSQLQuery("select pm.* from product_master pm where barcode = :barcode and vendor_id ilike :vendorId")
+							.createSQLQuery(
+									"select pm.* from product_master pm where barcode = :barcode and vendor_id ilike :vendorId")
 							.addEntity("product_master", ProductMaster.class).setParameter("barcode", barcode)
 							.setParameter("vendorId", "%" + vendorId.toString() + "%");
 
@@ -104,6 +109,74 @@ public class InventorySetup implements Runnable {
 					productMasterNew.setName(imData.getName());
 					productMasterNew.setTagLine(imData.getTagLine());
 					productMasterNew.setVendorId(imData.getVendorId().toString());
+
+					/*
+					 * To have lesser processing inside the transaction, pulling
+					 * the vendor-item data also from DB before the transaction
+					 * begins.
+					 * 
+					 * Look for latest vendor data for this barcode.
+					 */
+					Query vimQuery = session
+							.createSQLQuery(
+									"select vim.* from vendor_item_master vim where barcode = :barcode and vendor_id = :vendorId")
+							.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("barcode", barcode)
+							.setParameter("vendorId", vendorId);
+
+					boolean vendorRecordAlreadyExist = false;
+					List<VendorItemMaster> vendorItemMasterList = vimQuery.list();
+
+					VendorItemMaster vendorItemMasterExisting = null;
+
+					if (vendorItemMasterList != null && vendorItemMasterList.size() > 0) {
+						vendorRecordAlreadyExist = true;
+						vendorItemMasterExisting = vendorItemMasterList.get(0);
+					}
+
+					/*
+					 * If the vendor record already existed and still got picked
+					 * for processing, means something has changed. Simply pull
+					 * all data changes in and update.
+					 * 
+					 * Very unlikely case of where only product information has
+					 * changed. Hence ignoring that for now. Keeping a TODO if
+					 * ever need to optimize on that.
+					 */
+					if (vendorRecordAlreadyExist) {
+
+						vendorItemMasterExisting.setDiscountType(imData.getDiscountType());
+						vendorItemMasterExisting.setDiscountValue(imData.getDiscountValue());
+						vendorItemMasterExisting.setImageJSON(imData.getImageJSON());
+						vendorItemMasterExisting.setItemCode(imData.getItemCode());
+						vendorItemMasterExisting.setMrp(imData.getMrp());
+						vendorItemMasterExisting.setPrice(imData.getPrice());
+						vendorItemMasterExisting.setVersionId(imData.getVersionId());
+						vendorItemMasterExisting.setName(imData.getName());
+						vendorItemMasterExisting.setTagLine(imData.getTagLine());
+						vendorItemMasterExisting.setDescription(imData.getDescription());
+						vendorItemMasterExisting.setCreatedOn(new java.sql.Date(System.currentTimeMillis()));
+
+						vendorItemHistory = new VendorItemHistory(vendorItemMasterExisting);
+
+					} else {
+
+						vendorItemMasterNew.setVendorId(imData.getVendorId());
+						vendorItemMasterNew.setItemCode(imData.getItemCode());
+						vendorItemMasterNew.setVersionId(imData.getVersionId());
+						vendorItemMasterNew.setBarcode(imData.getBarcode());
+						vendorItemMasterNew.setMrp(imData.getMrp());
+						vendorItemMasterNew.setPrice(imData.getPrice());
+						vendorItemMasterNew.setImageJSON(imData.getImageJSON());
+						vendorItemMasterNew.setDiscountType(imData.getDiscountType());
+						vendorItemMasterNew.setDiscountValue(imData.getDiscountValue());
+						vendorItemMasterNew.setName(imData.getName());
+						vendorItemMasterNew.setTagLine(imData.getTagLine());
+						vendorItemMasterNew.setDescription(imData.getDescription());
+						vendorItemMasterNew.setCreatedOn(new java.sql.Date(System.currentTimeMillis()));
+
+						vendorItemHistory = new VendorItemHistory(vendorItemMasterNew);
+
+					}
 
 					session.getTransaction().begin();
 
@@ -138,22 +211,26 @@ public class InventorySetup implements Runnable {
 								 * new entry for this vendor, and remove him
 								 * from existing product entry
 								 */
-								
-								/* But what if the existing entry had only one vendor, the one currently being processed? In that case, no need to create */
-								if(pvMap.getVendorIds().size() == 1) {
+
+								/*
+								 * But what if the existing entry had only one
+								 * vendor, the one currently being processed? In
+								 * that case, no need to create
+								 */
+								if (pvMap.getVendorIds().size() == 1) {
 
 									// Copy everything into existing, and update
 									productMasterExisting.setDescription(imData.getDescription());
 									productMasterExisting.setImageJSON(imData.getImageJSON());
 									productMasterExisting.setName(imData.getName());
 									productMasterExisting.setTagLine(imData.getTagLine());
-									
+
 									// TODO Need to understand this better
 									session.saveOrUpdate(productMasterExisting);
 									session.merge(productMasterExisting);
 
 									productId = productMasterExisting.getId();
-									
+
 								} else {
 									pvMap.removeVendor(vendorId);
 									productMasterExisting.setVendorId(pvMap.getVendorsAsStringList());
@@ -166,7 +243,6 @@ public class InventorySetup implements Runnable {
 									session.save(productMasterNew);
 									productId = productMasterNew.getId();
 								}
-								
 
 							} else {
 								/*
@@ -202,59 +278,28 @@ public class InventorySetup implements Runnable {
 						}
 					}
 
-					// Look for latest vendor data for this barcode
-					Query vimQuery = session
-							.createSQLQuery(
-									"select vim.* from vendor_item_master vim where barcode = :barcode and vendor_id = :vendorId")
-							.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("barcode", barcode)
-							.setParameter("vendorId", vendorId);
-
-					boolean vendorRecordAlreadyExist = false;
-					List<VendorItemMaster> vendorItemMasterList = vimQuery.list();
-
-					VendorItemMaster vendorItemMasterExisting = null;
-
-					if (vendorItemMasterList != null && vendorItemMasterList.size() > 0) {
-						vendorRecordAlreadyExist = true;
-						vendorItemMasterExisting = vendorItemMasterList.get(0);
-					}
-
 					/*
 					 * If the vendor record already existed and still got picked
 					 * for processing, means something has changed. Simply pull
 					 * all data changes in and update.
 					 * 
 					 * Very unlikely case of where only product information has
-					 * changed. Hence ignoring that for now. Keeping a TODO if
-					 * ever need to optimize on that.
+					 * changed. Hence ignoring that for now.
 					 */
 					if (vendorRecordAlreadyExist) {
 
-						vendorItemMasterExisting.setDiscountType(imData.getDiscountType());
-						vendorItemMasterExisting.setDiscountValue(imData.getDiscountValue());
-						vendorItemMasterExisting.setImageJSON(imData.getImageJSON());
-						vendorItemMasterExisting.setItemCode(imData.getItemCode());
-						vendorItemMasterExisting.setMrp(imData.getMrp());
-						vendorItemMasterExisting.setPrice(imData.getPrice());
-						vendorItemMasterExisting.setVersionId(imData.getVersionId());
-						vendorItemMasterExisting.setCreatedOn(new java.sql.Date(System.currentTimeMillis()));
-
 						session.saveOrUpdate(vendorItemMasterExisting);
 						session.merge(vendorItemMasterExisting);
+
+						session.save(vendorItemHistory);
+
 					} else {
-						VendorItemMaster vendorItemMasterNew = new VendorItemMaster();
-						vendorItemMasterNew.setVendorId(imData.getVendorId());
-						vendorItemMasterNew.setItemCode(imData.getItemCode());
+
 						vendorItemMasterNew.setProductId(productId);
-						vendorItemMasterNew.setVersionId(imData.getVersionId());
-						vendorItemMasterNew.setBarcode(imData.getBarcode());
-						vendorItemMasterNew.setMrp(imData.getMrp());
-						vendorItemMasterNew.setPrice(imData.getPrice());
-						vendorItemMasterNew.setImageJSON(imData.getImageJSON());
-						vendorItemMasterNew.setDiscountType(imData.getDiscountType());
-						vendorItemMasterNew.setDiscountValue(imData.getDiscountValue());
-						vendorItemMasterNew.setCreatedOn(new java.sql.Date(System.currentTimeMillis()));
+						vendorItemHistory.setProductId(productId);
+						
 						session.save(vendorItemMasterNew);
+						session.save(vendorItemHistory);
 					}
 
 					session.getTransaction().commit();

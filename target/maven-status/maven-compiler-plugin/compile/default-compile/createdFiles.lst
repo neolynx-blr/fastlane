@@ -7,6 +7,7 @@ com/example/helloworld/core/ProductVendorMap.class
 com/example/helloworld/db/PersonDAO.class
 com/example/helloworld/filter/DateRequiredFeature.class
 com/example/helloworld/HelloWorldApplication$2.class
+com/example/helloworld/db/VendorItemHistoryDAO.class
 com/example/helloworld/HelloWorldApplication.class
 com/example/helloworld/views/PersonView.class
 com/example/helloworld/manager/InventoryEvaluator.class
@@ -20,6 +21,7 @@ com/example/helloworld/task/DaemonJob.class
 com/example/helloworld/resources/ViewResource$1.class
 com/example/helloworld/core/VendorItemMaster.class
 com/example/helloworld/core/ItemResponse.class
+com/example/helloworld/core/VendorItemHistory.class
 com/example/helloworld/resources/ProtectedResource.class
 com/example/helloworld/core/Person.class
 com/example/helloworld/auth/ExampleAuthenticator.class
