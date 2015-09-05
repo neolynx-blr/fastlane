@@ -1,7 +1,10 @@
 package com.example.helloworld.manager;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.commons.lang3.text.StrTokenizer;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -11,6 +14,8 @@ import com.example.helloworld.core.ProductMaster;
 import com.example.helloworld.core.ProductVendorMap;
 import com.example.helloworld.core.VendorItemHistory;
 import com.example.helloworld.core.VendorItemMaster;
+import com.example.helloworld.core.VendorVersionDetail;
+import com.example.helloworld.core.VendorVersionDifferential;
 
 /**
  * Created by nitesh.garg on 04-Sep-2015
@@ -297,7 +302,7 @@ public class InventorySetup implements Runnable {
 
 						vendorItemMasterNew.setProductId(productId);
 						vendorItemHistory.setProductId(productId);
-						
+
 						session.save(vendorItemMasterNew);
 						session.save(vendorItemHistory);
 					}
@@ -305,6 +310,146 @@ public class InventorySetup implements Runnable {
 					session.getTransaction().commit();
 
 				}
+
+				Query vendorItemMasterQuery = session
+						.createSQLQuery("select vendor_id, max(version_id) max_version_id from vendor_item_master group by vendor_id");
+
+				List<Object[]> vimDataRows = vendorItemMasterQuery.list();
+				System.out.println(vimDataRows.size() + " rows found after executing query:"
+						+ vendorItemMasterQuery.getQueryString());
+
+				for (Object[] vimDataRow : vimDataRows) {
+
+					Long maxVersionId = (Long) Long.parseLong(vimDataRow[1].toString());
+					Long vendorId = (Long) Long.parseLong(vimDataRow[0].toString());
+
+					Query vendorItemCurrentStateQuery = session
+							.createSQLQuery(
+									"select {vvdf.*}, {vvd.*} "
+											+ " from vendor_version_differential vvdf, vendor_version_detail vvd "
+											+ " where vvd.vendor_id = vvdf.vendor_id and vvd.vendor_id = :vendorId ")
+							.addEntity("vvdf", VendorVersionDifferential.class)
+							.addEntity("vvd", VendorVersionDetail.class).setParameter("vendorId", vendorId);
+
+					List<Object[]> vvdDataRows = vendorItemCurrentStateQuery.list();
+					System.out.println(vvdDataRows.size() + " rows found after executing query:"
+							+ vendorItemCurrentStateQuery.getQueryString());
+
+					VendorVersionDifferential vendorVersionDifferentialNew = new VendorVersionDifferential();
+					vendorVersionDifferentialNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
+					vendorVersionDifferentialNew.setLastSyncedVersionId(maxVersionId);
+					vendorVersionDifferentialNew.setVendorId(vendorId);
+					vendorVersionDifferentialNew.setVersionId(maxVersionId);
+
+					if (vvdDataRows == null || vvdDataRows.size() < 1) {
+
+						// New vendor data, do the insertions
+						VendorVersionDetail vendorVersionDetailNew = new VendorVersionDetail();
+
+						vendorVersionDetailNew.setVendorId(vendorId);
+						vendorVersionDetailNew.setLatestSyncedVersionId(maxVersionId);
+						vendorVersionDetailNew.setValidVersionIds(maxVersionId.toString());
+						vendorVersionDetailNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
+
+						session.getTransaction().begin();
+						session.save(vendorVersionDetailNew);
+						session.save(vendorVersionDifferentialNew);
+						session.getTransaction().commit();
+
+					} else {
+
+						for (Object[] vvdDataRow : vvdDataRows) {
+
+							VendorVersionDetail vendorVersionDetail = (VendorVersionDetail) vvdDataRow[1];
+							VendorVersionDifferential vendorVersionDifferential = (VendorVersionDifferential) vvdDataRow[0];
+
+							if (vendorVersionDetail.getLatestSyncedVersionId() < maxVersionId) {
+
+								Long lastSyncedVersionId = vendorVersionDetail.getLatestSyncedVersionId();
+
+								vendorVersionDetail.setLatestSyncedVersionId(maxVersionId);
+								vendorVersionDetail.setValidVersionIds(vendorVersionDetail.getValidVersionIds() + ","
+										+ maxVersionId);
+								vendorVersionDetail.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
+
+								Query vendorItemDifferentialQuery = session
+										.createSQLQuery(
+												"select vendor_id, version_id, string_agg(item_code, ',') "
+														+ "from ("
+														+ "	select vendor_id, version_id, item_code "
+														+ "	from vendor_item_master vim "
+														+ " where vim.vendor_id = :vendorId "
+														+ " and vim.version_id > :lastSyncedVersionId "
+														+ " and vim.version_id <= :latestVersionId) vim_inner "
+														+ "group by vendor_id, version_id order by vendor_id, version_id")
+										.setParameter("vendorId", vendorId)
+										.setParameter("lastSyncedVersionId", lastSyncedVersionId)
+										.setParameter("latestVersionId", maxVersionId);
+
+								Object[] diffDataRows = (Object[]) vendorItemDifferentialQuery.list().get(0);
+
+								String newItemDifferential = (String) diffDataRows[2];
+								String existingItemDifferential = vendorVersionDifferential.getDeltaItemCodes();
+
+								vendorVersionDifferential.setLastModifiedOn(new java.sql.Date(System
+										.currentTimeMillis()));
+								vendorVersionDifferential.setLastSyncedVersionId(maxVersionId);
+
+								if (newItemDifferential == null || newItemDifferential.trim().length() < 1) {
+									// Very unlikely state. No operation
+								} else {
+									if (existingItemDifferential == null
+											|| existingItemDifferential.trim().length() < 1) {
+										vendorVersionDifferential.setDeltaItemCodes(newItemDifferential);
+
+									} else {
+
+										Set<String> newDeltaItemCodes = new HashSet<String>();
+
+										List<String> newStringTokens = new StrTokenizer(newItemDifferential, ",")
+												.getTokenList();
+										List<String> existingStringTokens = new StrTokenizer(existingItemDifferential,
+												",").getTokenList();
+
+										newDeltaItemCodes.addAll(newStringTokens);
+										newDeltaItemCodes.addAll(existingStringTokens);
+
+										StringBuffer updatedDeltaItemCodes = new StringBuffer();
+
+										for (String itemCode : newDeltaItemCodes) {
+											if (updatedDeltaItemCodes.length() < 1) {
+												updatedDeltaItemCodes.append(itemCode);
+											} else {
+												updatedDeltaItemCodes.append("," + itemCode);
+											}
+										}
+
+										vendorVersionDifferential.setDeltaItemCodes(updatedDeltaItemCodes.toString());
+
+									}
+									session.getTransaction().begin();
+
+									session.saveOrUpdate(vendorVersionDifferential);
+									session.merge(vendorVersionDifferential);
+
+									session.save(vendorVersionDifferentialNew);
+
+									session.getTransaction().commit();
+
+								}
+
+							} else {
+								// Everything up-to-date, no-operation
+							}
+
+						}
+
+					}
+
+				}
+
+				session.close();
+
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

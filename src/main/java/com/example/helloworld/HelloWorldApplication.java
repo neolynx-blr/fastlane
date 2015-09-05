@@ -30,6 +30,8 @@ import com.example.helloworld.core.Template;
 import com.example.helloworld.core.User;
 import com.example.helloworld.core.VendorItemHistory;
 import com.example.helloworld.core.VendorItemMaster;
+import com.example.helloworld.core.VendorVersionDetail;
+import com.example.helloworld.core.VendorVersionDifferential;
 import com.example.helloworld.db.ItemResponseDAO;
 import com.example.helloworld.db.PersonDAO;
 import com.example.helloworld.filter.DateRequiredFeature;
@@ -51,7 +53,8 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 
 	private final HibernateBundle<HelloWorldConfiguration> hibernateBundle = new HibernateBundle<HelloWorldConfiguration>(
 			Person.class, InventorySyncStatus.class, VendorItemMaster.class, VendorItemHistory.class,
-			ProductMaster.class, ItemResponse.class, InventoryMaster.class) {
+			ProductMaster.class, ItemResponse.class, InventoryMaster.class, VendorVersionDetail.class,
+			VendorVersionDifferential.class) {
 		@Override
 		public DataSourceFactory getDataSourceFactory(HelloWorldConfiguration configuration) {
 			return configuration.getDataSourceFactory();

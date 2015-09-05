@@ -21,8 +21,8 @@ public class VendorItemMasterDAO extends AbstractDAO<VendorItemMaster> {
 		return Optional.fromNullable(get(id));
 	}
 
-	public VendorItemMaster create(VendorItemMaster itemDetail) {
-		return persist(itemDetail);
+	public VendorItemMaster create(VendorItemMaster vendorItemMaster) {
+		return persist(vendorItemMaster);
 	}
 
 	public List<VendorItemMaster> findByVendor(Long vendorId) {

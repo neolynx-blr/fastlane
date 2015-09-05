@@ -6,11 +6,13 @@
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/ResponseAudit.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/ProductMasterDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/task/DaemonJob.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/VendorVersionDifferentialDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/resources/PeopleResource.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/HelloWorldConfiguration.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/DiscountType.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/VendorItemHistoryDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/ProductMaster.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/VendorVersionDifferential.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/InventoryMasterDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/ProductVendorMap.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/health/TemplateHealthCheck.java
@@ -33,8 +35,10 @@
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/auth/ExampleAuthenticator.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/filter/DateRequired.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/ItemResponse.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/VendorVersionDetail.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/resources/ProtectedResource.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/HelloWorldApplication.java
+/Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/db/VendorVersionDetailDAO.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/manager/InventoryEvaluator.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/Template.java
 /Users/nitesh.garg/Documents/restart/fastlane/src/main/java/com/example/helloworld/core/User.java
