@@ -14,7 +14,9 @@ import lombok.EqualsAndHashCode;
 public class InventoryResponse extends ResponseAudit {
 
 	private Long vendorId;
-	private Long dataVersionId;
+	
+	private Long newDataVersionId;
+	private Long currentDataVersionId;
 	
 	private List<ItemResponse> itemsAdded;
 	private List<ItemResponse> itemsUpdated;

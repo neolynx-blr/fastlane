@@ -22,6 +22,8 @@ import com.example.helloworld.auth.ExampleAuthenticator;
 import com.example.helloworld.auth.ExampleAuthorizer;
 import com.example.helloworld.cli.RenderCommand;
 import com.example.helloworld.core.InventoryMaster;
+import com.example.helloworld.core.InventoryResponse;
+import com.example.helloworld.core.InventoryResponseCacheLoader;
 import com.example.helloworld.core.InventorySyncStatus;
 import com.example.helloworld.core.ItemResponse;
 import com.example.helloworld.core.Person;
@@ -34,6 +36,7 @@ import com.example.helloworld.core.VendorVersionDetail;
 import com.example.helloworld.core.VendorVersionDifferential;
 import com.example.helloworld.db.ItemResponseDAO;
 import com.example.helloworld.db.PersonDAO;
+import com.example.helloworld.db.VendorVersionDifferentialDAO;
 import com.example.helloworld.filter.DateRequiredFeature;
 import com.example.helloworld.health.TemplateHealthCheck;
 import com.example.helloworld.manager.InventoryEvaluator;
@@ -45,6 +48,9 @@ import com.example.helloworld.resources.PersonResource;
 import com.example.helloworld.resources.ProtectedResource;
 import com.example.helloworld.resources.ViewResource;
 import com.example.helloworld.task.DaemonJob;
+import com.example.helloworld.task.DataLoaderJob;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.LoadingCache;
 
 public class HelloWorldApplication extends Application<HelloWorldConfiguration> {
 	public static void main(String[] args) throws Exception {
@@ -95,12 +101,18 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
 		final ItemResponseDAO inventoryDAO = new ItemResponseDAO(hibernateBundle.getSessionFactory());
+		final VendorVersionDifferentialDAO differentialDAO = new VendorVersionDifferentialDAO(hibernateBundle.getSessionFactory());
+		
+				
+		LoadingCache<String, InventoryResponse> differentialInventoryCache = CacheBuilder.newBuilder().build(
+				new InventoryResponseCacheLoader(hibernateBundle.getSessionFactory(), differentialDAO));
 
-		final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(inventoryDAO);
+		final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(inventoryDAO, differentialInventoryCache);
 
 		final Template template = configuration.buildTemplate();
 
 		environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory()));
+		environment.lifecycle().manage(new DataLoaderJob(hibernateBundle.getSessionFactory(), differentialDAO, differentialInventoryCache));
 
 		environment.healthChecks().register("template", new TemplateHealthCheck(template));
 		environment.jersey().register(DateRequiredFeature.class);

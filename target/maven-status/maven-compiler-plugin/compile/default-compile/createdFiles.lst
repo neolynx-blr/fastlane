@@ -29,10 +29,12 @@ com/example/helloworld/core/Person.class
 com/example/helloworld/auth/ExampleAuthenticator.class
 com/example/helloworld/views/PersonView$Template.class
 com/example/helloworld/resources/HelloWorldResource.class
+com/example/helloworld/core/InventoryResponseCacheLoader.class
 com/example/helloworld/core/Vendor.class
 com/example/helloworld/core/User.class
 com/example/helloworld/HelloWorldApplication$3.class
 com/example/helloworld/core/VendorVersionDetail.class
+com/example/helloworld/manager/InMemorySetup.class
 com/example/helloworld/manager/InventorySetup.class
 com/example/helloworld/db/InventoryMasterDAO.class
 com/example/helloworld/resources/ViewResource$3.class
@@ -54,3 +56,4 @@ com/example/helloworld/core/ProductMaster.class
 com/example/helloworld/db/ItemResponseDAO.class
 com/example/helloworld/HelloWorldApplication$1.class
 com/example/helloworld/cli/RenderCommand.class
+com/example/helloworld/task/DataLoaderJob.class

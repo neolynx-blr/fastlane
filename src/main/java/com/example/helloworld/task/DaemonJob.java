@@ -20,7 +20,7 @@ public class DaemonJob implements Managed {
 	
 	private SessionFactory sessionFactory; 
 	
-	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("InvSetup-%d").setDaemon(true).build();
+	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DaemonJob-%d").setDaemon(true).build();
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 	
 	public DaemonJob(SessionFactory sessionFactory) {

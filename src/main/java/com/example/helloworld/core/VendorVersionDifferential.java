@@ -19,7 +19,9 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "vendor_version_differential")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.VendorVersionDifferential.findByVendorVersion", query = "SELECT p FROM VendorVersionDifferential p where vendorId = :vendorId and version_id = :versionId") })
+@NamedQueries({
+		@NamedQuery(name = "com.example.helloworld.core.VendorVersionDifferential.findByVendorVersion", query = "SELECT p FROM VendorVersionDifferential p where vendorId = :vendorId and version_id = :versionId"),
+		@NamedQuery(name = "com.example.helloworld.core.VendorVersionDifferential.findAll", query = "SELECT p FROM VendorVersionDifferential p") })
 public class VendorVersionDifferential {
 
 	@Id
