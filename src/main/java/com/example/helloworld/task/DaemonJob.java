@@ -10,7 +10,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.hibernate.SessionFactory;
 
+import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.manager.InventorySetup;
+import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -19,12 +21,16 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public class DaemonJob implements Managed {
 	
 	private SessionFactory sessionFactory; 
+	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 	
 	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DaemonJob-%d").setDaemon(true).build();
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 	
-	public DaemonJob(SessionFactory sessionFactory) {
+	public DaemonJob(SessionFactory sessionFactory, LoadingCache<String, InventoryResponse> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
 		this.sessionFactory = sessionFactory;
+		this.vendorVersionCache = vendorVersionCache;
+		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
 	/*
@@ -35,7 +41,7 @@ public class DaemonJob implements Managed {
 	@Override
 	@UnitOfWork
 	public void start() throws Exception {
-		executorService.execute(new InventorySetup(sessionFactory));
+		executorService.execute(new InventorySetup(sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
 	}
 
 	/*

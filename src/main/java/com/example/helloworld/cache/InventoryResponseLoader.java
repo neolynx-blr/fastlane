@@ -1,4 +1,4 @@
-package com.example.helloworld.core;
+package com.example.helloworld.cache;
 
 import io.dropwizard.hibernate.UnitOfWork;
 
@@ -10,16 +10,20 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
+import com.example.helloworld.core.InventoryResponse;
+import com.example.helloworld.core.ItemResponse;
+import com.example.helloworld.core.VendorItemMaster;
+import com.example.helloworld.core.VendorVersionDifferential;
 import com.google.common.cache.CacheLoader;
 
 /**
  * Created by nitesh.garg on 06-Sep-2015
  */
-public class InventoryResponseCacheLoader extends CacheLoader<String, InventoryResponse> {
+public class InventoryResponseLoader extends CacheLoader<String, InventoryResponse> {
 
 	private SessionFactory sessionFactory;
 
-	public InventoryResponseCacheLoader(SessionFactory sessionFactory) {
+	public InventoryResponseLoader(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
 

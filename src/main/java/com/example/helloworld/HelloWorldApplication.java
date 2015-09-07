@@ -20,10 +20,12 @@ import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 
 import com.example.helloworld.auth.ExampleAuthenticator;
 import com.example.helloworld.auth.ExampleAuthorizer;
+import com.example.helloworld.cache.InitialSetup;
+import com.example.helloworld.cache.InventoryResponseLoader;
+import com.example.helloworld.cache.VendorVersionLoader;
 import com.example.helloworld.cli.RenderCommand;
 import com.example.helloworld.core.InventoryMaster;
 import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.core.InventoryResponseCacheLoader;
 import com.example.helloworld.core.InventorySyncStatus;
 import com.example.helloworld.core.ItemResponse;
 import com.example.helloworld.core.Person;
@@ -38,7 +40,6 @@ import com.example.helloworld.db.ItemResponseDAO;
 import com.example.helloworld.db.PersonDAO;
 import com.example.helloworld.filter.DateRequiredFeature;
 import com.example.helloworld.health.TemplateHealthCheck;
-import com.example.helloworld.manager.DifferentialCacheSetup;
 import com.example.helloworld.manager.InventoryCurator;
 import com.example.helloworld.manager.InventoryEvaluator;
 import com.example.helloworld.resources.FilteredResource;
@@ -103,22 +104,25 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
 		final ItemResponseDAO inventoryDAO = new ItemResponseDAO(hibernateBundle.getSessionFactory());
 
-		final InventoryCurator curator = InventoryCurator.getInventoryCurator();
-		curator.setSessionFactory(hibernateBundle.getSessionFactory());
+		System.out.println("Processing any new inventory.");
+		
+		final InventoryCurator curator = new InventoryCurator(hibernateBundle.getSessionFactory());
+		curator.processNewInventory();
 
 		System.out.println("Creating the loading-cache for differential data.");
 		
-		final LoadingCache<String, InventoryResponse> differentialInventoryCache = CacheBuilder.newBuilder().build(
-				new InventoryResponseCacheLoader(hibernateBundle.getSessionFactory()));
-		final DifferentialCacheSetup diffCacheSetup = new DifferentialCacheSetup(hibernateBundle.getSessionFactory(), differentialInventoryCache);
-		diffCacheSetup.setupInitialCache();
+		final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
+		final LoadingCache<String, InventoryResponse> differentialInventoryCache = CacheBuilder.newBuilder().build(new InventoryResponseLoader(hibernateBundle.getSessionFactory()));
+
+		final InitialSetup diffCacheSetup = new InitialSetup(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache);
+		diffCacheSetup.setupInitialCaches();
 		
 		System.out.println("Moving On. Loaded the cache with {"+differentialInventoryCache.size()+"} entries.");
 
 		final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(inventoryDAO, differentialInventoryCache);
 		
-		environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory()));
-		environment.lifecycle().manage(new DataLoaderJob(hibernateBundle.getSessionFactory(), differentialInventoryCache));
+		environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
+		environment.lifecycle().manage(new DataLoaderJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
 
 		final Template template = configuration.buildTemplate();
 

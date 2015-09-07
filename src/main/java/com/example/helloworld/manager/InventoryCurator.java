@@ -18,24 +18,17 @@ import com.example.helloworld.core.VendorItemMaster;
 
 public class InventoryCurator {
 
-	public SessionFactory sessionFactory;
-	private static final InventoryCurator singletonInstance = new InventoryCurator();
+	private final SessionFactory sessionFactory;
 
-	protected InventoryCurator() {
-	}
-
-	public static InventoryCurator getInventoryCurator() {
-		return singletonInstance;
-	}
-
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	public InventoryCurator(SessionFactory sessionFactory) {
+		super();
 		this.sessionFactory = sessionFactory;
 	}
 
 	@SuppressWarnings("unchecked")
-	public static void processNewInventory() {
+	public void processNewInventory() {
 
-		Session session = singletonInstance.sessionFactory.openSession();
+		Session session = this.sessionFactory.openSession();
 
 		// Look for all new data in inventory_master w.r.t.
 		// vendor_item_master

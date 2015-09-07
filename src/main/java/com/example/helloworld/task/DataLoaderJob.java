@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public class DataLoaderJob implements Managed {
 
 	private SessionFactory sessionFactory;
+	private final LoadingCache<Long, Long> vendorVersionCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
 	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DataLoader-%d").setDaemon(true)
@@ -28,8 +29,9 @@ public class DataLoaderJob implements Managed {
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 
 	public DataLoaderJob(SessionFactory sessionFactory,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache) {
+			LoadingCache<String, InventoryResponse> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
 		this.sessionFactory = sessionFactory;
+		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
@@ -43,7 +45,7 @@ public class DataLoaderJob implements Managed {
 	public void start() throws Exception {
 		System.out.println("Starting up data-loader job via cache having existing size of {"
 				+ this.differentialInventoryCache.size() + "} entries.");
-		executorService.execute(new InMemorySetup(this.sessionFactory, this.differentialInventoryCache));
+		executorService.execute(new InMemorySetup(this.sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
 	}
 
 	/*

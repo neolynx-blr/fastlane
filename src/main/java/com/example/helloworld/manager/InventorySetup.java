@@ -10,12 +10,14 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 import com.example.helloworld.core.InventoryMaster;
+import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.core.ProductMaster;
 import com.example.helloworld.core.ProductVendorMap;
 import com.example.helloworld.core.VendorItemHistory;
 import com.example.helloworld.core.VendorItemMaster;
 import com.example.helloworld.core.VendorVersionDetail;
 import com.example.helloworld.core.VendorVersionDifferential;
+import com.google.common.cache.LoadingCache;
 
 /**
  * Created by nitesh.garg on 04-Sep-2015
@@ -35,10 +37,14 @@ import com.example.helloworld.core.VendorVersionDifferential;
 public class InventorySetup implements Runnable {
 
 	private SessionFactory sessionFactory;
+	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
-	public InventorySetup(SessionFactory sessionFactory) {
+	public InventorySetup(SessionFactory sessionFactory, LoadingCache<String, InventoryResponse> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
 		super();
 		this.sessionFactory = sessionFactory;
+		this.vendorVersionCache = vendorVersionCache;
+		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
 	/*
@@ -314,6 +320,7 @@ public class InventorySetup implements Runnable {
 				Query vendorItemMasterQuery = session
 						.createSQLQuery("select vendor_id, max(version_id) max_version_id from vendor_item_master group by vendor_id");
 
+				boolean vendorDataUpdated = false;
 				List<Object[]> vimDataRows = vendorItemMasterQuery.list();
 				//System.out.println(vimDataRows.size() + " rows found after executing query:" + vendorItemMasterQuery.getQueryString());
 
@@ -353,6 +360,8 @@ public class InventorySetup implements Runnable {
 						session.save(vendorVersionDetailNew);
 						session.save(vendorVersionDifferentialNew);
 						session.getTransaction().commit();
+						
+						vendorDataUpdated = true;
 
 					} else {
 
@@ -433,6 +442,7 @@ public class InventorySetup implements Runnable {
 									session.save(vendorVersionDifferentialNew);
 
 									session.getTransaction().commit();
+									vendorDataUpdated = true;
 
 								}
 
@@ -444,6 +454,14 @@ public class InventorySetup implements Runnable {
 
 					}
 
+					
+					if (vendorDataUpdated) {
+						System.out.println("Found some vendor {" + vendorId + "} data update, will call for cache refreshes.");
+						// TODO : What if this fails? No backup for this one
+						this.vendorVersionCache.refresh(vendorId);
+						this.differentialInventoryCache.refresh(vendorId + "-" + this.vendorVersionCache.getIfPresent(vendorId));
+					}
+					
 				}
 
 				session.close();

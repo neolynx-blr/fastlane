@@ -22,12 +22,14 @@ import com.google.common.cache.LoadingCache;
 public class InMemorySetup implements Runnable {
 
 	private final SessionFactory sessionFactory;
+	private final LoadingCache<Long, Long> vendorVersionCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
 	public InMemorySetup(SessionFactory sessionFactory,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache) {
+			LoadingCache<String, InventoryResponse> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
 		super();
 		this.sessionFactory = sessionFactory;
+		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
@@ -54,7 +56,7 @@ public class InMemorySetup implements Runnable {
 				Thread.sleep(10000);
 
 				System.out.println("Wokeup with cache-size of {" + this.differentialInventoryCache.size()
-						+ "} entries.");
+						+ "}");
 
 				Session session = sessionFactory.openSession();
 				Query diffQuery = session.createSQLQuery(
@@ -70,6 +72,16 @@ public class InMemorySetup implements Runnable {
 					Long vendorId = diffInstance.getVendorId();
 					Long versionId = diffInstance.getVersionId();
 					Long lastSyncedVersionId = diffInstance.getLastSyncedVersionId();
+					
+					if (this.vendorVersionCache.getIfPresent(vendorId).compareTo(lastSyncedVersionId) == 0) {
+						System.out.println("Skipping the cache refresh of {" + vendorId + "-" + versionId
+								+ "} entries.");
+						continue;
+					} else {
+						System.out.println("Time to refresh cache for Vendor:Version {" + vendorId + ":" + versionId
+								+ "} as cache has version {" + this.vendorVersionCache.getIfPresent(vendorId)
+								+ "} as against latest {" + lastSyncedVersionId + "}");
+					}
 
 					inventoryResponse.setVendorId(vendorId);
 					inventoryResponse.setCurrentDataVersionId(versionId);
