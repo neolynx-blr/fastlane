@@ -1,5 +1,8 @@
 package com.example.helloworld.manager;
 
+import io.dropwizard.hibernate.UnitOfWork;
+
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.text.StrTokenizer;
@@ -11,7 +14,6 @@ import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.core.ItemResponse;
 import com.example.helloworld.core.VendorItemMaster;
 import com.example.helloworld.core.VendorVersionDifferential;
-import com.example.helloworld.db.VendorVersionDifferentialDAO;
 import com.google.common.cache.LoadingCache;
 
 /**
@@ -19,15 +21,13 @@ import com.google.common.cache.LoadingCache;
  */
 public class InMemorySetup implements Runnable {
 
-	private SessionFactory sessionFactory;
-	private VendorVersionDifferentialDAO vendorVersionDifferentialDAO;
+	private final SessionFactory sessionFactory;
+	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
-	LoadingCache<String, InventoryResponse> differentialInventoryCache;
-
-	public InMemorySetup(SessionFactory sessionFactory, VendorVersionDifferentialDAO vendorVersionDifferentialDAO, 	LoadingCache<String, InventoryResponse> differentialInventoryCache) {
+	public InMemorySetup(SessionFactory sessionFactory,
+			LoadingCache<String, InventoryResponse> differentialInventoryCache) {
 		super();
 		this.sessionFactory = sessionFactory;
-		this.vendorVersionDifferentialDAO = vendorVersionDifferentialDAO;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
@@ -42,6 +42,7 @@ public class InMemorySetup implements Runnable {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
+	@UnitOfWork
 	public void run() {
 
 		// Keeping running for ever in the background looking for new inventory
@@ -52,31 +53,64 @@ public class InMemorySetup implements Runnable {
 				// Check for new inventory every 'X' seconds.
 				Thread.sleep(10000);
 
-				Session session = sessionFactory.openSession();
+				System.out.println("Wokeup with cache-size of {" + this.differentialInventoryCache.size()
+						+ "} entries.");
 
-				List<VendorVersionDifferential> vendorVersionDifferentials = this.vendorVersionDifferentialDAO.findAll();
+				Session session = sessionFactory.openSession();
+				Query diffQuery = session.createSQLQuery(
+						"select vvd.* from vendor_version_differential vvd order by last_modified_on ").addEntity(
+						"vendor_version_differential", VendorVersionDifferential.class);
+
+				List<VendorVersionDifferential> vendorVersionDifferentials = diffQuery.list();
 
 				for (VendorVersionDifferential diffInstance : vendorVersionDifferentials) {
-					
+
 					InventoryResponse inventoryResponse = new InventoryResponse();
+
+					Long vendorId = diffInstance.getVendorId();
+					Long versionId = diffInstance.getVersionId();
+					Long lastSyncedVersionId = diffInstance.getLastSyncedVersionId();
+
+					inventoryResponse.setVendorId(vendorId);
+					inventoryResponse.setCurrentDataVersionId(versionId);
+					inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
+
+					List<VendorItemMaster> vendorItemMasterList;
+					if (versionId.compareTo(lastSyncedVersionId) == 0) {
+
+						Query query = session
+								.createSQLQuery(
+										"select vim.* from vendor_item_master vim where vendor_id = :vendorId "
+												+ " order by vim.item_code ")
+								.addEntity("vendor_item_master", VendorItemMaster.class)
+								.setParameter("vendorId", vendorId);
+
+						vendorItemMasterList = query.list();
+						System.out.println("For Vendor ::" + vendorId + " pulling the latest inventory containing "
+								+ vendorItemMasterList.size() + " items.");
+
+					} else {
+
+						Query query = session
+								.createSQLQuery(
+										"select vim.* from vendor_item_master vim where vendor_id = :vendorId and item_code in (:itemCodes) "
+												+ " order by vim.item_code ")
+								.addEntity("vendor_item_master", VendorItemMaster.class)
+								.setParameter("vendorId", vendorId)
+								.setParameter("itemCodes", convertStringToTokens(diffInstance.getDeltaItemCodes()));
+
+						vendorItemMasterList = query.list();
+						System.out.println("For Vendor ::" + vendorId + " found " + vendorItemMasterList.size()
+								+ " items for differential.");
+
+					}
+
+					if(!vendorItemMasterList.isEmpty()) {
+						inventoryResponse.setItemsUpdated(new ArrayList<ItemResponse>());
+					}
 					
-					inventoryResponse.setVendorId(diffInstance.getVendorId());
-					inventoryResponse.setCurrentDataVersionId(diffInstance.getVersionId());
-					inventoryResponse.setNewDataVersionId(diffInstance.getLastSyncedVersionId());
-
-					Query query = session
-							.createSQLQuery(
-									"select vim.* " + " from vendor_item_master vim where item_code in (:itemCodes) "
-											+ " order by vim.item_code ")
-							.addEntity("vendor_item_master", VendorItemMaster.class)
-							.setParameter("itemCodes", convertStringToTokens(diffInstance.getDeltaItemCodes()));
-
-					List<VendorItemMaster> vendorItemMasterList = query.list();
-					System.out.println(vendorItemMasterList.size() + " rows found after executing query:"
-							+ query.getQueryString());
-
 					for (VendorItemMaster vendorItemData : vendorItemMasterList) {
-						
+
 						ItemResponse itemData = new ItemResponse();
 						itemData.setBarcode(vendorItemData.getBarcode());
 						itemData.setDescription(vendorItemData.getDescription());
@@ -90,14 +124,17 @@ public class InMemorySetup implements Runnable {
 						itemData.setProductId(vendorItemData.getProductId());
 						itemData.setTagline(vendorItemData.getTagLine());
 						itemData.setVersionId(vendorItemData.getVersionId());
-						
+
 						inventoryResponse.getItemsUpdated().add(itemData);
-						
 					}
-					this.differentialInventoryCache.put(diffInstance.getVendorId()+"-"+diffInstance.getVersionId(), inventoryResponse);
+
+					this.differentialInventoryCache.put(vendorId + "-" + versionId, inventoryResponse);
 				}
 
 				session.close();
+				System.out.println("Leaving with cache-size of {" + this.differentialInventoryCache.size()
+						+ "} entries.");
+
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

@@ -2,7 +2,6 @@ package com.example.helloworld.manager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.core.ItemResponse;
@@ -21,14 +20,9 @@ public class InventoryEvaluator {
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
-	public InventoryResponse getInventoryDifferential(Long vendorId, String dataVersionId) {
+	public InventoryResponse getInventoryDifferential(Long vendorId, Long dataVersionId) {
 		InventoryResponse inventoryResponse = null;
-		try {
-			inventoryResponse = this.differentialInventoryCache.get(vendorId + "-" + dataVersionId);
-		} catch (ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + "-" + dataVersionId);
 		if (inventoryResponse == null) {
 			inventoryResponse = getLatestInventory(vendorId);
 		}

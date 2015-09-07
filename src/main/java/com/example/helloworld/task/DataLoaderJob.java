@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 import org.hibernate.SessionFactory;
 
 import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.db.VendorVersionDifferentialDAO;
 import com.example.helloworld.manager.InMemorySetup;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -22,16 +21,15 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public class DataLoaderJob implements Managed {
 
 	private SessionFactory sessionFactory;
-	private VendorVersionDifferentialDAO vendorVersionDifferentialDAO;
+	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
-	LoadingCache<String, InventoryResponse> differentialInventoryCache;
-	
-	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DataLoader-%d").setDaemon(true).build();
+	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DataLoader-%d").setDaemon(true)
+			.build();
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 
-	public DataLoaderJob(SessionFactory sessionFactory, VendorVersionDifferentialDAO vendorVersionDifferentialDAO, LoadingCache<String, InventoryResponse> differentialInventoryCache) {
+	public DataLoaderJob(SessionFactory sessionFactory,
+			LoadingCache<String, InventoryResponse> differentialInventoryCache) {
 		this.sessionFactory = sessionFactory;
-		this.vendorVersionDifferentialDAO = vendorVersionDifferentialDAO;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
@@ -43,7 +41,9 @@ public class DataLoaderJob implements Managed {
 	@Override
 	@UnitOfWork
 	public void start() throws Exception {
-		executorService.execute(new InMemorySetup(sessionFactory, this.vendorVersionDifferentialDAO, this.differentialInventoryCache));
+		System.out.println("Starting up data-loader job via cache having existing size of {"
+				+ this.differentialInventoryCache.size() + "} entries.");
+		executorService.execute(new InMemorySetup(this.sessionFactory, this.differentialInventoryCache));
 	}
 
 	/*

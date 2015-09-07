@@ -1,5 +1,8 @@
 package com.example.helloworld.core;
 
+import io.dropwizard.hibernate.UnitOfWork;
+
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.text.StrTokenizer;
@@ -7,7 +10,6 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
-import com.example.helloworld.db.VendorVersionDifferentialDAO;
 import com.google.common.cache.CacheLoader;
 
 /**
@@ -16,13 +18,9 @@ import com.google.common.cache.CacheLoader;
 public class InventoryResponseCacheLoader extends CacheLoader<String, InventoryResponse> {
 
 	private SessionFactory sessionFactory;
-	private VendorVersionDifferentialDAO vendorVersionDifferentialDAO;
 
-	public InventoryResponseCacheLoader(SessionFactory sessionFactory,
-			VendorVersionDifferentialDAO vendorVersionDifferentialDAO) {
+	public InventoryResponseCacheLoader(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
-		this.vendorVersionDifferentialDAO = vendorVersionDifferentialDAO;
-		setupInitialCache();
 	}
 
 	private List<String> convertStringToTokens(String data) {
@@ -35,35 +33,69 @@ public class InventoryResponseCacheLoader extends CacheLoader<String, InventoryR
 	 * @see com.google.common.cache.CacheLoader#load(java.lang.Object)
 	 */
 	@SuppressWarnings("unchecked")
+	@UnitOfWork
 	@Override
 	public InventoryResponse load(String vendorVersionKey) throws Exception {
 
-		InventoryResponse inventoryResponse = null;
+		InventoryResponse inventoryResponse = new InventoryResponse();
 		List<String> vendorVersion = new StrTokenizer(vendorVersionKey, "-").getTokenList();
 
-		Session session = this.sessionFactory.openSession();
-		VendorVersionDifferential vendorVersionDifferential = this.vendorVersionDifferentialDAO.findByVendorVersion(
-				Long.parseLong(vendorVersion.get(0)), Long.parseLong(vendorVersion.get(1)));
+		Long vendorId = Long.parseLong(vendorVersion.get(0));
+		Long versionId = Long.parseLong(vendorVersion.get(1));
 
-		if (vendorVersionDifferential != null
-				&& vendorVersionDifferential.getVendorId() == Long.parseLong(vendorVersion.get(0))) {
+		inventoryResponse.setVendorId(vendorId);
+		inventoryResponse.setCurrentDataVersionId(versionId);
 
-			inventoryResponse = new InventoryResponse();
+		Session session = sessionFactory.openSession();
+		Query diffQuery = session
+				.createSQLQuery(
+						" select vvd.* from vendor_version_differential vvd where vendor_id = :vendorId and version_id = :versionId order by last_modified_on ")
+				.addEntity("vendor_version_differential", VendorVersionDifferential.class)
+				.setParameter("vendorId", vendorId).setParameter("versionId", versionId);
 
-			inventoryResponse.setVendorId(vendorVersionDifferential.getVendorId());
-			inventoryResponse.setCurrentDataVersionId(vendorVersionDifferential.getVersionId());
-			inventoryResponse.setNewDataVersionId(vendorVersionDifferential.getLastSyncedVersionId());
+		List<VendorVersionDifferential> vendorVersionDifferentials = diffQuery.list();
 
-			Query query = session
-					.createSQLQuery(
-							"select vim.* " + " from vendor_item_master vim where item_code in (:itemCodes) "
-									+ " order by vim.item_code ")
-					.addEntity("vendor_item_master", VendorItemMaster.class)
-					.setParameter("itemCodes", convertStringToTokens(vendorVersionDifferential.getDeltaItemCodes()));
+		if (vendorVersionDifferentials.isEmpty()) {
+			System.out.println("Unable to find DB entry for Vendor:Version," + vendorId + ":" + versionId);
+		} else {
 
-			List<VendorItemMaster> vendorItemMasterList = query.list();
-			System.out.println(vendorItemMasterList.size() + " rows found after executing query:"
-					+ query.getQueryString());
+			List<VendorItemMaster> vendorItemMasterList;
+
+			VendorVersionDifferential diffInstance = vendorVersionDifferentials.get(0);
+			Long lastSyncedVersionId = diffInstance.getLastSyncedVersionId();
+
+			inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
+
+			if (versionId.compareTo(lastSyncedVersionId) == 0) {
+
+				Query query = session
+						.createSQLQuery(
+								"select vim.* from vendor_item_master vim where vendor_id = :vendorId "
+										+ " order by vim.item_code ")
+						.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("vendorId", vendorId);
+
+				vendorItemMasterList = query.list();
+				System.out.println("For Vendor ::" + vendorId + " pulling the latest inventory containing "
+						+ vendorItemMasterList.size() + " items.");
+
+			} else {
+
+				Query query = session
+						.createSQLQuery(
+								"select vim.* from vendor_item_master vim where vendor_id = :vendorId and item_code in (:itemCodes) "
+										+ " order by vim.item_code ")
+						.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("vendorId", vendorId)
+						.setParameter("itemCodes", convertStringToTokens(diffInstance.getDeltaItemCodes()));
+
+				vendorItemMasterList = query.list();
+				System.out.println("For Vendor ::" + vendorId + " found " + vendorItemMasterList.size()
+						+ " items for differential.");
+
+			}
+
+			if (!vendorItemMasterList.isEmpty()) {
+				inventoryResponse.setItemsUpdated(new ArrayList<ItemResponse>());
+			}
 
 			for (VendorItemMaster vendorItemData : vendorItemMasterList) {
 
@@ -87,21 +119,6 @@ public class InventoryResponseCacheLoader extends CacheLoader<String, InventoryR
 
 		session.close();
 		return inventoryResponse;
-	}
-
-	private void setupInitialCache() {
-
-		List<VendorVersionDifferential> vendorVersionDifferentials = this.vendorVersionDifferentialDAO.findAll();
-
-		for (VendorVersionDifferential diffInstance : vendorVersionDifferentials) {
-			try {
-				load(diffInstance.getVendorId() + "-" + diffInstance.getVersionId());
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
 	}
 
 }

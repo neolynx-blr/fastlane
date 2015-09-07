@@ -25,7 +25,7 @@ public class InventoryResource {
 	@Path("/{vendorId}/{versionId}")
     @GET
     @UnitOfWork
-    public InventoryResponse getInventoryDifferential(@PathParam(value="vendorId") Long vendorId, @PathParam(value="dataVersionId") String dataVersionId) {
+    public InventoryResponse getInventoryDifferential(@PathParam(value="vendorId") Long vendorId, @PathParam(value="versionId") Long dataVersionId) {
     	return evaluator.getInventoryDifferential(vendorId, dataVersionId);
     }
 	

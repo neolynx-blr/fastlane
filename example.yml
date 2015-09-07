@@ -64,7 +64,7 @@ logging:
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:
-      level: DEBUG
+      level: WARN
 
   appenders:
     - type: console

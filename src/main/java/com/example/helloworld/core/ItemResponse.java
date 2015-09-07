@@ -1,11 +1,15 @@
 package com.example.helloworld.core;
 
+import java.io.Serializable;
+
 import lombok.Data;
 
 /* Indicates the data points that are sent to the device for each vendor-item combination for display purposes and final bill generation purposes. */
 
 @Data
-public class ItemResponse {
+public class ItemResponse implements Serializable {
+
+	private static final long serialVersionUID = -2390488059710886230L;
 
 	private Long barcode;
 
@@ -24,7 +28,7 @@ public class ItemResponse {
 
 	private String imageJSON;
 
-	private int discountType;
+	private Integer discountType;
 	private Double discountValue;
 
 }

@@ -56,7 +56,7 @@ public class InventorySetup implements Runnable {
 			try {
 
 				// Check for new inventory every 'X' seconds.
-				Thread.sleep(6000);
+				Thread.sleep(20000);
 
 				Session session = sessionFactory.openSession();
 
@@ -76,8 +76,8 @@ public class InventorySetup implements Runnable {
 						.addEntity("inventory_master", InventoryMaster.class);
 
 				List<InventoryMaster> inventoryMasterList = query.list();
-				System.out.println(inventoryMasterList.size() + " rows found after executing query:"
-						+ query.getQueryString());
+				//System.out.println(inventoryMasterList.size() + " rows found looking for new inventory");
+				//after executing query:"+ query.getQueryString());
 
 				// Did we find anything new?
 				for (InventoryMaster instance : inventoryMasterList) {
@@ -91,7 +91,7 @@ public class InventorySetup implements Runnable {
 					Long barcode = imData.getBarcode();
 					Long productId;
 
-					System.out.println("Looking for product data on barcode:" + barcode + ", and vendor::" + vendorId);
+					//System.out.println("Looking for product data on barcode:" + barcode + ", and vendor::" + vendorId);
 
 					// First see if the product for this barcode exists already
 					Query pmQuery = session
@@ -205,7 +205,7 @@ public class InventorySetup implements Runnable {
 						boolean existingNewProductAreSame = productMasterExisting.equals(productMasterNew);
 
 						// Did this product existed in master with this vendor?
-						System.out.println("VendorSet::" + pvMap.getVendorsAsStringList());
+						//System.out.println("VendorSet::" + pvMap.getVendorsAsStringList());
 						if (pvMap.getVendorIds().contains(vendorId)) {
 
 							if (!existingNewProductAreSame) {
@@ -315,8 +315,7 @@ public class InventorySetup implements Runnable {
 						.createSQLQuery("select vendor_id, max(version_id) max_version_id from vendor_item_master group by vendor_id");
 
 				List<Object[]> vimDataRows = vendorItemMasterQuery.list();
-				System.out.println(vimDataRows.size() + " rows found after executing query:"
-						+ vendorItemMasterQuery.getQueryString());
+				//System.out.println(vimDataRows.size() + " rows found after executing query:" + vendorItemMasterQuery.getQueryString());
 
 				for (Object[] vimDataRow : vimDataRows) {
 
@@ -332,8 +331,7 @@ public class InventorySetup implements Runnable {
 							.addEntity("vvd", VendorVersionDetail.class).setParameter("vendorId", vendorId);
 
 					List<Object[]> vvdDataRows = vendorItemCurrentStateQuery.list();
-					System.out.println(vvdDataRows.size() + " rows found after executing query:"
-							+ vendorItemCurrentStateQuery.getQueryString());
+					//System.out.println(vvdDataRows.size() + " rows found after executing query:" + vendorItemCurrentStateQuery.getQueryString());
 
 					VendorVersionDifferential vendorVersionDifferentialNew = new VendorVersionDifferential();
 					vendorVersionDifferentialNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
