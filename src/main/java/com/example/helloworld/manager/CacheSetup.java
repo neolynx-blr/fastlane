@@ -19,13 +19,13 @@ import com.google.common.cache.LoadingCache;
 /**
  * Created by nitesh.garg on 06-Sep-2015
  */
-public class InMemorySetup implements Runnable {
+public class CacheSetup implements Runnable {
 
 	private final SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
-	public InMemorySetup(SessionFactory sessionFactory,
+	public CacheSetup(SessionFactory sessionFactory,
 			LoadingCache<String, InventoryResponse> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
 		super();
 		this.sessionFactory = sessionFactory;

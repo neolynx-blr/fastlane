@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.hibernate.SessionFactory;
 
 import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.manager.InMemorySetup;
+import com.example.helloworld.manager.CacheSetup;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -45,7 +45,7 @@ public class DataLoaderJob implements Managed {
 	public void start() throws Exception {
 		System.out.println("Starting up data-loader job via cache having existing size of {"
 				+ this.differentialInventoryCache.size() + "} entries.");
-		executorService.execute(new InMemorySetup(this.sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
+		executorService.execute(new CacheSetup(this.sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
 	}
 
 	/*

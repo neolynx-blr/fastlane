@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.hibernate.SessionFactory;
 
 import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.manager.InventorySetup;
+import com.example.helloworld.manager.InventoryDBSetup;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -41,7 +41,7 @@ public class DaemonJob implements Managed {
 	@Override
 	@UnitOfWork
 	public void start() throws Exception {
-		executorService.execute(new InventorySetup(sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
+		executorService.execute(new InventoryDBSetup(sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
 	}
 
 	/*
