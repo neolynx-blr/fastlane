@@ -8,9 +8,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.helloworld.core.InventoryResponse;
+import com.example.helloworld.manager.CacheCurator;
 import com.example.helloworld.manager.CacheSetup;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -20,17 +22,19 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public class DataLoaderJob implements Managed {
 
-	private SessionFactory sessionFactory;
+	private final CacheCurator cacheCurator;
 	private final LoadingCache<Long, Long> vendorVersionCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+
+	static Logger LOGGER = LoggerFactory.getLogger(DataLoaderJob.class);
 
 	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DataLoader-%d").setDaemon(true)
 			.build();
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 
-	public DataLoaderJob(SessionFactory sessionFactory,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
-		this.sessionFactory = sessionFactory;
+	public DataLoaderJob(LoadingCache<String, InventoryResponse> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache, CacheCurator cacheCurator) {
+		this.cacheCurator = cacheCurator;
 		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
@@ -43,9 +47,11 @@ public class DataLoaderJob implements Managed {
 	@Override
 	@UnitOfWork
 	public void start() throws Exception {
-		System.out.println("Starting up data-loader job via cache having existing size of {"
-				+ this.differentialInventoryCache.size() + "} entries.");
-		executorService.execute(new CacheSetup(this.sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
+		LOGGER.debug(
+				"Starting up data-loader job with initial sizes of caches as [{}] for differential cache and [{}] for vendor-version cache",
+				this.differentialInventoryCache.size(), this.vendorVersionCache.size());
+		executorService.execute(new CacheSetup(this.differentialInventoryCache, this.vendorVersionCache,
+				this.cacheCurator));
 	}
 
 	/*
@@ -56,10 +62,10 @@ public class DataLoaderJob implements Managed {
 	@Override
 	public void stop() throws Exception {
 
-		System.out.println("Shutting down the executor service...");
+		LOGGER.info("Shutting down the executor service...");
 		executorService.shutdown();
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
-		System.out.println("Completed.");
+		LOGGER.info("Completed.");
 
 	}
 

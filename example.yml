@@ -62,10 +62,13 @@ logging:
     # Sets the level for 'com.example.app' to DEBUG.
     com.example.app: DEBUG
     
-    com.example.helloworld: INFO
+    com.example.helloworld: DEBUG
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:
+      level: WARN
+      
+    org.hibernate.type:
       level: WARN
 
   appenders:

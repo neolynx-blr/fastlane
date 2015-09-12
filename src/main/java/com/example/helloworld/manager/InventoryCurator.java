@@ -619,8 +619,8 @@ public class InventoryCurator {
 						.setParameter("lastSyncedVersionId", lastSyncedVersionId)
 						.setParameter("latestVersionId", maxVersionId);
 
-				String[] diffDataRows = (String[]) vendorItemDifferentialQuery.list().get(0);
-				String newItemDifferential = diffDataRows[0];
+				String newItemDifferential = (String) vendorItemDifferentialQuery.list().get(0);
+				//String newItemDifferential = diffDataRows[0];
 
 				LOGGER.debug("[{}] are the newly updated item codes found for vendor [{}] since the last sync up.",
 						newItemDifferential, vendorId);
@@ -665,6 +665,11 @@ public class InventoryCurator {
 					}
 				}
 
+				// Update the vendor-version detail first
+				session.saveOrUpdate(vvdDataRow);
+				session.merge(vvdDataRow);
+
+				// Add the row for latest version as well
 				session.save(vendorVersionDifferentialNew);
 				session.getTransaction().commit();
 

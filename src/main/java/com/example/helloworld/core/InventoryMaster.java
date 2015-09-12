@@ -19,7 +19,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "inventory.inventory_master")
+@Table(name = "inventory_master")
 @NamedQueries(
 		{ @NamedQuery(
 				name = "com.example.helloworld.core.InventoryMaster.findLatestInventoryByVendor", 

@@ -14,6 +14,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
@@ -22,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import com.example.helloworld.auth.ExampleAuthenticator;
 import com.example.helloworld.auth.ExampleAuthorizer;
-import com.example.helloworld.cache.InitialSetup;
 import com.example.helloworld.cache.DifferentialDataLoader;
 import com.example.helloworld.cache.VendorVersionLoader;
 import com.example.helloworld.cli.RenderCommand;
@@ -38,11 +38,14 @@ import com.example.helloworld.core.VendorItemHistory;
 import com.example.helloworld.core.VendorItemMaster;
 import com.example.helloworld.core.VendorVersionDetail;
 import com.example.helloworld.core.VendorVersionDifferential;
+import com.example.helloworld.db.InventoryMasterDAO;
 import com.example.helloworld.db.PersonDAO;
 import com.example.helloworld.filter.DateRequiredFeature;
 import com.example.helloworld.health.TemplateHealthCheck;
+import com.example.helloworld.manager.CacheCurator;
 import com.example.helloworld.manager.InventoryCurator;
 import com.example.helloworld.manager.InventoryEvaluator;
+import com.example.helloworld.manager.InventoryLoader;
 import com.example.helloworld.resources.FilteredResource;
 import com.example.helloworld.resources.HelloWorldResource;
 import com.example.helloworld.resources.InventoryResource;
@@ -52,6 +55,8 @@ import com.example.helloworld.resources.ProtectedResource;
 import com.example.helloworld.resources.ViewResource;
 import com.example.helloworld.task.DaemonJob;
 import com.example.helloworld.task.DataLoaderJob;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 
@@ -106,6 +111,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 	public void run(HelloWorldConfiguration configuration, Environment environment) {
 
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
+		final InventoryMasterDAO invMasterDAO = new InventoryMasterDAO(hibernateBundle.getSessionFactory());
 
 		LOGGER.debug("Starting the application by processing any new inventory...");
 		
@@ -118,8 +124,34 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 		 * data inconsistent. Although everything is under a transaction so
 		 * unlikely, but need to double check.
 		 */
-		final InventoryCurator curator = new InventoryCurator(hibernateBundle.getSessionFactory());
-		curator.processNewInventory();
+		
+		final InventoryCurator invCurator = new InventoryCurator(hibernateBundle.getSessionFactory());
+		invCurator.processNewInventory();
+		
+		ItemResponse itemResponse = new ItemResponse();
+		itemResponse.setBarcode(1251L);
+		itemResponse.setDescription("Updated item via post call");
+		itemResponse.setItemCode("I2001");
+		itemResponse.setMrp(2.35);
+		itemResponse.setName("Name of Post Updated item");
+		itemResponse.setPrice(2.35);
+		itemResponse.setTagline("Sample Tagline");
+		itemResponse.setVersionId(1L);
+		
+		InventoryResponse response = new InventoryResponse();
+		response.setNewDataVersionId(1L);
+		response.setVendorId(71L);
+		response.setItemsUpdated(new ArrayList<ItemResponse>());
+		response.getItemsUpdated().add(itemResponse);
+		response.setIsError(Boolean.FALSE);
+		
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			System.out.println(mapper.writeValueAsString(response));
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		LOGGER.debug("Setting up caches for Vendor Version and Version Differential Data...");
 		
@@ -127,30 +159,32 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 		final LoadingCache<String, InventoryResponse> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
 		
 		LOGGER.debug("Setting up the vendor-version metadata in DB based on latest inventory...");
-		curator.processVendorVersionMeta(differentialInventoryCache, vendorVersionCache);
-
+		invCurator.processVendorVersionMeta(differentialInventoryCache, vendorVersionCache);
+		
 		/*
 		 * Check the tables based on inventory updates and setup the caches for
 		 * serving data.
 		 * 
-		 * TODO: This can possibly be removed now because InventoryCurator
-		 * explicitly calls for cache updates also.
+		 * This is required to be here given that application could have crashed
+		 * last time in the middle or immediately post the DB operation etc.
 		 */
-		final InitialSetup diffCacheSetup = new InitialSetup(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache);
-		diffCacheSetup.setupInitialCaches();
-		
+		final CacheCurator cacheCurator = new CacheCurator(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache);
+		cacheCurator.processVendorVersionCache();
+		cacheCurator.processDifferentialInventoryCache();
+
 		LOGGER.debug("Done setting up differential cache with [{}] entries.", differentialInventoryCache.size());
 
 		/*
 		 * Contains the logic of serving the requests including latest vendor
 		 * inventory and since a specific version
 		 */
+		final InventoryLoader inventoryLoader = new InventoryLoader(hibernateBundle.getSessionFactory(), invMasterDAO);
 		final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache);
 		
 		LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");
 		environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
 		LOGGER.debug("Setting up lifecycle for Version-Differential cache loaders...");
-		environment.lifecycle().manage(new DataLoaderJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
+		environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, cacheCurator));
 		LOGGER.debug("Completed seting up periodic cache updates...");
 
 		final Template template = configuration.buildTemplate();
@@ -171,7 +205,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 		environment.jersey().register(new PeopleResource(dao));
 		environment.jersey().register(new PersonResource(dao));
 
-		environment.jersey().register(new InventoryResource(inventoryEvaluator));
+		environment.jersey().register(new InventoryResource(inventoryEvaluator, inventoryLoader));
 		environment.jersey().register(new FilteredResource());
 		LOGGER.debug("Initialisation complete.");
 	}
