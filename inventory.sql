@@ -94,6 +94,10 @@ create table vendor_version_differential (
 insert into discount_type (name, description) values ('Absolute', 'Applicable discount is absolute value over the MRP price');
 insert into discount_type (name, description) values ('Percentage', 'Applicable discount is %  value over the MRP price');
 
+-- Vendor registration should include this
+insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (1, 0, now());
+insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (2, 0, now());
+
 insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234567890, 'Zespri Kiwi - Green', 'Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals.', 'Zespri Kiwi - Green, 1 pc', 1, 'http://bigbasket.com/media/uploads/p/l/40024625_1-zespri-kiwi-green.jpg');
 insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234567891, 'Fresho Apple - Washington', 'Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent ''heart disease'', ''smoker''s risk'' and aid lung functions.', 'Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)', 1, 'http://bigbasket.com/media/uploads/p/l/10000008_15-fresho-apple-washington.jpg');
 insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234, 'X-Name', 'X-Description', 'X-Tagline', '1,2', 'X-ImageJSON');
@@ -168,10 +172,6 @@ and vvd.latest_synced_version_id < vim_inner.max_version_id;
 select vvd.*, vvdf.*
 from vendor_version_differential vvdf, vendor_version_detail vvd 
 where vvd.vendor_id = vvdf.vendor_id;
-
-select vendor_id, version_id, string_agg(item_code, ',') 
-from (select vendor_id, version_id, item_code from vendor_item_master vim where vim.vendor_id in (1,2) and vim.version_id between 1 and 1000) vim_inner
-group by vendor_id, version_id order by vendor_id, version_id;
 
 select vim.* from vendor_item_master vim
 where vendor_id = 1

@@ -208,6 +208,8 @@
     <h2.version>1.4.187</h2.version>
     <jersey.version>2.21</jersey.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <slf4j.version>1.7.6</slf4j.version>
+    <log4j.version>2.0-rc1</log4j.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>

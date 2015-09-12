@@ -18,14 +18,11 @@ import lombok.Data;
 @Data()
 @Entity
 @Table(name = "product_master")
-@NamedQueries(
-		{ 
-			@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findAll", query = "SELECT p FROM ProductMaster p"),
-			@NamedQuery(name = "com.example.helloworld.core.ProductMaster.fetchByBarcode", query = "SELECT p FROM ProductMaster p where barcode = :barcode")
-		})
+@NamedQueries({
+		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findAll", query = "SELECT p FROM ProductMaster p"),
+		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.fetchByBarcode", query = "SELECT p FROM ProductMaster p where barcode = :barcode") })
+public class ProductMaster implements Comparable<ProductMaster> {
 
-public class ProductMaster {
-	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
@@ -38,7 +35,7 @@ public class ProductMaster {
 
 	@Column(name = "description")
 	private String description;
-	
+
 	@Column(name = "image_json")
 	private String imageJSON;
 
@@ -47,4 +44,24 @@ public class ProductMaster {
 
 	@Column(name = "barcode", nullable = false)
 	private Long barcode;
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(ProductMaster o) {
+
+		/*
+		 * TODO Not looking at Image-JSON yet
+		 */
+		if (this.getName().equalsIgnoreCase(o.getName()) && this.getDescription().equalsIgnoreCase(o.getDescription())
+				&& this.getTagLine().equalsIgnoreCase(o.getTagLine()) && this.getBarcode() == o.getBarcode()) {
+			return 0;
+		}
+
+		return 1;
+	}
+
 }

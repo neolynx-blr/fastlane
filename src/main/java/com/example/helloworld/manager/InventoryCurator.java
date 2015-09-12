@@ -4,10 +4,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.StrTokenizer;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.helloworld.core.InventoryMaster;
 import com.example.helloworld.core.InventoryResponse;
@@ -20,25 +24,37 @@ import com.example.helloworld.core.VendorVersionDifferential;
 import com.google.common.cache.LoadingCache;
 
 /**
+ * Meant for curating any newly uploaded inventory into the master tables from
+ * which the differentials are calculated and served
+ * 
+ * 
  * Created by nitesh.garg on 06-Sep-2015
  */
 
 public class InventoryCurator {
 
 	private final SessionFactory sessionFactory;
+	static Logger LOGGER = LoggerFactory.getLogger(InventoryCurator.class);
 
 	public InventoryCurator(SessionFactory sessionFactory) {
 		super();
 		this.sessionFactory = sessionFactory;
 	}
 
+	/*
+	 * Looks at inventory_master table and accordingly converts the new data
+	 * into product and vendor-item master tables.
+	 */
 	@SuppressWarnings("unchecked")
 	public void processNewInventory() {
 
 		Session session = this.sessionFactory.openSession();
 
-		// Look for all new data in inventory_master w.r.t.
-		// vendor_item_master
+		/*
+		 * Look for all new data in inventory_master w.r.t. vendor_item_master,
+		 * i.e. compared on version_id, pick all new data rows which were never
+		 * pushed to vendor_item_master.
+		 */
 		Query query = session
 				.createSQLQuery(
 						"select im.* "
@@ -51,7 +67,13 @@ public class InventoryCurator {
 								+ " order by im.vendor_id").addEntity("inventory_master", InventoryMaster.class);
 
 		List<InventoryMaster> inventoryMasterList = query.list();
-		System.out.println(inventoryMasterList.size() + " rows found after executing query:" + query.getQueryString());
+
+		int updatedInventorySize = 0;
+		int newInventorySize = inventoryMasterList.size();
+
+		LOGGER.info("[{}] new entries found in the inventory_master since the last update of data.",
+				inventoryMasterList.size());
+		LOGGER.debug("Query Executed::\n{}", query.getQueryString());
 
 		// Did we find anything new?
 		for (InventoryMaster instance : inventoryMasterList) {
@@ -61,11 +83,11 @@ public class InventoryCurator {
 			VendorItemHistory vendorItemHistory;
 			VendorItemMaster vendorItemMasterNew = new VendorItemMaster();
 
-			Long vendorId = imData.getVendorId();
-			Long barcode = imData.getBarcode();
 			Long productId;
+			Long barcode = imData.getBarcode();
+			Long vendorId = imData.getVendorId();
 
-			System.out.println("Looking for product data on barcode:" + barcode + ", and vendor::" + vendorId);
+			LOGGER.debug("Working with data Vendor:Barcode:Version {}:{}:{}", vendorId, barcode, imData.getVersionId());
 
 			// First see if the product for this barcode exists already
 			Query pmQuery = session
@@ -79,8 +101,10 @@ public class InventoryCurator {
 			ProductVendorMap pvMap = null;
 			ProductMaster productMasterExisting = null;
 
-			// Setup a new product_master with latest data, that may be
-			// same as existing
+			/*
+			 * Setup a new product_master with latest data, that may be same as
+			 * existing
+			 */
 			ProductMaster productMasterNew = new ProductMaster();
 			productMasterNew.setBarcode(imData.getBarcode());
 			productMasterNew.setDescription(imData.getDescription());
@@ -91,7 +115,9 @@ public class InventoryCurator {
 
 			/*
 			 * To have lesser processing inside the transaction, pulling the
-			 * vendor-item data also from DB before the transaction begins.
+			 * vendor-item data also from DB before the transaction begins. Note
+			 * that this will definitely be required later because a new entry
+			 * has been found in inventory_master already.
 			 * 
 			 * Look for latest vendor data for this barcode.
 			 */
@@ -102,13 +128,16 @@ public class InventoryCurator {
 					.setParameter("vendorId", vendorId);
 
 			boolean vendorRecordAlreadyExist = false;
-			List<VendorItemMaster> vendorItemMasterList = vimQuery.list();
-
 			VendorItemMaster vendorItemMasterExisting = null;
 
-			if (vendorItemMasterList != null && vendorItemMasterList.size() > 0) {
+			List<VendorItemMaster> vendorItemMasterList = vimQuery.list();
+
+			if (CollectionUtils.isNotEmpty(vendorItemMasterList)) {
 				vendorRecordAlreadyExist = true;
 				vendorItemMasterExisting = vendorItemMasterList.get(0);
+				LOGGER.debug("Found existing Vendor-Barcode-Version record [{}-{}-{}]",
+						vendorItemMasterExisting.getVendorId(), vendorItemMasterExisting.getBarcode(),
+						vendorItemMasterExisting.getVersionId());
 			}
 
 			/*
@@ -158,29 +187,36 @@ public class InventoryCurator {
 
 			session.getTransaction().begin();
 
-			// If this product doesn't already exits in product_master,
-			// add it
-			if (productMasterList == null || productMasterList.size() < 1) {
+			/*
+			 * If this product doesn't already exits in product_master, add it
+			 */
+			if (CollectionUtils.isEmpty(productMasterList)) {
 				session.save(productMasterNew);
 				productId = productMasterNew.getId();
+				LOGGER.info("New product information found, Product-Vendor-Barcode, [{}-{}-{}]",
+						productMasterNew.getName(), productMasterNew.getVendorId(), productMasterNew.getBarcode());
 			} else {
 
 				productMasterExisting = productMasterList.get(0);
 				pvMap = new ProductVendorMap(productMasterExisting);
-				productMasterNew.setId(productMasterExisting.getId());
-				productId = productMasterNew.getId();
+
+				productId = productMasterExisting.getId();
 				productMasterNew.setVendorId(productMasterExisting.getVendorId());
 
 				/*
 				 * When product exist in the master, compare with latest data
 				 */
-				boolean existingNewProductAreSame = productMasterExisting.equals(productMasterNew);
+				int existingNewProductAreSame = productMasterExisting.compareTo(productMasterNew);
 
-				// Did this product existed in master with this vendor?
-				System.out.println("VendorSet::" + pvMap.getVendorsAsStringList());
+				// Did this product-vendor mapping previously existed?
+				LOGGER.debug("Is there a change in product information? Answer [{}]", existingNewProductAreSame);
+				LOGGER.debug(
+						"Set of vendors for which the product previously existed are [{}], and is currently processed vendor [{}] present?",
+						pvMap.getVendorsAsStringList(), vendorId, pvMap.getVendorIds().contains(vendorId));
+
 				if (pvMap.getVendorIds().contains(vendorId)) {
 
-					if (!existingNewProductAreSame) {
+					if (existingNewProductAreSame != 0) {
 
 						/*
 						 * Product existed with this vendor, but some data about
@@ -205,19 +241,29 @@ public class InventoryCurator {
 							session.saveOrUpdate(productMasterExisting);
 							session.merge(productMasterExisting);
 
-							productId = productMasterExisting.getId();
+							LOGGER.debug("Completed updating the details of product [{}] for vendor [{}]",
+									productMasterExisting.getName(), productMasterExisting.getVendorId());
 
 						} else {
+
+							/*
+							 * If product information has changed only for this
+							 * vendor, remove him from previous list and create
+							 * it's own entry.
+							 */
 							pvMap.removeVendor(vendorId);
 							productMasterExisting.setVendorId(pvMap.getVendorsAsStringList());
 
 							session.saveOrUpdate(productMasterExisting);
 							session.merge(productMasterExisting);
 
-							productMasterNew.setId(0);
 							productMasterNew.setVendorId(vendorId.toString());
 							session.save(productMasterNew);
 							productId = productMasterNew.getId();
+
+							LOGGER.debug(
+									"Created new product [{}] for vendor [{}] while removing this vendor from the older list.",
+									productMasterNew.getName(), productMasterNew.getVendorId());
 						}
 
 					} else {
@@ -229,7 +275,7 @@ public class InventoryCurator {
 
 				} else {
 
-					if (existingNewProductAreSame) {
+					if (existingNewProductAreSame == 0) {
 
 						/*
 						 * Product existed already, no data changes, simply add
@@ -238,6 +284,11 @@ public class InventoryCurator {
 						productMasterExisting.setVendorId(productMasterExisting.getVendorId() + "," + vendorId);
 						session.saveOrUpdate(productMasterExisting);
 						session.merge(productMasterExisting);
+
+						LOGGER.debug(
+								"Nothing changed for the product [{}] except that the vendor [{}] got added to it",
+								productMasterExisting.getName(), vendorId);
+
 					} else {
 
 						/*
@@ -245,10 +296,13 @@ public class InventoryCurator {
 						 * existed for this vendor, create new vendor specific
 						 * product entry
 						 */
-						productMasterNew.setId(0);
+
 						productMasterNew.setVendorId(vendorId.toString());
 						session.save(productMasterNew);
 						productId = productMasterNew.getId();
+
+						LOGGER.debug("Created new product [{}] for vendor [{}].", productMasterNew.getName(),
+								productMasterNew.getVendorId());
 					}
 				}
 			}
@@ -277,30 +331,44 @@ public class InventoryCurator {
 				session.save(vendorItemHistory);
 			}
 
+			updatedInventorySize++;
 			session.getTransaction().commit();
 		}
 
+		session.clear();
+		session.close();
+		LOGGER.info(
+				"Completed processing new inventory where [{}] were identfied to be changed, and [{}] got updated successfully.",
+				newInventorySize, updatedInventorySize);
+
 	}
 
+	/*
+	 * This function looks at any new vendor specific inventory added and
+	 * accordingly updates the caches.
+	 */
 	@SuppressWarnings("unchecked")
-	public void processVendorVersionMeta(LoadingCache<String, InventoryResponse> differentialInventoryCache,
+	public void processVendorVersionMetaOld(LoadingCache<String, InventoryResponse> differentialInventoryCache,
 			LoadingCache<Long, Long> vendorVersionCache) {
 
+		boolean vendorDataUpdated = false;
 		Session session = this.sessionFactory.openSession();
 
+		// Get the latest known version for each vendor
 		Query vendorItemMasterQuery = session
 				.createSQLQuery("select vendor_id, max(version_id) max_version_id from vendor_item_master group by vendor_id");
 
-		boolean vendorDataUpdated = false;
 		List<Object[]> vimDataRows = vendorItemMasterQuery.list();
-		System.out.println(vimDataRows.size() + " rows found after executing query:"
-				+ vendorItemMasterQuery.getQueryString());
+		LOGGER.debug("[{}] vendors selected from vendor-item-master tables to be checked for any inventory updates.",
+				vimDataRows.size());
 
+		// For every known vendor and it's max version-id
 		for (Object[] vimDataRow : vimDataRows) {
 
-			Long maxVersionId = (Long) Long.parseLong(vimDataRow[1].toString());
 			Long vendorId = (Long) Long.parseLong(vimDataRow[0].toString());
+			Long maxVersionId = (Long) Long.parseLong(vimDataRow[1].toString());
 
+			// Look for the version details and their differentials
 			Query vendorItemCurrentStateQuery = session
 					.createSQLQuery(
 							"select {vvdf.*}, {vvd.*} "
@@ -310,8 +378,9 @@ public class InventoryCurator {
 					.setParameter("vendorId", vendorId);
 
 			List<Object[]> vvdDataRows = vendorItemCurrentStateQuery.list();
-			System.out.println(vvdDataRows.size() + " rows found after executing query:"
-					+ vendorItemCurrentStateQuery.getQueryString());
+			LOGGER.debug(
+					"Looked at vendor version details along with differential data and found [{}] rows for processing against the latest vendor-item-master table",
+					vvdDataRows.size());
 
 			VendorVersionDifferential vendorVersionDifferentialNew = new VendorVersionDifferential();
 			vendorVersionDifferentialNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
@@ -319,39 +388,37 @@ public class InventoryCurator {
 			vendorVersionDifferentialNew.setVendorId(vendorId);
 			vendorVersionDifferentialNew.setVersionId(maxVersionId);
 
-			if (vvdDataRows == null || vvdDataRows.size() < 1) {
+			if (CollectionUtils.isNotEmpty(vvdDataRows)) {
 
-				// New vendor data, do the insertions
-				VendorVersionDetail vendorVersionDetailNew = new VendorVersionDetail();
-
-				vendorVersionDetailNew.setVendorId(vendorId);
-				vendorVersionDetailNew.setLatestSyncedVersionId(maxVersionId);
-				vendorVersionDetailNew.setValidVersionIds(maxVersionId.toString());
-				vendorVersionDetailNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
-
-				session.getTransaction().begin();
-				session.save(vendorVersionDetailNew);
-				session.save(vendorVersionDifferentialNew);
-				session.getTransaction().commit();
-
-				vendorDataUpdated = true;
-
-			} else {
-
+				// For every know vendor-version detail data
 				for (Object[] vvdDataRow : vvdDataRows) {
 
 					VendorVersionDetail vendorVersionDetail = (VendorVersionDetail) vvdDataRow[1];
 					VendorVersionDifferential vendorVersionDifferential = (VendorVersionDifferential) vvdDataRow[0];
 
+					/*
+					 * If the latest known version in item-master is more than
+					 * the previously synced version in detail/differential
+					 * data, need updates to those tables.
+					 */
 					if (vendorVersionDetail.getLatestSyncedVersionId() < maxVersionId) {
 
 						Long lastSyncedVersionId = vendorVersionDetail.getLatestSyncedVersionId();
+
+						LOGGER.debug(
+								"For vendor [{}], the last synced version [{}] is older than latest version [{}] found in vendor-item-master table.",
+								vendorId, lastSyncedVersionId, maxVersionId);
 
 						vendorVersionDetail.setLatestSyncedVersionId(maxVersionId);
 						vendorVersionDetail.setValidVersionIds(vendorVersionDetail.getValidVersionIds() + ","
 								+ maxVersionId);
 						vendorVersionDetail.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
 
+						/*
+						 * Among all the new data for this vendor under
+						 * processing, group the new items by various new
+						 * version ids.
+						 */
 						Query vendorItemDifferentialQuery = session
 								.createSQLQuery(
 										"select vendor_id, version_id, string_agg(item_code, ',') " + "from ("
@@ -363,6 +430,8 @@ public class InventoryCurator {
 								.setParameter("vendorId", vendorId)
 								.setParameter("lastSyncedVersionId", lastSyncedVersionId)
 								.setParameter("latestVersionId", maxVersionId);
+
+						LOGGER.debug("[{}] different new versions found for vendor [{}] since the last sync up.");
 
 						Object[] diffDataRows = (Object[]) vendorItemDifferentialQuery.list().get(0);
 
@@ -422,6 +491,26 @@ public class InventoryCurator {
 
 				}
 
+			} else {
+
+				// New vendor data, do the insertions
+				VendorVersionDetail vendorVersionDetailNew = new VendorVersionDetail();
+
+				vendorVersionDetailNew.setVendorId(vendorId);
+				vendorVersionDetailNew.setLatestSyncedVersionId(maxVersionId);
+				vendorVersionDetailNew.setValidVersionIds(maxVersionId.toString());
+				vendorVersionDetailNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
+
+				session.getTransaction().begin();
+				session.save(vendorVersionDetailNew);
+				session.save(vendorVersionDifferentialNew);
+				session.getTransaction().commit();
+
+				LOGGER.info(
+						"Vendor [{}] is seen for the first time and added to it's version details and differential tables using verision [{}]",
+						vendorId, maxVersionId);
+				vendorDataUpdated = true;
+
 			}
 
 			if (vendorDataUpdated) {
@@ -435,4 +524,158 @@ public class InventoryCurator {
 
 	}
 
+	/*
+	 * This function looks at any new vendor specific inventory added and
+	 * accordingly updates the caches.
+	 */
+	@SuppressWarnings("unchecked")
+	public void processVendorVersionMeta(LoadingCache<String, InventoryResponse> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache) {
+
+		Session session = this.sessionFactory.openSession();
+
+		/*
+		 * Get the vendor-version combinations where latest known version hasn't
+		 * been synced
+		 */
+		Query vendorVersionDetailQuery = session
+				.createSQLQuery(
+						"select vvd.* from vendor_version_detail vvd where vvd.latest_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvd.vendor_id)")
+				.addEntity("vendor_version_detail", VendorVersionDetail.class);
+
+		List<VendorVersionDetail> vvdDataRows = vendorVersionDetailQuery.list();
+		LOGGER.debug(
+				"[{}] vendors selected from vendor-version-details tables to be synced up with the latest version.",
+				vvdDataRows.size());
+
+		// For every vendor where sync in required
+		for (VendorVersionDetail vvdDataRow : vvdDataRows) {
+
+			Long vendorId = vvdDataRow.getVendorId();
+			Long lastSyncedVersionId = vvdDataRow.getLatestSyncedVersionId();
+
+			Query maxVendorIdQuery = session.createSQLQuery(
+					" select max(version_id) maxVersionId from vendor_item_master vim where vendor_id = :vendorId ")
+					.setParameter("vendorId", vendorId);
+
+			Long maxVersionId = Long.parseLong(maxVendorIdQuery.list().get(0).toString());
+			LOGGER.info("Working on vendor [{}] whose last and current version ids are [{}] and [{}]", vendorId,
+					vvdDataRow.getLatestSyncedVersionId(), maxVersionId);
+
+			// Update the Vendor Version details for updates at some point
+			vvdDataRow.setLatestSyncedVersionId(maxVersionId);
+			vvdDataRow.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
+			vvdDataRow.setValidVersionIds((StringUtils.isEmpty(vvdDataRow.getValidVersionIds()) ? maxVersionId
+					.toString() : vvdDataRow.getValidVersionIds() + "," + maxVersionId));
+
+			// Look for all the version details and their differentials
+			Query vendorVersionDiffQuery = session
+					.createSQLQuery(
+							"select vvdf.* from vendor_version_differential vvdf where vvdf.vendor_id = :vendorId ")
+					.addEntity("vvdf", VendorVersionDifferential.class).setParameter("vendorId", vendorId);
+
+			List<VendorVersionDifferential> vvdfDataRows = vendorVersionDiffQuery.list();
+			LOGGER.debug("Will be iterating over [{}] differential versions knows for vendor [{}] and update",
+					vvdfDataRows.size(), vendorId);
+
+			// Given the new version, create entry for that for sure
+			VendorVersionDifferential vendorVersionDifferentialNew = new VendorVersionDifferential();
+			vendorVersionDifferentialNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
+			vendorVersionDifferentialNew.setLastSyncedVersionId(maxVersionId);
+			vendorVersionDifferentialNew.setVendorId(vendorId);
+			vendorVersionDifferentialNew.setVersionId(maxVersionId);
+
+			if (CollectionUtils.isEmpty(vvdfDataRows)) {
+
+				/*
+				 * If no row exist already containing differential data, means
+				 * its the first time vendor differentials are being recorded.
+				 * So, simply add up the new row and save change on
+				 * vendor-version-detail
+				 */
+				session.getTransaction().begin();
+
+				session.saveOrUpdate(vvdDataRow);
+				session.merge(vvdDataRow);
+
+				session.save(vendorVersionDifferentialNew);
+
+				session.getTransaction().commit();
+				LOGGER.info(
+						"Noticed first time differentials added for vendor-version [{}-{}]. Completed successfully.",
+						vendorId, maxVersionId);
+
+			} else {
+
+				/*
+				 * Otherwise, for given vendor, pick all the updated item codes
+				 * that have changed since the last sync version and compare and
+				 * update those with all differential rows.
+				 */
+				Query vendorItemDifferentialQuery = session
+						.createSQLQuery(
+								" select string_agg(item_code, ',') from vendor_item_master vim where vim.vendor_id = :vendorId and vim.version_id > :lastSyncedVersionId and vim.version_id <= :latestVersionId group by vendor_id ")
+						.setParameter("vendorId", vendorId)
+						.setParameter("lastSyncedVersionId", lastSyncedVersionId)
+						.setParameter("latestVersionId", maxVersionId);
+
+				String[] diffDataRows = (String[]) vendorItemDifferentialQuery.list().get(0);
+				String newItemDifferential = diffDataRows[0];
+
+				LOGGER.debug("[{}] are the newly updated item codes found for vendor [{}] since the last sync up.",
+						newItemDifferential, vendorId);
+
+				session.getTransaction().begin();
+
+				/*
+				 * For every row in the differential data, add the new item
+				 * codes and persist
+				 */
+				for (VendorVersionDifferential vvdfDataRow : vvdfDataRows) {
+
+					String existingItemDifferential = vvdfDataRow.getDeltaItemCodes();
+
+					vvdfDataRow.setLastSyncedVersionId(maxVersionId);
+					vvdfDataRow.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
+
+					if (StringUtils.isNotEmpty(newItemDifferential)) {
+
+						if (StringUtils.isEmpty(existingItemDifferential)) {
+							vvdfDataRow.setDeltaItemCodes(newItemDifferential);
+						} else {
+
+							Set<String> newDeltaItemCodes = new HashSet<String>();
+
+							List<String> newStringTokens = new StrTokenizer(newItemDifferential, ",").getTokenList();
+							List<String> existingStringTokens = new StrTokenizer(existingItemDifferential, ",")
+									.getTokenList();
+
+							newDeltaItemCodes.addAll(newStringTokens);
+							newDeltaItemCodes.addAll(existingStringTokens);
+
+							vvdfDataRow.setDeltaItemCodes(StringUtils.join(newDeltaItemCodes, ","));
+
+						}
+
+						session.saveOrUpdate(vvdfDataRow);
+						session.merge(vvdfDataRow);
+
+						LOGGER.debug("Updated version [{}] of vendor [{}] with item-codes [{}]",
+								vvdfDataRow.getVersionId(), vvdfDataRow.getVendorId(), vvdfDataRow.getDeltaItemCodes());
+					}
+				}
+
+				session.save(vendorVersionDifferentialNew);
+				session.getTransaction().commit();
+
+			}
+
+			LOGGER.info("Refreshing the cache entry for vendor [{}]", vendorId);
+			// TODO : What if this fails? No backup for this one
+			vendorVersionCache.refresh(vendorId);
+			differentialInventoryCache.refresh(vendorId + "-" + vendorVersionCache.getIfPresent(vendorId));
+
+		}
+
+	}
 }

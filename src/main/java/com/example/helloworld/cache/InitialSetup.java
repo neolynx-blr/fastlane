@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutionException;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.core.VendorVersionDetail;
@@ -13,13 +15,19 @@ import com.example.helloworld.core.VendorVersionDifferential;
 import com.google.common.cache.LoadingCache;
 
 /**
+ * Used for initial cache data loading. Simply get all data rows in the
+ * vendor_version_detail and vendor_version_differential tables and call the get
+ * on cache which loads the data if that is absent.
+ * 
  * Created by nitesh.garg on 07-Sep-2015
  */
 public class InitialSetup {
 
 	private final SessionFactory sessionFactory;
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+
+	static Logger LOGGER = LoggerFactory.getLogger(InitialSetup.class);
 
 	public InitialSetup(SessionFactory sessionFactory,
 			LoadingCache<String, InventoryResponse> differentialInventoryCache,
@@ -40,16 +48,18 @@ public class InitialSetup {
 				"vendor_version_differential", VendorVersionDifferential.class);
 
 		List<VendorVersionDifferential> vendorVersionDifferentials = diffQuery.list();
-		System.out.println("As part of the initial cache setup, trying to add {" + vendorVersionDifferentials.size()
-				+ "} entries.");
+		LOGGER.info("As part of the initial cache setup, trying to add [{}] entries of differential data",
+				vendorVersionDifferentials.size());
 
 		for (VendorVersionDifferential diffInstance : vendorVersionDifferentials) {
 			try {
-				this.differentialInventoryCache.get(diffInstance.getVendorId() + "-" + diffInstance.getVersionId());
-				System.out.println("Successfully added cache for {" + diffInstance.getVendorId() + "-"
-						+ diffInstance.getVersionId() + "}.");
+				
+				String key = diffInstance.getVendorId() + "-" + diffInstance.getVersionId();
+				this.differentialInventoryCache.get(key);
+				LOGGER.info("Successfully added cache for vendor-version, [{}-{}]", diffInstance.getVendorId(),
+						diffInstance.getVersionId());
 			} catch (Exception e) {
-				System.out.println("Error {" + e.getMessage() + "} occurred while loading combination {"
+				LOGGER.error("Error {" + e.getMessage() + "} occurred while loading combination {"
 						+ diffInstance.getVendorId() + ":" + diffInstance.getVersionId() + "} into the cache.");
 				e.printStackTrace();
 			}
@@ -64,15 +74,17 @@ public class InitialSetup {
 			Long vendorId = instance.getVendorId();
 			try {
 				this.vendorVersionCache.get(instance.getVendorId());
-				System.out.println("Adding version {" + this.vendorVersionCache.getIfPresent(vendorId)
-						+ "} as the latest one for vendor {" + vendorId + "}");
+				LOGGER.info("Adding version [{}] as the latest one for vendor [{}]",
+						this.vendorVersionCache.getIfPresent(vendorId), vendorId);
 			} catch (ExecutionException e) {
-				System.out.println("Error {" + e.getMessage() + "} occurred while loading version for vendor {"
-						+ vendorId + "} into the cache.");
+				LOGGER.error("Error {" + e.getMessage() + "} occurred while loading version for vendor {" + vendorId
+						+ "} into the cache.");
 				e.printStackTrace();
 			}
 
 		}
+
+		session.close();
 
 	}
 

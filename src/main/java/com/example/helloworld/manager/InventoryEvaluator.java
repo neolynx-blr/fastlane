@@ -1,56 +1,72 @@
 package com.example.helloworld.manager;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.core.ItemResponse;
-import com.example.helloworld.db.ItemResponseDAO;
+import com.example.helloworld.util.Constants;
 import com.google.common.cache.LoadingCache;
 
 public class InventoryEvaluator {
 
-	private final ItemResponseDAO itemResponseDAO;
+	private final LoadingCache<Long, Long> vendorVersionCache;
+	static Logger LOGGER = LoggerFactory.getLogger(InventoryEvaluator.class);
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
-	public InventoryEvaluator(ItemResponseDAO itemResponseDAO,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache) {
+	public InventoryEvaluator(LoadingCache<String, InventoryResponse> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache) {
 		super();
-		this.itemResponseDAO = itemResponseDAO;
 		this.differentialInventoryCache = differentialInventoryCache;
+		this.vendorVersionCache = vendorVersionCache;
 	}
 
+	// Simply pull the data from the cache
 	public InventoryResponse getInventoryDifferential(Long vendorId, Long dataVersionId) {
+
 		InventoryResponse inventoryResponse = null;
-		inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + "-" + dataVersionId);
-		if (inventoryResponse == null) {
-			inventoryResponse = getLatestInventory(vendorId);
+		LOGGER.debug("Request received for inventory differential for vendor-version [{}-{}]", vendorId, dataVersionId);
+
+		if (vendorId == null || dataVersionId == null) {
+			LOGGER.debug("Invalid request received for missing vendor and/or version id.");
+
+			inventoryResponse = new InventoryResponse();
+			inventoryResponse.setIsError(Boolean.TRUE);
+			inventoryResponse.setVendorId(vendorId);
+			inventoryResponse.setCurrentDataVersionId(dataVersionId);
+
+		} else {
+
+			inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + "-" + dataVersionId);
+			if (inventoryResponse == null) {
+				LOGGER.debug(
+						"Unable to get anydata from the cache for vendor-version [{}-{}], will instead pull latest inventory.",
+						vendorId, dataVersionId);
+				inventoryResponse = getLatestInventory(vendorId);
+			}
 		}
+
 		return inventoryResponse;
 	}
 
 	public InventoryResponse getLatestInventory(Long vendorId) {
 
-		Long dataVersionId = -1L;
-		InventoryResponse response = new InventoryResponse();
+		InventoryResponse inventoryResponse = null;
 
-		List<ItemResponse> latestVendorItems = this.itemResponseDAO.getLatestInventory(vendorId);
+		if (vendorId == null) {
+			LOGGER.debug("Invalid request received for NULL vendor id.");
+			inventoryResponse = new InventoryResponse();
+			inventoryResponse.setIsError(Boolean.TRUE);
+			inventoryResponse.setVendorId(vendorId);
 
-		response.setVendorId(vendorId);
-
-		List<ItemResponse> itemList = new ArrayList<ItemResponse>();
-
-		for (ItemResponse instance : latestVendorItems) {
-			if (instance.getVersionId() > dataVersionId) {
-				dataVersionId = instance.getVersionId();
-			}
-			itemList.add(instance);
+		} else {
+			Long latestVersionId = this.vendorVersionCache.getIfPresent(vendorId);
+			LOGGER.debug("The latest version found for vendor [{}] is [{}], looking for differential data now.",
+					vendorId, latestVersionId);
+			inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId
+					+ Constants.VENDOR_VERSION_KEY_SEPARATOR + latestVersionId);
 		}
 
-		response.setNewDataVersionId(dataVersionId);
-		response.setItemsAdded(itemList);
-
-		return response;
+		return inventoryResponse;
 	}
 
 }

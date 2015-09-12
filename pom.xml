@@ -16,6 +16,9 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<jersey.version>2.21</jersey.version>
 		<h2.version>1.4.187</h2.version>
+		<slf4j.version>1.7.6</slf4j.version>
+		<!-- current log4j 2 release -->
+		<log4j.version>2.0-rc1</log4j.version>
 	</properties>
 
 	<repositories>
@@ -116,13 +119,17 @@
 			</exclusions>
 		</dependency>
 
-	<dependency>
-		<groupId>com.google.guava</groupId>
-		<artifactId>guava</artifactId>
-		<version>18.0</version>
-	</dependency>
-		
-
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>18.0</version>
+		</dependency>
+	
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

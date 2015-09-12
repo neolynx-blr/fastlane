@@ -2,6 +2,8 @@ package com.example.helloworld.manager;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.helloworld.core.InventoryResponse;
 import com.google.common.cache.LoadingCache;
@@ -26,6 +28,8 @@ public class InventoryDBSetup implements Runnable {
 	private SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+
+	static Logger LOGGER = LoggerFactory.getLogger(InventoryDBSetup.class);
 
 	public InventoryDBSetup(SessionFactory sessionFactory,
 			LoadingCache<String, InventoryResponse> differentialInventoryCache,
@@ -53,17 +57,24 @@ public class InventoryDBSetup implements Runnable {
 				Thread.sleep(20000);
 
 				Session session = sessionFactory.openSession();
-				
+
 				InventoryCurator curator = new InventoryCurator(sessionFactory);
+
+				LOGGER.debug("Woken up and processing new inventory...");
 				curator.processNewInventory();
+				LOGGER.debug("Processing new metadata for vendor-version...");
 				curator.processVendorVersionMeta(this.differentialInventoryCache, this.vendorVersionCache);
+				LOGGER.debug(
+						"Completed. The cache sizes being [{}] and [{}] for differential data and version details.",
+						this.differentialInventoryCache.size(), this.vendorVersionCache.size());
 
 				session.close();
 
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (Exception e) {
-				// Eat away to make sure infinite loop continues for data refresh
+				// Eat away to make sure infinite loop continues for data
+				// refresh
 			}
 
 		}
