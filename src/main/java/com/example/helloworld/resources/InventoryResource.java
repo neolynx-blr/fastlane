@@ -10,9 +10,11 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.manager.InventoryEvaluator;
 import com.example.helloworld.manager.InventoryLoader;
+import com.neolynx.common.model.InventoryRequest;
+import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.ResponseAudit;
 
 @Path("/inventory")
 @Produces(MediaType.APPLICATION_JSON)
@@ -46,10 +48,10 @@ public class InventoryResource {
 	@POST
 	@UnitOfWork
 	@Consumes(MediaType.APPLICATION_JSON)
-	public void postInventoryUpdate(InventoryResponse inventoryResponse) {
+	public ResponseAudit postInventoryUpdate(InventoryRequest request) {
 
-		System.out.println("Request received from vendor::"+inventoryResponse.getVendorId());
-		loader.loadNewInventory(inventoryResponse);
+		System.out.println("Request received from vendor::"+request.getVendorId());
+		return loader.loadNewInventory(request);
 
 	}
 

@@ -1,4 +1,4 @@
-package com.example.helloworld.core;
+package com.neolynx.common.model;
 
 import java.util.List;
 
@@ -12,6 +12,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class InventoryResponse extends ResponseAudit {
+
+	private static final long serialVersionUID = -3415988252429606589L;
 
 	private Long vendorId;
 	

@@ -11,11 +11,11 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.manager.CacheCurator;
 import com.example.helloworld.manager.CacheSetup;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.neolynx.common.model.InventoryResponse;
 
 /**
  * Created by nitesh.garg on 06-Sep-2015

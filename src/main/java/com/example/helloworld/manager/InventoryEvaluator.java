@@ -3,9 +3,9 @@ package com.example.helloworld.manager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.util.Constants;
 import com.google.common.cache.LoadingCache;
+import com.neolynx.common.model.InventoryResponse;
 
 public class InventoryEvaluator {
 

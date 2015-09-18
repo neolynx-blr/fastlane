@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.helloworld.core.InventoryMaster;
-import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.core.ProductMaster;
 import com.example.helloworld.core.ProductVendorMap;
 import com.example.helloworld.core.VendorItemHistory;
@@ -22,6 +21,7 @@ import com.example.helloworld.core.VendorItemMaster;
 import com.example.helloworld.core.VendorVersionDetail;
 import com.example.helloworld.core.VendorVersionDifferential;
 import com.google.common.cache.LoadingCache;
+import com.neolynx.common.model.InventoryResponse;
 
 /**
  * Meant for curating any newly uploaded inventory into the master tables from
@@ -83,23 +83,23 @@ public class InventoryCurator {
 			VendorItemHistory vendorItemHistory;
 			VendorItemMaster vendorItemMasterNew = new VendorItemMaster();
 
-			Long productId;
+			Long productId = 0L;
 			Long barcode = imData.getBarcode();
 			Long vendorId = imData.getVendorId();
 
 			LOGGER.debug("Working with data Vendor:Barcode:Version {}:{}:{}", vendorId, barcode, imData.getVersionId());
 
-			// First see if the product for this barcode exists already
-			Query pmQuery = session
-					.createSQLQuery(
-							"select pm.* from product_master pm where barcode = :barcode and vendor_id ilike :vendorId")
-					.addEntity("product_master", ProductMaster.class).setParameter("barcode", barcode)
-					.setParameter("vendorId", "%" + vendorId.toString() + "%");
+			// First see if the product(s) for this bar-code exists already
+			Query pmQuery = session.createSQLQuery("select pm.* from product_master pm where barcode = :barcode ") // and
+																													// vendor_id
+																													// ilike
+																													// :vendorId")
+					.addEntity("product_master", ProductMaster.class).setParameter("barcode", barcode);
+			// .setParameter("vendorId", "%" + vendorId.toString() + "%");
 
 			List<ProductMaster> productMasterList = pmQuery.list();
 
 			ProductVendorMap pvMap = null;
-			ProductMaster productMasterExisting = null;
 
 			/*
 			 * Setup a new product_master with latest data, that may be same as
@@ -185,22 +185,15 @@ public class InventoryCurator {
 
 			}
 
+			boolean shouldNewProductBeAdded = true;
 			session.getTransaction().begin();
 
 			/*
-			 * If this product doesn't already exits in product_master, add it
+			 * For all products existing in the system with same barcode
 			 */
-			if (CollectionUtils.isEmpty(productMasterList)) {
-				session.save(productMasterNew);
-				productId = productMasterNew.getId();
-				LOGGER.info("New product information found, Product-Vendor-Barcode, [{}-{}-{}]",
-						productMasterNew.getName(), productMasterNew.getVendorId(), productMasterNew.getBarcode());
-			} else {
+			for (ProductMaster productMasterExisting : productMasterList) {
 
-				productMasterExisting = productMasterList.get(0);
 				pvMap = new ProductVendorMap(productMasterExisting);
-
-				productId = productMasterExisting.getId();
 				productMasterNew.setVendorId(productMasterExisting.getVendorId());
 
 				/*
@@ -209,7 +202,8 @@ public class InventoryCurator {
 				int existingNewProductAreSame = productMasterExisting.compareTo(productMasterNew);
 
 				// Did this product-vendor mapping previously existed?
-				LOGGER.debug("Is there a change in product information? Answer [{}]", existingNewProductAreSame);
+				LOGGER.debug("Is there a change in product information? Answer [{}]",
+						existingNewProductAreSame == 0 ? "True" : "False");
 				LOGGER.debug(
 						"Set of vendors for which the product previously existed are [{}], and is currently processed vendor [{}] present?",
 						pvMap.getVendorsAsStringList(), vendorId, pvMap.getVendorIds().contains(vendorId));
@@ -241,6 +235,9 @@ public class InventoryCurator {
 							session.saveOrUpdate(productMasterExisting);
 							session.merge(productMasterExisting);
 
+							shouldNewProductBeAdded = false;
+							productId = productMasterExisting.getId();
+
 							LOGGER.debug("Completed updating the details of product [{}] for vendor [{}]",
 									productMasterExisting.getName(), productMasterExisting.getVendorId());
 
@@ -257,12 +254,8 @@ public class InventoryCurator {
 							session.saveOrUpdate(productMasterExisting);
 							session.merge(productMasterExisting);
 
-							productMasterNew.setVendorId(vendorId.toString());
-							session.save(productMasterNew);
-							productId = productMasterNew.getId();
-
 							LOGGER.debug(
-									"Created new product [{}] for vendor [{}] while removing this vendor from the older list.",
+									"Will created new product [{}] for vendor [{}] while removing this vendor from the older list.",
 									productMasterNew.getName(), productMasterNew.getVendorId());
 						}
 
@@ -285,26 +278,32 @@ public class InventoryCurator {
 						session.saveOrUpdate(productMasterExisting);
 						session.merge(productMasterExisting);
 
+						shouldNewProductBeAdded = false;
+						productId = productMasterExisting.getId();
+
 						LOGGER.debug(
 								"Nothing changed for the product [{}] except that the vendor [{}] got added to it",
 								productMasterExisting.getName(), vendorId);
 
 					} else {
-
 						/*
 						 * Product data is different and this product never
-						 * existed for this vendor, create new vendor specific
-						 * product entry
+						 * existed for this vendor, so very likely a new vendor
+						 * specific product entry is to be created. But wait for
+						 * that till all products with same barcode are
+						 * iterated.
 						 */
-
-						productMasterNew.setVendorId(vendorId.toString());
-						session.save(productMasterNew);
-						productId = productMasterNew.getId();
-
-						LOGGER.debug("Created new product [{}] for vendor [{}].", productMasterNew.getName(),
-								productMasterNew.getVendorId());
 					}
 				}
+			}
+
+			if (shouldNewProductBeAdded) {
+				productMasterNew.setVendorId(vendorId.toString());
+				session.save(productMasterNew);
+				productId = productMasterNew.getId();
+
+				LOGGER.debug("Created new product [{}] for vendor [{}].", productMasterNew.getName(),
+						productMasterNew.getVendorId());
 			}
 
 			/*
@@ -615,12 +614,11 @@ public class InventoryCurator {
 				Query vendorItemDifferentialQuery = session
 						.createSQLQuery(
 								" select string_agg(item_code, ',') from vendor_item_master vim where vim.vendor_id = :vendorId and vim.version_id > :lastSyncedVersionId and vim.version_id <= :latestVersionId group by vendor_id ")
-						.setParameter("vendorId", vendorId)
-						.setParameter("lastSyncedVersionId", lastSyncedVersionId)
+						.setParameter("vendorId", vendorId).setParameter("lastSyncedVersionId", lastSyncedVersionId)
 						.setParameter("latestVersionId", maxVersionId);
 
 				String newItemDifferential = (String) vendorItemDifferentialQuery.list().get(0);
-				//String newItemDifferential = diffDataRows[0];
+				// String newItemDifferential = diffDataRows[0];
 
 				LOGGER.debug("[{}] are the newly updated item codes found for vendor [{}] since the last sync up.",
 						newItemDifferential, vendorId);

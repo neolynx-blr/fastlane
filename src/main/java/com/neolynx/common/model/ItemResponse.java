@@ -1,4 +1,4 @@
-package com.example.helloworld.core;
+package com.neolynx.common.model;
 
 import java.io.Serializable;
 

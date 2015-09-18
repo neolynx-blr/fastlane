@@ -13,13 +13,13 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.core.ItemResponse;
 import com.example.helloworld.core.VendorItemMaster;
 import com.example.helloworld.core.VendorVersionDifferential;
 import com.example.helloworld.util.Constants;
 import com.example.helloworld.util.StringUtilsCustom;
 import com.google.common.cache.CacheLoader;
+import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.ItemResponse;
 
 /**
  * Created by nitesh.garg on 06-Sep-2015

@@ -9,9 +9,9 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
-import com.example.helloworld.core.ItemResponse;
 import com.example.helloworld.core.ProductMaster;
 import com.example.helloworld.core.VendorItemMaster;
+import com.neolynx.common.model.ItemResponse;
 
 /**
  * Created by nitesh.garg on 25-Aug-2015

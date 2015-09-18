@@ -1,6 +1,14 @@
 template: Hello, %s!
-
+vendorId: 89
 defaultName: ${DW_DEFAULT_NAME:-Stranger}
+
+#All client side setting for calling the inventory on server side
+CurationConfig:
+
+  vendorId: 89
+  maxRowCountForServerPost: 5
+  inventoryFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_master.csv
+  statusFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/status.csv
 
 # Database settings.
 database:
@@ -63,6 +71,7 @@ logging:
     com.example.app: DEBUG
     
     com.example.helloworld: DEBUG
+    com.neolynx: DEBUG
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

@@ -56,10 +56,38 @@ public class ProductMaster implements Comparable<ProductMaster> {
 		/*
 		 * TODO Not looking at Image-JSON yet
 		 */
-		if (this.getName().equalsIgnoreCase(o.getName()) && this.getDescription().equalsIgnoreCase(o.getDescription())
-				&& this.getTagLine().equalsIgnoreCase(o.getTagLine()) && this.getBarcode() == o.getBarcode()) {
+		if (this.getName().trim().equalsIgnoreCase(o.getName().trim())
+				&& this.getDescription().trim().equalsIgnoreCase(o.getDescription().trim())
+				&& this.getTagLine().trim().equalsIgnoreCase(o.getTagLine().trim())
+				&& this.getBarcode().compareTo(o.getBarcode()) == 0) {
 			return 0;
-		}
+		} else {
+			System.out.println("Something didn't match");
+
+			if (this.getBarcode().compareTo(o.getBarcode()) == 0) {
+				System.out.println("Barcode matched");
+			} else {
+				System.out.println("Barcode didn't match" + this.getBarcode() + "&" + o.getBarcode());
+			}
+
+			if (this.getName().trim().equalsIgnoreCase(o.getName().trim())) {
+				System.out.println("Name matched");
+			} else {
+				System.out.println("Name didn't match" + this.getName() + "&" + o.getName());
+			}
+
+			if (this.getDescription().trim().equalsIgnoreCase(o.getDescription().trim())) {
+				System.out.println("getDescription matched");
+			} else {
+				System.out.println("getDescription didn't match" + this.getDescription() + "&" + o.getDescription());
+			}
+
+			if (this.getTagLine().trim().equalsIgnoreCase(o.getTagLine().trim())) {
+				System.out.println("getTagLine matched");
+			} else {
+				System.out.println("getTagLine didn't match" + this.getTagLine() + "&" + o.getTagLine());
+			}
+}
 
 		return 1;
 	}

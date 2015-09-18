@@ -27,9 +27,6 @@ import com.example.helloworld.cache.DifferentialDataLoader;
 import com.example.helloworld.cache.VendorVersionLoader;
 import com.example.helloworld.cli.RenderCommand;
 import com.example.helloworld.core.InventoryMaster;
-import com.example.helloworld.core.InventoryResponse;
-import com.example.helloworld.core.InventorySyncStatus;
-import com.example.helloworld.core.ItemResponse;
 import com.example.helloworld.core.Person;
 import com.example.helloworld.core.ProductMaster;
 import com.example.helloworld.core.Template;
@@ -59,6 +56,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.ItemResponse;
 
 public class HelloWorldApplication extends Application<HelloWorldConfiguration> {
 	
@@ -69,7 +68,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 	}
 
 	private final HibernateBundle<HelloWorldConfiguration> hibernateBundle = new HibernateBundle<HelloWorldConfiguration>(
-			Person.class, InventorySyncStatus.class, VendorItemMaster.class, VendorItemHistory.class,
+			Person.class, VendorItemMaster.class, VendorItemHistory.class,
 			ProductMaster.class, ItemResponse.class, InventoryMaster.class, VendorVersionDetail.class,
 			VendorVersionDifferential.class) {
 		@Override
@@ -178,13 +177,16 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 		 * Contains the logic of serving the requests including latest vendor
 		 * inventory and since a specific version
 		 */
-		final InventoryLoader inventoryLoader = new InventoryLoader(hibernateBundle.getSessionFactory(), invMasterDAO);
+		final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO);
 		final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache);
 		
 		LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");
 		environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
 		LOGGER.debug("Setting up lifecycle for Version-Differential cache loaders...");
 		environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, cacheCurator));
+		LOGGER.debug("Setting up lifecycle for Inventory loader...");
+		environment.lifecycle().manage(new com.neolynx.curator.job.InventoryLoader(configuration.getCurationConfig()));
+		
 		LOGGER.debug("Completed seting up periodic cache updates...");
 
 		final Template template = configuration.buildTemplate();

@@ -5,8 +5,8 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.helloworld.core.InventoryResponse;
 import com.google.common.cache.LoadingCache;
+import com.neolynx.common.model.InventoryResponse;
 
 /**
  * Created by nitesh.garg on 04-Sep-2015

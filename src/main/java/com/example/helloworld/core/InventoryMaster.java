@@ -20,31 +20,23 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "inventory_master")
-@NamedQueries(
-		{ @NamedQuery(
-				name = "com.example.helloworld.core.InventoryMaster.findLatestInventoryByVendor", 
-				query = "SELECT p FROM InventoryMaster p where p.vendorId = :vendorId and p.versionId = (select max(versionId) from InventoryMaster q where q.vendorId = :vendorId)"), 
-		@NamedQuery(
-				name = "com.example.helloworld.core.AllInventory.findRecentInventoryUpdates", 
-				query = "select p from InventoryMaster p "
-						+ " where vendorId = :vendorId "
-						+ " and versionId = ("
-							+ "	select max(versionId) from InventoryMaster "
-							+ " where barcode = p.barcode "
-							+ " and vendorId = :vendorId "
-							+ " and versionId >= :lastSyncedVersionId )  ") 
-		}	
-	)
-
+@NamedQueries({
+		@NamedQuery(name = "com.example.helloworld.core.InventoryMaster.findInventoryByUniqueConstraint", query = "SELECT p FROM InventoryMaster p where p.vendorId = :vendorId and p.versionId = :versionId and (p.barcode = :barcode or p.itemCode = :itemCode)"),
+		@NamedQuery(name = "com.example.helloworld.core.AllInventory.findRecentInventoryUpdates", query = "select p from InventoryMaster p "
+				+ " where vendorId = :vendorId "
+				+ " and versionId = ("
+				+ "	select max(versionId) from InventoryMaster "
+				+ " where barcode = p.barcode "
+				+ " and vendorId = :vendorId " + " and versionId >= :lastSyncedVersionId )  ") })
 public class InventoryMaster {
-	
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 
 	@Column(name = "vendor_id", nullable = false)
 	private Long vendorId;
-	
+
 	@Column(name = "item_code", nullable = false)
 	private String itemCode;
 
@@ -62,7 +54,7 @@ public class InventoryMaster {
 
 	@Column(name = "barcode", nullable = false)
 	private Long barcode;
-	
+
 	@Column(name = "mrp", nullable = false)
 	private Double mrp;
 
@@ -77,7 +69,7 @@ public class InventoryMaster {
 
 	@Column(name = "discount_value")
 	private Double discountValue;
-	
+
 	@Column(name = "created_on", nullable = false)
 	private Date createdOn;
 

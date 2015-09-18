@@ -3,18 +3,25 @@ package com.example.helloworld;
 import com.example.helloworld.core.Template;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.neolynx.curator.model.CurationConfig;
+
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
+
 import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
 import java.util.Collections;
 import java.util.Map;
 
 public class HelloWorldConfiguration extends Configuration {
     @NotEmpty
     private String template;
+    
+    @NotNull
+    private Long vendorId;
 
     @NotEmpty
     private String defaultName = "Stranger";
@@ -24,8 +31,31 @@ public class HelloWorldConfiguration extends Configuration {
     private DataSourceFactory database = new DataSourceFactory();
     
     @NotNull
+    private CurationConfig curationConfig = new CurationConfig();
+
+    @JsonProperty("CurationConfig")
+    public CurationConfig getCurationConfig() {
+		return curationConfig;
+	}
+
+    @JsonProperty("CurationConfig")
+	public void setCurationConfig(CurationConfig curationConfig) {
+		this.curationConfig = curationConfig;
+	}
+
+	@NotNull
     private Map<String, Map<String, String>> viewRendererConfiguration = Collections.emptyMap();
 
+    @JsonProperty
+    public Long getVendorId() {
+        return vendorId;
+    }
+
+    @JsonProperty
+    public void setVendorId(Long vendorId) {
+        this.vendorId = vendorId;
+    }
+    
     @JsonProperty
     public String getTemplate() {
         return template;

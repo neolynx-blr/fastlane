@@ -10,10 +10,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.hibernate.SessionFactory;
 
-import com.example.helloworld.core.InventoryResponse;
 import com.example.helloworld.manager.InventoryDBSetup;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.neolynx.common.model.InventoryResponse;
 
 /**
  * Created by nitesh.garg on 04-Sep-2015
