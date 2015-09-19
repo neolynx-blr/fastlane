@@ -13,10 +13,14 @@ public class CurationConfig implements Serializable {
 
 	private static final long serialVersionUID = 420048540249500055L;
 
-	public Long vendorId;
-	public Integer maxRowCountForServerPost;
+	private Long vendorId;
+	private Integer maxRowCountForServerPost;
 
-	public String statusFileName;
-	public String inventoryFileName;
+	private String statusFileName;
+	private String inventoryFileName;
+	private String lastSyncIdFileName;
+	private String backupFileNameForInventory;
+	
+	private int lastSyncIdType;
 
 }

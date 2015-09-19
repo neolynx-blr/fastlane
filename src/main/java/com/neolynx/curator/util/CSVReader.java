@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -18,29 +19,44 @@ public class CSVReader {
 
 	static Logger LOGGER = LoggerFactory.getLogger(CSVReader.class);
 
-	private static final String[] FILE_HEADER_MAPPING = { "id", "item_code", "version_id", "name", "description",
-			"tag_line", "barcode", "mrp", "price", "image_json", "discount_type", "discount_value", "last_modified_on" };
+	public String getLastSyncIdentifier(String fileName) {
+		List<CSVRecord> csvRecords = readCSVRecords(fileName, Constant.STATUS_FILE_HEADER);
+		if (CollectionUtils.isNotEmpty(csvRecords)) {
+			return csvRecords.get(1).toString();
+		}
+		return null;
+	}
 
-	public List<CSVRecord> getAllPendingRecords(String fileName) {
+	public List<CSVRecord>getLastSyncSuccessIds(String fileName) {
+		return readCSVRecords(fileName, Constant.SYNC_FILE_HEADER);
+	}
+
+	public List<CSVRecord> getAllPendingInventoryRecords(String fileName) {
+		return readCSVRecords(fileName, Constant.INVENTORY_FILE_HEADER);
+	}
+
+	private List<CSVRecord> readCSVRecords(String fileName, String[] fileHeader) {
 
 		FileReader fileReader = null;
 		CSVParser csvFileParser = null;
 		List<CSVRecord> csvRecords = null;
 
 		// Create the CSVFormat object with the header mapping
-		CSVFormat csvFileFormat = CSVFormat.DEFAULT.withHeader(FILE_HEADER_MAPPING);
+		CSVFormat csvFileFormat = CSVFormat.DEFAULT.withHeader(fileHeader);
 
 		try {
 
 			LOGGER.debug("About to openup the file [{}]", fileName);
-			
+
 			fileReader = new FileReader(fileName);
 			csvFileParser = new CSVParser(fileReader, csvFileFormat);
 			csvRecords = csvFileParser.getRecords();
-			LOGGER.debug("Read the file [{}] for [{}] records", fileName, csvRecords.size());
-			
-			if(csvRecords.size()>1) {
-				LOGGER.debug("First record:[{}]", csvRecords.get(1).toString());
+
+			if (csvRecords.size() > 1) {
+				LOGGER.debug("While reading file [{}], found [{}] records, and first record found is:[{}]", fileName,
+						csvRecords.size(), csvRecords.get(1).toString());
+			} else {
+				LOGGER.debug("No record found while reading file [{}]", fileName);
 			}
 
 		} catch (FileNotFoundException e) {

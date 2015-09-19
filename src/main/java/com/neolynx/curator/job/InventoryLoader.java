@@ -38,6 +38,7 @@ public class InventoryLoader implements Managed {
 	 */
 	@Override
 	public void start() throws Exception {
+		LOGGER.debug("Starting vendor side inventory loader process with configuration as [{}]", this.curationConfig.toString());
 		executorService.execute(new Processor(this.curationConfig));
 	}
 

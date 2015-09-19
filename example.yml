@@ -8,7 +8,11 @@ CurationConfig:
   vendorId: 89
   maxRowCountForServerPost: 5
   inventoryFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_master.csv
+  backupFileNameForInventory: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_master_backup.csv
   statusFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/status.csv
+  lastSyncIdFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/sync.csv
+  #For SyncType check Constants file
+  lastSyncIdType: 1
 
 # Database settings.
 database:

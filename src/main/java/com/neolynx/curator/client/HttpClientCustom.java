@@ -26,6 +26,7 @@ public class HttpClientCustom {
 
 		ResponseAudit responseAudit = new ResponseAudit();
 		// create HTTP Client
+		//TODO Create some pool and/or stay-alive/persistent connection
 		HttpClient httpClient = HttpClientBuilder.create().build();
 
 		// Create new getRequest with below mentioned URL
