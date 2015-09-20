@@ -68,17 +68,27 @@ public class Processor implements Runnable {
 				
 				// Read the last sync identifier
 				String lastSyncId = reader.getLastSyncIdentifier(this.curationConfig.getLastSyncIdFileName());
-
-				//TODO lastSyncId is null?
 				
 				List<ItemMaster> recentRecords = null;
-				if (this.curationConfig.getLastSyncIdType() == Integer.parseInt(lastSyncId)) {
+				if(lastSyncId == null) {
+					/*
+					 * TODO lastSyncId is null? It basically indicated that the
+					 * file got corrupted or the vendor is here for the first
+					 * time. For first time vendors, we should have an offline
+					 * provision to enter first time inventory and set this file
+					 * somehow. But of the file is lost, let's have a call from
+					 * server to indicate when is the last data point received
+					 * from this vendor and adjust accordingly.
+					 */
 					
-					recentRecords = adapter.getRecentRecords(lastSyncId, latestLastModifiedTimeStamp);
+					
 					
 				}
+				else if (this.curationConfig.getLastSyncIdType() == Constant.VENDOR_DATA_SYNC_ID_TIMESTAMP_MILLIS) {
+					recentRecords = adapter.getRecentRecords(lastSyncId, latestLastModifiedTimeStamp);
+				} 
 
-				LOGGER.debug(
+				LOGGER.info(
 						"Received [{}] new records from the vendor store. Looking for anything pending from last push to the server.",
 						CollectionUtils.isEmpty(recentRecords) ? 0L : recentRecords.size());
 
@@ -94,13 +104,32 @@ public class Processor implements Runnable {
 				 * and create the final master-inventory CSV file for further
 				 * push over to the server.
 				 */
-				List<CSVRecord> pendingRecords = reader.getAllPendingInventoryRecords(this.curationConfig
-						.getInventoryFileName());
-
+				List<CSVRecord> pendingRecords = new ArrayList<CSVRecord>();
 				List<CSVRecord> lastSyncSuccessIds = reader.getLastSyncSuccessIds(this.curationConfig
 						.getStatusFileName());
+				
+				
+				/*
+				 * Handing scenarios with these files.
+				 * 1. Sync file should always be populated unless first time vendor or file corruption
+				 * 2. Status file will not be there when 
+				 * 	a. Either the last push to server was ALL successful, nothing pending
+				 *  b. If not empty, backup file has the last accumulated data and should be worked upon
+				 *  c. If backup file is empty, and main file is not empty, it has the last accumulated data and should be worked upon
+				 */
+				
+				if(CollectionUtils.isEmpty(lastSyncSuccessIds)) {
+					pendingRecords = reader.getAllPendingInventoryRecords(this.curationConfig.getBackupFileNameForInventory());
+					if(CollectionUtils.isEmpty(pendingRecords)) {
+						pendingRecords = reader.getAllPendingInventoryRecords(this.curationConfig.getInventoryFileName());
+					} else {
+						LOGGER.debug("Received [{}] records from the backup file as status file was empty.", pendingRecords.size());
+					}
+				} else {
+					
+				}
 
-				LOGGER.debug(
+				LOGGER.info(
 						"Received [{}] records that were found on the CSV file, and [{}] entries for success-ids. now will remove the success ids from last push.",
 						CollectionUtils.isEmpty(pendingRecords) ? 0L : pendingRecords.size(),
 						CollectionUtils.isEmpty(lastSyncSuccessIds) ? 0L : lastSyncSuccessIds.size());
@@ -139,11 +168,11 @@ public class Processor implements Runnable {
 								String itemCode = pendingRecord.get("item_code");
 								if (recentItemCodes.contains(itemCode)) {
 									LOGGER.debug(
-											"Record with id [{}], item-code [{}] from pending-records file wasn't pushed (at all or successfully), but is not found again in the recent records. So skipping from pending records...",
+											"Record with id [{}], item-code [{}] from pending-records file wasn't pushed (at all or successfully), but is now found again in the recent records. So skipping from pending records...",
 											recordId, itemCode);
 								} else {
 									LOGGER.debug(
-											"Record with id [{}], item-code [{}] from pending-records file wasn't pushed (at all or successfully), and not updatdin recent records. So adding...",
+											"Record with id [{}], item-code [{}] from pending-records file wasn't pushed (at all or successfully), and not updated in recent records. So adding...",
 											recordId, itemCode);
 									finalRecordsForLoad.add(CSVMapper.mapCSVRecordsToArray(pendingRecord,
 											Constant.INVENTORY_FILE_HEADER));
@@ -222,13 +251,34 @@ public class Processor implements Runnable {
 						LOGGER.debug("Successfully added [{}] records to the main file. Cleaning up the backup/status/sync files.", finalRecordsForLoad.size());
 						writer.clearFileContents(this.curationConfig.getBackupFileNameForInventory(), Constant.INVENTORY_FILE_HEADER);
 
+					} else {
+						//Try cleaning the main file
+						mainWriterErrorList = writer.clearFileContents(this.curationConfig.getInventoryFileName(), Constant.INVENTORY_FILE_HEADER);
 					}
-					
-					LOGGER.debug("Updating the last sync time to [{}] ...", latestLastModifiedTimeStamp);
-					writer.writeLastSyncIdentifierRecord(this.curationConfig.getLastSyncIdFileName(), latestLastModifiedTimeStamp);
 
-					LOGGER.debug("Clearing the last status file ...", latestLastModifiedTimeStamp);
-					writer.clearFileContents(this.curationConfig.getStatusFileName(), Constant.STATUS_FILE_HEADER);
+					if(CollectionUtils.isEmpty(mainWriterErrorList)) {
+						LOGGER.debug("Clearing the last status file ...", latestLastModifiedTimeStamp);
+						List<Error> statusWriterErrorList = writer.clearFileContents(this.curationConfig.getStatusFileName(), Constant.STATUS_FILE_HEADER);
+
+						if(CollectionUtils.isEmpty(statusWriterErrorList)) {
+							LOGGER.debug("Updating the last sync time to [{}] ...", latestLastModifiedTimeStamp);
+							List<Error> syncWriterErrorList = writer.writeLastSyncIdentifierRecord(this.curationConfig.getLastSyncIdFileName(), latestLastModifiedTimeStamp);
+							
+							if(CollectionUtils.isEmpty(syncWriterErrorList)) {
+								LOGGER.debug("All files updated successfully.");
+							}
+						}
+					} else {
+						/*
+						 * If main file is not corrected, let things be
+						 * reprocessed next time. Only issue is that what if
+						 * main file update failed in the middle. In that case,
+						 * re-processing may end up considering half baked main
+						 * file next time.
+						 */
+					}
+
+
 
 
 				} else {
@@ -302,6 +352,15 @@ public class Processor implements Runnable {
 								request.getItemsUpdated().size(), response.getSuccessIds().size(), response.getFailureIdCodeMap().size());
 
 						successIds.addAll(response.getSuccessIds());
+						
+						// Add duplicates to success as well
+						for(Long key : response.getFailureIdCodeMap().keySet()) {
+							Error errorDetail = response.getFailureIdCodeMap().get(key);
+							if(errorDetail.getErrorCode().equalsIgnoreCase("E0001")) {
+								successIds.add(key);
+							}
+						}
+						
 					}
 
 					// If everything went fine, cleanup inventory and status files.

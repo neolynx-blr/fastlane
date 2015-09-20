@@ -22,12 +22,12 @@ public class CSVReader {
 	public String getLastSyncIdentifier(String fileName) {
 		List<CSVRecord> csvRecords = readCSVRecords(fileName, Constant.STATUS_FILE_HEADER);
 		if (CollectionUtils.isNotEmpty(csvRecords)) {
-			return csvRecords.get(1).toString();
+			return csvRecords.get(0).toString();
 		}
 		return null;
 	}
 
-	public List<CSVRecord>getLastSyncSuccessIds(String fileName) {
+	public List<CSVRecord> getLastSyncSuccessIds(String fileName) {
 		return readCSVRecords(fileName, Constant.SYNC_FILE_HEADER);
 	}
 
@@ -46,15 +46,20 @@ public class CSVReader {
 
 		try {
 
-			LOGGER.debug("About to openup the file [{}]", fileName);
+			//LOGGER.debug("About to openup the file [{}]", fileName);
 
 			fileReader = new FileReader(fileName);
 			csvFileParser = new CSVParser(fileReader, csvFileFormat);
 			csvRecords = csvFileParser.getRecords();
 
-			if (csvRecords.size() > 1) {
+			if (CollectionUtils.isNotEmpty(csvRecords)) {
+				// Remove the header row
+				csvRecords.remove(0);
+			}
+
+			if (CollectionUtils.isNotEmpty(csvRecords)) {
 				LOGGER.debug("While reading file [{}], found [{}] records, and first record found is:[{}]", fileName,
-						csvRecords.size(), csvRecords.get(1).toString());
+						csvRecords.size(), csvRecords.get(0).toString());
 			} else {
 				LOGGER.debug("No record found while reading file [{}]", fileName);
 			}

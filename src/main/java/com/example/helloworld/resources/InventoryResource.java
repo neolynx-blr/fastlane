@@ -43,6 +43,15 @@ public class InventoryResource {
 	public InventoryResponse getLatestInventory(@PathParam(value = "vendorId") Long vendorId) {
 		return evaluator.getLatestInventory(vendorId);
 	}
+	
+	@Path("/{vendorId}/lastSyncId")
+	@GET
+	@UnitOfWork
+	public InventoryResponse getLastKnownSyncId(@PathParam(value = "vendorId") Long vendorId) {
+		// TODO
+		return evaluator.getLatestInventory(vendorId);
+	}
+	
 
 	@Path("/load")
 	@POST

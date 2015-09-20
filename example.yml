@@ -12,6 +12,7 @@ CurationConfig:
   statusFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/status.csv
   lastSyncIdFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/sync.csv
   #For SyncType check Constants file
+  # 1 - Time stamp in milliseconds
   lastSyncIdType: 1
 
 # Database settings.
@@ -74,7 +75,7 @@ logging:
     # Sets the level for 'com.example.app' to DEBUG.
     com.example.app: DEBUG
     
-    com.example.helloworld: DEBUG
+    com.example.helloworld: INFO
     com.neolynx: DEBUG
 
     # Redirects SQL logs to a separate file
