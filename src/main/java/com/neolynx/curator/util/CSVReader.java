@@ -12,6 +12,8 @@ import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.example.helloworld.util.StringUtilsCustom;
+
 /**
  * Created by nitesh.garg on 14-Sep-2015
  */
@@ -46,7 +48,7 @@ public class CSVReader {
 
 		try {
 
-			//LOGGER.debug("About to openup the file [{}]", fileName);
+			// LOGGER.debug("About to openup the file [{}]", fileName);
 
 			fileReader = new FileReader(fileName);
 			csvFileParser = new CSVParser(fileReader, csvFileFormat);
@@ -58,24 +60,26 @@ public class CSVReader {
 			}
 
 			if (CollectionUtils.isNotEmpty(csvRecords)) {
-				LOGGER.debug("While reading file [{}], found [{}] records, and first record found is:[{}]", fileName,
-						csvRecords.size(), csvRecords.get(0).toString());
+				LOGGER.debug("While reading file [{}], found [{}] records, and first record found is:[{}]",
+						StringUtilsCustom.extractFileName(fileName), csvRecords.size(), csvRecords.get(0).toString());
 			} else {
-				LOGGER.debug("No record found while reading file [{}]", fileName);
+				LOGGER.debug("No record found while reading file [{}]", StringUtilsCustom.extractFileName(fileName));
 			}
 
 		} catch (FileNotFoundException e) {
-			LOGGER.error("Unable to find any file with name [{}]", fileName);
+			LOGGER.error("Unable to find any file with name [{}]", StringUtilsCustom.extractFileName(fileName));
 			e.printStackTrace();
 		} catch (IOException e) {
-			LOGGER.error("Exception with message [{}] occurred while parsing the file [{}]", e.getMessage(), fileName);
+			LOGGER.error("Exception with message [{}] occurred while parsing the file [{}]", e.getMessage(),
+					StringUtilsCustom.extractFileName(fileName));
 			e.printStackTrace();
 		} finally {
 			try {
 				fileReader.close();
 				csvFileParser.close();
 			} catch (IOException e) {
-				LOGGER.error("Error while closing fileReader/csvFileParser for file [{}]", fileName);
+				LOGGER.error("Error while closing fileReader/csvFileParser for file [{}]",
+						StringUtilsCustom.extractFileName(fileName));
 				e.printStackTrace();
 			}
 		}

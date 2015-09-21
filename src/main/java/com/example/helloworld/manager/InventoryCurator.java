@@ -264,6 +264,7 @@ public class InventoryCurator {
 						 * Everything exists, product details are same, and
 						 * already associated with this vendor. Do nothing.
 						 */
+						shouldNewProductBeAdded = false;
 					}
 
 				} else {

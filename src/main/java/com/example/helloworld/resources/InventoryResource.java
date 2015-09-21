@@ -1,5 +1,7 @@
 package com.example.helloworld.resources;
 
+import java.util.List;
+
 import io.dropwizard.hibernate.UnitOfWork;
 
 import javax.ws.rs.Consumes;
@@ -12,6 +14,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.example.helloworld.manager.InventoryEvaluator;
 import com.example.helloworld.manager.InventoryLoader;
+import com.neolynx.common.model.CacheDetail;
 import com.neolynx.common.model.InventoryRequest;
 import com.neolynx.common.model.InventoryResponse;
 import com.neolynx.common.model.ResponseAudit;
@@ -37,6 +40,13 @@ public class InventoryResource {
 		return evaluator.getInventoryDifferential(vendorId, dataVersionId);
 	}
 
+	@Path("/cache/{vendorId}")
+	@GET
+	@UnitOfWork
+	public List<CacheDetail> getCacheDetails(@PathParam(value = "vendorId") Long vendorId) {
+		return evaluator.getCacheDetails(vendorId);
+	}
+	
 	@Path("/{vendorId}")
 	@GET
 	@UnitOfWork

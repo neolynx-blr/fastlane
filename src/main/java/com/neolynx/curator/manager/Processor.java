@@ -44,7 +44,7 @@ public class Processor implements Runnable {
 		final CSVReader reader = new CSVReader();
 		final CSVWriter writer = new CSVWriter();
 
-		final Adapter adapter = new Adapter();
+		final TestAdapter adapter = new TestAdapter();
 
 		while (true) {
 
@@ -76,7 +76,7 @@ public class Processor implements Runnable {
 					 * file got corrupted or the vendor is here for the first
 					 * time. For first time vendors, we should have an offline
 					 * provision to enter first time inventory and set this file
-					 * somehow. But of the file is lost, let's have a call from
+					 * somehow. But if the file is lost, let's have a call from
 					 * server to indicate when is the last data point received
 					 * from this vendor and adjust accordingly.
 					 */
@@ -84,7 +84,13 @@ public class Processor implements Runnable {
 					
 					
 				}
-				else if (this.curationConfig.getLastSyncIdType() == Constant.VENDOR_DATA_SYNC_ID_TIMESTAMP_MILLIS) {
+				
+				/*
+				 * For now, in case of handling null lastSyncId, basically pull
+				 * everything from scratch. Although this should be avoided and
+				 * rather pulled offline or some optimized way.
+				 */
+				if (this.curationConfig.getLastSyncIdType() == Constant.VENDOR_DATA_SYNC_ID_TIMESTAMP_MILLIS) {
 					recentRecords = adapter.getRecentRecords(lastSyncId, latestLastModifiedTimeStamp);
 				} 
 
@@ -306,7 +312,7 @@ public class Processor implements Runnable {
 				 */
 				Thread.sleep(2000);
 
-				LOGGER.debug("About to call CSVReader to read and return data from [{}]", this.curationConfig.getInventoryFileName());
+				LOGGER.debug("About to call CSVReader to read and return data from [{}]", this.curationConfig.getInventoryFileNamePrint());
 				List<CSVRecord> records = reader.getAllPendingInventoryRecords(this.curationConfig.getInventoryFileName());
 				LOGGER.debug("Received [{}] records to be pushed to server.", CollectionUtils.isEmpty(records) ? 0L : records.size());
 
@@ -319,9 +325,6 @@ public class Processor implements Runnable {
 					request.setVendorId(this.curationConfig.getVendorId());
 
 					Iterator<CSVRecord> recordIterator = records.iterator();
-					
-					// Skipping the header row
-					recordIterator.next();
 					
 					while (recordIterator.hasNext()) {
 

@@ -54,7 +54,7 @@ public class InventoryDBSetup implements Runnable {
 			try {
 
 				// Check for new inventory every 'X' seconds.
-				Thread.sleep(20000);
+				Thread.sleep(10000);
 
 				Session session = sessionFactory.openSession();
 

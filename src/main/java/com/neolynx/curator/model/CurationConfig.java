@@ -21,19 +21,19 @@ public class CurationConfig implements Serializable {
 	private String lastSyncIdFileName;
 	private String backupFileNameForInventory;
 	
-	public String getStatusFileName() {
+	public String getStatusFileNamePrint() {
 		return this.statusFileName.substring(this.statusFileName.lastIndexOf("/")+1);
 	}
 	
-	public String getInventoryFileName() {
+	public String getInventoryFileNamePrint() {
 		return this.inventoryFileName.substring(this.inventoryFileName.lastIndexOf("/")+1);
 	}
 
-	public String getLastSyncIdFileName() {
+	public String getLastSyncIdFileNamePrint() {
 		return this.lastSyncIdFileName.substring(this.lastSyncIdFileName.lastIndexOf("/")+1);
 	}
 
-	public String getBackupFileNameForInventory() {
+	public String getBackupFileNameForInventoryPrint() {
 		return this.backupFileNameForInventory.substring(this.backupFileNameForInventory.lastIndexOf("/")+1);
 	}
 

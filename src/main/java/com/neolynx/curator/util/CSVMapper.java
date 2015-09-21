@@ -22,15 +22,29 @@ public class CSVMapper {
 
 	}
 
+	// TODO
 	public static String[] mapCSVRecordsToArray(CSVRecord record, String[] headerList) {
 
 		String[] response = new String[] {};
+		List<String> responseList = new ArrayList<String>();
 		int count = 0;
 
+		System.out.println("Loading record ["+record.toString()+"] against headerList ["+headerList.toString()+"]");
+		
 		for (String headerName : headerList) {
-			response[count++] = record.get(headerName);
+			System.out.println("Loading for [" + headerName + "]" + " value [" + record.get(headerName) + "]");
+			responseList.add(new String(record.get(headerName)));
 		}
-
+		
+		response = new String [responseList.size()];
+		for(String str : responseList) {
+			if(str == null || str.trim().equalsIgnoreCase("null")) {
+				response[count] = null;
+			} else {
+				response[count] = str;
+			}
+			count++;
+		}
 		return response;
 
 	}

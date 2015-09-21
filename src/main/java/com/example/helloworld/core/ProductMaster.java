@@ -62,6 +62,8 @@ public class ProductMaster implements Comparable<ProductMaster> {
 				&& this.getBarcode().compareTo(o.getBarcode()) == 0) {
 			return 0;
 		} else {
+			
+			/*
 			System.out.println("Something didn't match");
 
 			if (this.getBarcode().compareTo(o.getBarcode()) == 0) {
@@ -87,6 +89,7 @@ public class ProductMaster implements Comparable<ProductMaster> {
 			} else {
 				System.out.println("getTagLine didn't match" + this.getTagLine() + "&" + o.getTagLine());
 			}
+			*/
 }
 
 		return 1;

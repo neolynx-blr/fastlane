@@ -10,6 +10,7 @@ import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.example.helloworld.util.StringUtilsCustom;
 import com.neolynx.common.model.Error;
 
 /**
@@ -21,7 +22,7 @@ public class CSVWriter {
 	private final CSVFormat csvFileFormat = CSVFormat.DEFAULT.withRecordSeparator(Constant.NEW_LINE_SEPARATOR);
 
 	public List<Error> clearFileContents(String fileName, String[] fileHeader) {
-		//TODO Find a better way
+		// TODO Find a better way
 		return writeCSVRecords(fileName, new ArrayList<String[]>(), fileHeader);
 	}
 
@@ -30,7 +31,7 @@ public class CSVWriter {
 		List<String[]> records = new ArrayList<String[]>();
 		records.add(new String[] { String.valueOf(lastSyncId), String.valueOf(System.currentTimeMillis()) });
 		return writeCSVRecords(fileName, records, Constant.SYNC_FILE_HEADER);
-		
+
 	}
 
 	public List<Error> writeLoadStatusRecords(String fileName, List<Long> successIds) {
@@ -43,7 +44,7 @@ public class CSVWriter {
 	}
 
 	public List<Error> writeInventoryRecords(String fileName, List<String[]> inventoryRecords) {
-		return writeCSVRecords(fileName, inventoryRecords, Constant.STATUS_FILE_HEADER);
+		return writeCSVRecords(fileName, inventoryRecords, Constant.INVENTORY_FILE_HEADER);
 	}
 
 	private List<Error> writeCSVRecords(String fileName, List<String[]> records, String[] fileHeader) {
@@ -53,8 +54,8 @@ public class CSVWriter {
 
 		List<Error> errorResponse = new ArrayList<Error>();
 
-		LOGGER.debug("Adding [{}] records to file [{}] using header [{}]", records.size(), fileName,
-				fileHeader.toString());
+		LOGGER.debug("Adding [{}] records to file [{}] using header [{}]", records.size(),
+				StringUtilsCustom.extractFileName(fileName), fileHeader.toString());
 
 		try {
 
@@ -64,14 +65,16 @@ public class CSVWriter {
 
 			// Write a new student object list to the CSV file
 			for (String[] record : records) {
-				LOGGER.debug("Adding record  [{}] to the file [{}]", record.toString(), fileName);
+				LOGGER.debug("Adding record  [{}] to the file [{}]", record.toString(),
+						StringUtilsCustom.extractFileName(fileName));
 				csvFilePrinter.printRecord((Object[]) record);
 			}
 
 			LOGGER.debug("Completed adding all records to the file.");
 
 		} catch (IOException e) {
-			LOGGER.debug("Error occured with message [{}} while adding records to file [{}]", e.getMessage(), fileName);
+			LOGGER.debug("Error occured with message [{}} while adding records to file [{}]", e.getMessage(),
+					StringUtilsCustom.extractFileName(fileName));
 			e.printStackTrace();
 		} finally {
 			try {
