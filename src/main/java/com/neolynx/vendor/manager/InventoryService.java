@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory;
 import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.Error;
 import com.neolynx.common.model.ItemMaster;
+import com.neolynx.common.util.CSVWriter;
 import com.neolynx.vendor.manager.intf.VendorAdapter;
 import com.neolynx.vendor.manager.test.TestVendorAdapter;
 import com.neolynx.vendor.model.CurationConfig;
-import com.neolynx.vendor.util.CSVWriter;
 
 /**
  * Purpose of this file is to handle all inventory related operations locally on

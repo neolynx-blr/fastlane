@@ -1,4 +1,4 @@
-package com.neolynx.vendor.util;
+package com.neolynx.common.util;
 
 /**
  * Created by nitesh.garg on 18-Sep-2015

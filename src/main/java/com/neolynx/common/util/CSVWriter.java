@@ -1,4 +1,4 @@
-package com.neolynx.vendor.util;
+package com.neolynx.common.util;
 
 import java.io.FileWriter;
 import java.io.IOException;

@@ -1,8 +1,8 @@
 package com.example.helloworld;
 
 import com.google.common.base.Optional;
-import com.neolynx.curator.HelloWorldApplication;
-import com.neolynx.curator.HelloWorldConfiguration;
+import com.neolynx.curator.FastlaneApplication;
+import com.neolynx.curator.FastlaneConfiguration;
 import com.neolynx.curator.api.Saying;
 import com.neolynx.curator.core.Person;
 
@@ -28,8 +28,8 @@ public class IntegrationTest {
     private static final String CONFIG_PATH = ResourceHelpers.resourceFilePath("test-example.yml");
 
     @ClassRule
-    public static final DropwizardAppRule<HelloWorldConfiguration> RULE = new DropwizardAppRule<>(
-            HelloWorldApplication.class, CONFIG_PATH,
+    public static final DropwizardAppRule<FastlaneConfiguration> RULE = new DropwizardAppRule<>(
+            FastlaneApplication.class, CONFIG_PATH,
             ConfigOverride.config("database.url", "jdbc:h2:" + TMP_FILE));
 
     private Client client;

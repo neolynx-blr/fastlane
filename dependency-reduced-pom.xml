@@ -11,23 +11,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <version>1.3.1</version>
-        <executions>
-          <execution>
-            <id>enforce</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <DependencyConvergence />
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
         <configuration>
@@ -72,7 +55,7 @@
               <transformers>
                 <transformer />
                 <transformer>
-                  <mainClass>com.example.helloworld.HelloWorldApplication</mainClass>
+                  <mainClass>com.neolynx.curator.FastlaneApplication</mainClass>
                 </transformer>
               </transformers>
             </configuration>

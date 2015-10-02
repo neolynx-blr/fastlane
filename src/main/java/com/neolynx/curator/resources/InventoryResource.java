@@ -1,8 +1,8 @@
 package com.neolynx.curator.resources;
 
-import java.util.List;
-
 import io.dropwizard.hibernate.UnitOfWork;
+
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -62,13 +62,18 @@ public class InventoryResource {
 		return evaluator.getLatestInventory(vendorId);
 	}
 	
-
+	@Path("/{vendorId}/freshLoad")
+	@GET
+	@UnitOfWork
+	public ResponseAudit loadFreshInventoryDetailsFromCSV(@PathParam(value = "vendorId") Long vendorId) {
+		return loader.freshInventoryLoad(vendorId);
+	}
+	
 	@Path("/load")
 	@POST
 	@UnitOfWork
 	@Consumes(MediaType.APPLICATION_JSON)
 	public ResponseAudit postInventoryUpdate(InventoryRequest request) {
-
 		System.out.println("Request received from vendor::"+request.getVendorId());
 		return loader.loadNewInventory(request);
 

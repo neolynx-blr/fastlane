@@ -59,19 +59,19 @@ import com.neolynx.vendor.ClientResource;
 import com.neolynx.vendor.job.InventorySync;
 import com.neolynx.vendor.manager.InventoryService;
 
-public class HelloWorldApplication extends Application<HelloWorldConfiguration> {
+public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
-	static Logger LOGGER = LoggerFactory.getLogger(HelloWorldApplication.class);
+	static Logger LOGGER = LoggerFactory.getLogger(FastlaneApplication.class);
 
 	public static void main(String[] args) throws Exception {
-		new HelloWorldApplication().run(args);
+		new FastlaneApplication().run(args);
 	}
 
-	private final HibernateBundle<HelloWorldConfiguration> hibernateBundle = new HibernateBundle<HelloWorldConfiguration>(
+	private final HibernateBundle<FastlaneConfiguration> hibernateBundle = new HibernateBundle<FastlaneConfiguration>(
 			Person.class, VendorItemMaster.class, VendorItemHistory.class, ProductMaster.class, ItemResponse.class,
 			InventoryMaster.class, VendorVersionDetail.class, VendorVersionDifferential.class) {
 		@Override
-		public DataSourceFactory getDataSourceFactory(HelloWorldConfiguration configuration) {
+		public DataSourceFactory getDataSourceFactory(FastlaneConfiguration configuration) {
 			return configuration.getDataSourceFactory();
 		}
 	};
@@ -82,23 +82,23 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 	}
 
 	@Override
-	public void initialize(Bootstrap<HelloWorldConfiguration> bootstrap) {
+	public void initialize(Bootstrap<FastlaneConfiguration> bootstrap) {
 		// Enable variable substitution with environment variables
 		bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(bootstrap
 				.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false)));
 
 		bootstrap.addCommand(new RenderCommand());
 		bootstrap.addBundle(new AssetsBundle());
-		bootstrap.addBundle(new MigrationsBundle<HelloWorldConfiguration>() {
+		bootstrap.addBundle(new MigrationsBundle<FastlaneConfiguration>() {
 			@Override
-			public DataSourceFactory getDataSourceFactory(HelloWorldConfiguration configuration) {
+			public DataSourceFactory getDataSourceFactory(FastlaneConfiguration configuration) {
 				return configuration.getDataSourceFactory();
 			}
 		});
 		bootstrap.addBundle(hibernateBundle);
-		bootstrap.addBundle(new ViewBundle<HelloWorldConfiguration>() {
+		bootstrap.addBundle(new ViewBundle<FastlaneConfiguration>() {
 			@Override
-			public Map<String, Map<String, String>> getViewConfiguration(HelloWorldConfiguration configuration) {
+			public Map<String, Map<String, String>> getViewConfiguration(FastlaneConfiguration configuration) {
 				return configuration.getViewRendererConfiguration();
 			}
 		});
@@ -106,7 +106,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 	}
 
 	@Override
-	public void run(HelloWorldConfiguration configuration, Environment environment) {
+	public void run(FastlaneConfiguration configuration, Environment environment) {
 
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
 
@@ -178,7 +178,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
 			 * Contains the logic of serving the requests including latest
 			 * vendor inventory and since a specific version
 			 */
-			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO);
+			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, configuration.getCurationConfig());
 			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache);
 
 			LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");

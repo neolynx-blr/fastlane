@@ -28,7 +28,7 @@ public class ClientResource {
 		this.inventoryService = inventoryService;
 	}
 
-	@Path("/inventory-master/generate")
+	@Path("/generate-inventory-master/")
 	@GET
 	@UnitOfWork
 	public BaseResponse generateInventoryMaster() {
