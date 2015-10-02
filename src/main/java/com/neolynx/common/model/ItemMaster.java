@@ -7,7 +7,7 @@ import lombok.Data;
 
 import org.apache.commons.csv.CSVRecord;
 
-import com.example.helloworld.util.StringUtilsCustom;
+import com.neolynx.curator.util.StringUtilsCustom;
 
 /**
  * Created by nitesh.garg on 15-Sep-2015

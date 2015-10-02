@@ -1,11 +1,14 @@
 package com.example.helloworld.resources;
 
-import com.example.helloworld.auth.ExampleAuthenticator;
-import com.example.helloworld.auth.ExampleAuthorizer;
-import com.example.helloworld.core.User;
+import com.neolynx.curator.auth.ExampleAuthenticator;
+import com.neolynx.curator.auth.ExampleAuthorizer;
+import com.neolynx.curator.core.User;
+import com.neolynx.curator.resources.ProtectedResource;
+
 import io.dropwizard.auth.*;
 import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.testing.junit.ResourceTestRule;
+
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
 import org.junit.ClassRule;

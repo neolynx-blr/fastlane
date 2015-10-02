@@ -1,9 +1,12 @@
 package com.example.helloworld.resources;
 
-import com.example.helloworld.core.Person;
-import com.example.helloworld.db.PersonDAO;
 import com.google.common.base.Optional;
+import com.neolynx.curator.core.Person;
+import com.neolynx.curator.db.PersonDAO;
+import com.neolynx.curator.resources.PersonResource;
+
 import io.dropwizard.testing.junit.ResourceTestRule;
+
 import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
 import org.junit.After;
 import org.junit.Before;

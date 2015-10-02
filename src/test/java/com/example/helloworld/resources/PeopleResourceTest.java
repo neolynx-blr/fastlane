@@ -1,10 +1,13 @@
 package com.example.helloworld.resources;
 
-import com.example.helloworld.core.Person;
-import com.example.helloworld.db.PersonDAO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
+import com.neolynx.curator.core.Person;
+import com.neolynx.curator.db.PersonDAO;
+import com.neolynx.curator.resources.PeopleResource;
+
 import io.dropwizard.testing.junit.ResourceTestRule;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -18,6 +21,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;

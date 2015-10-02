@@ -2,15 +2,19 @@ template: Hello, %s!
 vendorId: 89
 defaultName: ${DW_DEFAULT_NAME:-Stranger}
 
+clientConfig: true
+serverConfig: true
+
 #All client side setting for calling the inventory on server side
 CurationConfig:
 
   vendorId: 89
   maxRowCountForServerPost: 5
-  inventoryFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_master.csv
-  backupFileNameForInventory: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_master_backup.csv
-  statusFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/status.csv
-  lastSyncIdFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/sync.csv
+  inventoryMasterFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_master.csv
+  inventoryFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_sync.csv
+  backupFileNameForInventory: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_sync_backup.csv
+  statusFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/sync_status.csv
+  lastSyncIdFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/sync_id.csv
   #For SyncType check Constants file
   # 1 - Time stamp in milliseconds
   lastSyncIdType: 1
@@ -76,7 +80,8 @@ logging:
     com.example.app: DEBUG
     
     com.example.helloworld: INFO
-    com.neolynx: DEBUG
+    com.neolynx: INFO
+    com.neolynx.curator.manager.Processor: INFO
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

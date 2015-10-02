@@ -1,17 +1,22 @@
 package com.example.helloworld;
 
-import com.example.helloworld.core.Person;
-import com.example.helloworld.api.Saying;
 import com.google.common.base.Optional;
+import com.neolynx.curator.HelloWorldApplication;
+import com.neolynx.curator.HelloWorldConfiguration;
+import com.neolynx.curator.api.Saying;
+import com.neolynx.curator.core.Person;
+
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.ResourceHelpers;
 import io.dropwizard.testing.junit.DropwizardAppRule;
+
 import org.junit.*;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
+
 import java.io.File;
 import java.io.IOException;
 
