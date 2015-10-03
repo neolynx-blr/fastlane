@@ -80,7 +80,6 @@ public class InventoryCurator {
 
 			InventoryMaster imData = (InventoryMaster) instance;
 
-			VendorItemHistory vendorItemHistory;
 			VendorItemMaster vendorItemMasterNew = new VendorItemMaster();
 
 			Long productId = 0L;
@@ -163,7 +162,7 @@ public class InventoryCurator {
 				vendorItemMasterExisting.setDescription(imData.getDescription());
 				vendorItemMasterExisting.setCreatedOn(new java.sql.Date(System.currentTimeMillis()));
 
-				vendorItemHistory = new VendorItemHistory(vendorItemMasterExisting);
+				//vendorItemHistory = new VendorItemHistory(vendorItemMasterExisting);
 
 			} else {
 
@@ -181,7 +180,7 @@ public class InventoryCurator {
 				vendorItemMasterNew.setDescription(imData.getDescription());
 				vendorItemMasterNew.setCreatedOn(new java.sql.Date(System.currentTimeMillis()));
 
-				vendorItemHistory = new VendorItemHistory(vendorItemMasterNew);
+				//vendorItemHistory = new VendorItemHistory(vendorItemMasterNew);
 
 			}
 
@@ -320,15 +319,22 @@ public class InventoryCurator {
 				session.saveOrUpdate(vendorItemMasterExisting);
 				session.merge(vendorItemMasterExisting);
 
+				VendorItemHistory vendorItemHistory = new VendorItemHistory(vendorItemMasterExisting);
 				session.save(vendorItemHistory);
 
 			} else {
 
 				vendorItemMasterNew.setProductId(productId);
-				vendorItemHistory.setProductId(productId);
-
 				session.save(vendorItemMasterNew);
-				session.save(vendorItemHistory);
+				
+				/**
+				 * TODO Commenting the line below because if the vendor record never
+				 * previously existed, there is no need for adding anything to
+				 * the history. But since the code change has been slightly old,
+				 * don't want to miss out on something now.
+				 */
+				//vendorItemHistory.setProductId(productId);
+				//session.save(vendorItemHistory);
 			}
 
 			updatedInventorySize++;

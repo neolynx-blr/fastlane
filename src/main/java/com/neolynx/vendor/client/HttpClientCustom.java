@@ -30,7 +30,7 @@ public class HttpClientCustom {
 		HttpClient httpClient = HttpClientBuilder.create().build();
 
 		// Create new getRequest with below mentioned URL
-		HttpPost getRequest = new HttpPost("http://localhost:8080/inventory/load/");
+		HttpPost getRequest = new HttpPost("http://localhost:8080/fastlane/vendor/load/");
 
 		// Add additional header to getRequest which accepts
 		// application/xml data

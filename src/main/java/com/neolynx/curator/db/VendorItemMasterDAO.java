@@ -4,6 +4,7 @@ import io.dropwizard.hibernate.AbstractDAO;
 
 import java.util.List;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.hibernate.SessionFactory;
 
 import com.google.common.base.Optional;
@@ -29,4 +30,14 @@ public class VendorItemMasterDAO extends AbstractDAO<VendorItemMaster> {
 		return list(namedQuery("com.example.helloworld.core.VendorItemMaster.findByVendor").setParameter("vendorId",
 				vendorId));
 	}
+	
+	public void deleteByVendorId(Long vendorId) {
+		List<VendorItemMaster> vendorItemRecords = findByVendor(vendorId);
+		if (CollectionUtils.isNotEmpty(vendorItemRecords)) {
+			for(VendorItemMaster instance : vendorItemRecords) {
+				this.currentSession().delete(instance);				
+			}
+		}
+	}
+
 }

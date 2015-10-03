@@ -80,6 +80,11 @@ public class CacheCurator {
 		session.close();
 	}
 
+	public void removeVersionCacheForVendor(Long vendorId) {
+		// TODO Handle failure scenarios
+		this.vendorVersionCache.invalidate(vendorId);
+	}
+	
 	public void removeDifferentialInventoryCache(Long vendorId) {
 
 		int invalidateCount = 0;

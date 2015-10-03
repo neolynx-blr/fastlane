@@ -10,6 +10,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.InventoryRequest;
 import com.neolynx.common.model.InventoryResponse;
 import com.neolynx.common.model.ResponseAudit;
@@ -47,7 +48,7 @@ public class VendorResource {
 	@Path("/{vendorId}/freshLoad")
 	@GET
 	@UnitOfWork
-	public ResponseAudit loadFreshInventoryDetailsFromCSV(@PathParam(value = "vendorId") Long vendorId) {
+	public BaseResponse loadFreshInventoryDetailsFromCSV(@PathParam(value = "vendorId") Long vendorId) {
 		return loader.freshInventoryLoad(vendorId);
 	}
 

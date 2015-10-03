@@ -81,7 +81,15 @@ public class TestVendorAdapter implements VendorAdapter {
 	@Override
 	public List<ItemMaster> getAllInventory() {
 		List<ItemMaster> response = new ArrayList<ItemMaster>();
-		response.add(itemList.get(0));
+		response.add(itemList.get(itemList.size()-1));
+		response.add(new ItemMaster(null, 1234567892L, "ICode002", null, "IName002-3", "ITagLine002-2",
+				"IDesc002-3", 92.91D, 92.90D, null, null, null, new Date(System.currentTimeMillis())));
+		response.add(new ItemMaster(null, 1234567893L, "ICode003", null, "IName003-3", "ITagLine003-2",
+				"IDesc003-3", 93.91D, 93.90D, null, null, null, new Date(System.currentTimeMillis())));
+		response.add(new ItemMaster(null, 1234567894L, "ICode004", null, "IName004-3", "ITagLine004-2",
+				"IDesc004-3", 94.91D, 94.90D, null, null, null, new Date(System.currentTimeMillis())));
+		response.add(new ItemMaster(null, 1234567895L, "ICode005", null, "IName005-3", "ITagLine005-2",
+				"IDesc005-3", 95.91D, 95.90D, null, null, null, new Date(System.currentTimeMillis())));
 		return response;
 	}
 

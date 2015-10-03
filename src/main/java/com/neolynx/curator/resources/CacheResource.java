@@ -31,7 +31,7 @@ public class CacheResource {
 		this.cacheEvaluator = cacheEvaluator;
 	}
 
-	@Path("/cache/{vendorId}")
+	@Path("/{vendorId}")
 	@GET
 	@UnitOfWork
 	public List<CacheDetail> getCacheDetails(@PathParam(value = "vendorId") Long vendorId) {

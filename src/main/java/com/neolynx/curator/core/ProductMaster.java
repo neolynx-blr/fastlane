@@ -21,7 +21,6 @@ import lombok.Data;
 @NamedQueries({
 		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findAll", query = "SELECT p FROM ProductMaster p"),
 		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findExclusiveToVendor", query = "SELECT p FROM ProductMaster p where vendor_id = :vendorId "),
-		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findByVendor", query = "SELECT p FROM ProductMaster p where vendor_id ilike :vendorIdPattern "),
 		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.fetchByBarcode", query = "SELECT p FROM ProductMaster p where barcode = :barcode") })
 public class ProductMaster implements Comparable<ProductMaster> {
 

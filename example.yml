@@ -82,6 +82,7 @@ logging:
     com.example.helloworld: INFO
     com.neolynx: INFO
     com.neolynx.curator.manager.Processor: INFO
+    com.neolynx.curator.manager.InventoryLoader: DEBUG
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

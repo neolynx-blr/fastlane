@@ -5,6 +5,7 @@ import io.dropwizard.hibernate.AbstractDAO;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.hibernate.Query;
 import org.hibernate.SessionFactory;
 
 import com.google.common.base.Optional;
@@ -36,9 +37,15 @@ public class ProductMasterDAO extends AbstractDAO<ProductMaster> {
 				.get(0);
 	}
 
+	@SuppressWarnings("unchecked")
 	public List<ProductMaster> findByVendor(Long vendorId) {
-		return list(namedQuery("com.example.helloworld.core.ProductMaster.findByVendor").setParameter(
-				"vendorIdPattern", "%" + String.valueOf(vendorId) + "%"));
+		Query query = this.currentSession()
+				.createSQLQuery("select pm.* from product_master pm where vendor_id ilike :vendorIdPattern")
+				.addEntity("product_master", ProductMaster.class)
+				.setParameter("vendorIdPattern", "%" + String.valueOf(vendorId) + "%");
+		List<ProductMaster> productMasterListForVendor = query.list();
+
+		return productMasterListForVendor;
 	}
 
 	public List<ProductMaster> findExclusiveToVendor(Long vendorId) {

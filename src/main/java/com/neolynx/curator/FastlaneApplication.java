@@ -40,6 +40,9 @@ import com.neolynx.curator.core.VendorVersionDetail;
 import com.neolynx.curator.core.VendorVersionDifferential;
 import com.neolynx.curator.db.InventoryMasterDAO;
 import com.neolynx.curator.db.PersonDAO;
+import com.neolynx.curator.db.ProductMasterDAO;
+import com.neolynx.curator.db.VendorItemHistoryDAO;
+import com.neolynx.curator.db.VendorItemMasterDAO;
 import com.neolynx.curator.db.VendorVersionDetailDAO;
 import com.neolynx.curator.db.VendorVersionDifferentialDAO;
 import com.neolynx.curator.filter.DateRequiredFeature;
@@ -49,6 +52,10 @@ import com.neolynx.curator.manager.CacheEvaluator;
 import com.neolynx.curator.manager.InventoryCurator;
 import com.neolynx.curator.manager.InventoryEvaluator;
 import com.neolynx.curator.manager.InventoryLoader;
+import com.neolynx.curator.manager.ProductMasterService;
+import com.neolynx.curator.manager.VendorItemService;
+import com.neolynx.curator.manager.VendorVersionDifferentialService;
+import com.neolynx.curator.manager.VendorVersionService;
 import com.neolynx.curator.resources.CacheResource;
 import com.neolynx.curator.resources.FilteredResource;
 import com.neolynx.curator.resources.HelloWorldResource;
@@ -144,8 +151,17 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final InventoryMasterDAO invMasterDAO = new InventoryMasterDAO(hibernateBundle.getSessionFactory());
 			
 			final VendorVersionDetailDAO vendorVersionDetailDAO = new VendorVersionDetailDAO(hibernateBundle.getSessionFactory());
-			final VendorVersionDifferentialDAO vendorVersionDifferentialDAO = new VendorVersionDifferentialDAO(hibernateBundle.getSessionFactory());
-
+			
+			final ProductMasterDAO productMasterDAO = new ProductMasterDAO(hibernateBundle.getSessionFactory());
+			final VendorVersionDifferentialDAO vendorVersionDiffDAO = new VendorVersionDifferentialDAO(hibernateBundle.getSessionFactory());
+			final VendorItemMasterDAO vendorItemMasterDAO = new VendorItemMasterDAO(hibernateBundle.getSessionFactory());
+			final VendorItemHistoryDAO vendorItemHistoryDAO = new VendorItemHistoryDAO(hibernateBundle.getSessionFactory());
+			
+			
+			final ProductMasterService pmService = new ProductMasterService(hibernateBundle.getSessionFactory(), productMasterDAO);
+			final VendorVersionDifferentialService vvDiffService = new VendorVersionDifferentialService(vendorVersionDiffDAO);
+			final VendorVersionService vvDetailService = new VendorVersionService(vendorVersionDetailDAO);
+			final VendorItemService vendorItemService = new VendorItemService(vendorItemMasterDAO, vendorItemHistoryDAO);
 
 			/*
 			 * Meant for DB updates, basically setting up new inventory if any
@@ -186,9 +202,9 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * Contains the logic of serving the requests including latest
 			 * vendor inventory and since a specific version
 			 */
-			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, vendorVersionCache);
+			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache);
 			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache);
-			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, vendorVersionDetailDAO, vendorVersionDifferentialDAO, configuration.getCurationConfig(), cacheCurator);
+			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, configuration.getCurationConfig(), cacheCurator, pmService, vvDiffService, vvDetailService, vendorItemService);
 
 			LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");
 			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));

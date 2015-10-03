@@ -1,7 +1,6 @@
 package com.neolynx.curator.manager;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -9,17 +8,18 @@ import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.Error;
 import com.neolynx.common.model.InventoryRequest;
 import com.neolynx.common.model.ItemMaster;
 import com.neolynx.common.model.ResponseAudit;
 import com.neolynx.common.util.CSVReader;
 import com.neolynx.curator.core.InventoryMaster;
+import com.neolynx.curator.core.ProductMaster;
+import com.neolynx.curator.core.VendorItemMaster;
 import com.neolynx.curator.core.VendorVersionDetail;
 import com.neolynx.curator.core.VendorVersionDifferential;
 import com.neolynx.curator.db.InventoryMasterDAO;
-import com.neolynx.curator.db.VendorVersionDetailDAO;
-import com.neolynx.curator.db.VendorVersionDifferentialDAO;
 import com.neolynx.vendor.model.CurationConfig;
 
 /**
@@ -30,84 +30,143 @@ public class InventoryLoader {
 	private final CacheCurator cacheCurator;
 	private final CurationConfig curationConfig;
 	private final InventoryMasterDAO invMasterDAO;
-	private final VendorVersionDetailDAO vendorVersionDetailDAO;
-	private final VendorVersionDifferentialDAO vendorVersionDifferentialDAO;
+
+	final ProductMasterService pmService;
+	final VendorItemService vendorItemService;
+	final VendorVersionService vvDetailService;
+	final VendorVersionDifferentialService vvDiffService;
 
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryLoader.class);
 
-	public InventoryLoader(InventoryMasterDAO invMasterDAO, VendorVersionDetailDAO vendorVersionDetailDAO,
-			VendorVersionDifferentialDAO vendorVersionDifferentialDAO, CurationConfig curationConfig,
-			CacheCurator cacheCurator) {
+	public InventoryLoader(InventoryMasterDAO invMasterDAO, CurationConfig curationConfig, CacheCurator cacheCurator,
+			ProductMasterService pmService, VendorVersionDifferentialService vvDiffService,
+			VendorVersionService vvDetailService, VendorItemService vendorItemService) {
 		super();
 		this.invMasterDAO = invMasterDAO;
 		this.cacheCurator = cacheCurator;
 		this.curationConfig = curationConfig;
-		this.vendorVersionDetailDAO = vendorVersionDetailDAO;
-		this.vendorVersionDifferentialDAO = vendorVersionDifferentialDAO;
+
+		this.pmService = pmService;
+		this.vvDiffService = vvDiffService;
+		this.vvDetailService = vvDetailService;
+		this.vendorItemService = vendorItemService;
 	}
 
-	public ResponseAudit freshInventoryLoad(Long vendorId) {
+	/**
+	 * This is invoked to load fresh inventory of a vendor into the system by
+	 * cleaning up anything existing stuff. TODO 1. Error handling 2. Ensure
+	 * that sync process from client is not working in parallel 3. Make addition
+	 * to history table as non critical operation as that should not potentially
+	 * fail a critical operation 4. Ensure the load fresh is happening for one
+	 * vendor at a time, because right now, the file names are generic which
+	 * loads the fresh inventory
+	 * 
+	 * @param vendorId
+	 * @return
+	 */
+	public BaseResponse freshInventoryLoad(Long vendorId) {
 
 		final CSVReader reader = new CSVReader();
-		ResponseAudit response = new ResponseAudit();
+		BaseResponse response = new BaseResponse();
 		List<CSVRecord> freshRecords = new ArrayList<CSVRecord>();
 
 		freshRecords = reader.getAllPendingInventoryRecords(this.curationConfig.getInventoryMasterFileName());
 
-		if (CollectionUtils.isNotEmpty(freshRecords)) {
-
-			LOGGER.debug("[{}] records found while uploading fresh inventory for vendor [{}]", freshRecords.size(),
+		if (CollectionUtils.isEmpty(freshRecords)) {
+			LOGGER.debug(
+					"No records found while uploading fresh inventory for vendor [{}]. Skipping the operation and returning error.",
 					vendorId);
-			List<ItemMaster> freshItemDetails = new ArrayList<ItemMaster>();
-
-			for (CSVRecord record : freshRecords) {
-				freshItemDetails.add(new ItemMaster(record));
-			}
-
-			/*
-			 * TODO For now assume this will only be called for a new vendor
-			 * only
-			 * 
-			 * Before you add up fresh inventory for the vendor, you'll need to
-			 * remove all previous details for this vendor include cache entries
-			 * and different data versions.
-			 */
-
-			this.vendorVersionDetailDAO.deleteByVendorId(vendorId);
-			List<VendorVersionDetail> vendorVersionDetails = this.vendorVersionDetailDAO.findByVendor(vendorId);
-			
-			this.vendorVersionDifferentialDAO.deleteByVendorId(vendorId);
-			List<VendorVersionDifferential> vendorVersionDifferentialDetails = this.vendorVersionDifferentialDAO.findByVendor(vendorId);
-
-			if (CollectionUtils.isEmpty(vendorVersionDetails) && CollectionUtils.isEmpty(vendorVersionDifferentialDetails)) {
-
-				/**
-				 * TODO Add some wait here to ensure this doesn't overlap with
-				 * cache object being created in parallel
-				 */
-				
-				// Remove from differential cache
-				this.cacheCurator.removeDifferentialInventoryCache(vendorId);
-
-				response = addItemsToInventoryMaster(vendorId, freshItemDetails);
-				
-				VendorVersionDetail newVendorVersionDetail = new VendorVersionDetail();
-				newVendorVersionDetail.setVendorId(vendorId);
-				newVendorVersionDetail.setLatestSyncedVersionId(0L);
-				newVendorVersionDetail.setLastModifiedOn(new Date(System.currentTimeMillis()));
-				
-				this.vendorVersionDetailDAO.create(newVendorVersionDetail);
-				
-			} else {
-
-			}
-
-		} else {
-
-			LOGGER.debug("No records found while uploading fresh inventory for vendor [{}]. Skipping.", vendorId);
-
+			response.getErrorDetails().add(
+					new Error("V001", "No records are available for vendor to replace existing inventory."));
+			return response;
 		}
 
+		LOGGER.debug("[{}] records found while uploading fresh inventory for vendor [{}]", freshRecords.size(),
+				vendorId);
+
+		/**
+		 * Before anything else, ensure that this vendor is completely cleaned
+		 * up from the existing system, in case it already exists.
+		 * 
+		 * 1. Clean up vendor-version-differential data 2. Clean up
+		 * vendor-version-detail 3. Clean up the product-master details 4. Move
+		 * everything from vendor-item-master to history table 5. Clean up all
+		 * the caches 6. Insert the new records in inventory-master 7. New entry
+		 * for vendor-version-detail
+		 * 
+		 * Make multiple attempts to clear this up or else, give up without
+		 * loading new inventory
+		 */
+
+		// #1
+		this.vvDiffService.removeAllVersionDifferentialForVendor(vendorId);
+		List<VendorVersionDifferential> vendorVersionDiffDetails = this.vvDiffService
+				.getVersionDiffDetailsForVendor(vendorId);
+		if (CollectionUtils.isNotEmpty(vendorVersionDiffDetails)) {
+			LOGGER.debug(
+					"Unable to remove version differentials for vendor [{}], still found [{}] pending entries. Skipping the fresh inventory load",
+					vendorId, vendorVersionDiffDetails.size());
+			response.getErrorDetails().add(
+					new Error("VVDiff001", "Unable to remove vendor data from version differential details."));
+			return response;
+		}
+
+		// #2
+		this.vvDetailService.removeAllVersionDetailsForVendor(vendorId);
+		List<VendorVersionDetail> vendorVersionDetails = this.vvDetailService.getVersionDetailsForVendor(vendorId);
+		if (CollectionUtils.isNotEmpty(vendorVersionDetails)) {
+			LOGGER.debug(
+					"Unable to remove version details for vendor [{}], still found [{}] pending entries. Skipping the fresh inventory load",
+					vendorId, vendorVersionDetails.size());
+			response.getErrorDetails().add(
+					new Error("VVDtl001", "Unable to remove vendor data from version differential details."));
+			return response;
+		}
+
+		// #3
+		this.pmService.removeVendorFromInventory(vendorId);
+		List<ProductMaster> productMasterDetailsForVendor = this.pmService.getProductListForVendor(vendorId);
+		if (CollectionUtils.isNotEmpty(productMasterDetailsForVendor)) {
+			LOGGER.debug(
+					"Unable to remove vendor [{}] from product-master details, still found [{}] pending entries. Skipping the fresh inventory load",
+					vendorId, productMasterDetailsForVendor.size());
+			response.getErrorDetails().add(
+					new Error("PM001", "Unable to remove vendor data from product master details."));
+			return response;
+		}
+
+		// #4
+		this.vendorItemService.removeAllItemRecordsForVendor(vendorId);
+		List<VendorItemMaster> itemRecordsForVendor = this.vendorItemService.getAllItemRecordsForVendor(vendorId);
+		if (CollectionUtils.isNotEmpty(itemRecordsForVendor)) {
+			LOGGER.debug(
+					"Unable to remove vendor [{}] from vendor-item-master details, still found [{}] pending entries. Skipping the fresh inventory load",
+					vendorId, itemRecordsForVendor.size());
+			response.getErrorDetails().add(
+					new Error("VIM001", "Unable to remove vendor data from item master details."));
+			return response;
+		}
+
+		// #5
+		/**
+		 * TODO Add some wait here to ensure this doesn't overlap with cache
+		 * object being created in parallel
+		 */
+
+		this.cacheCurator.removeVersionCacheForVendor(vendorId);
+		this.cacheCurator.removeDifferentialInventoryCache(vendorId);
+
+		// #6
+		List<ItemMaster> freshItemDetails = new ArrayList<ItemMaster>();
+		for (CSVRecord record : freshRecords) {
+			freshItemDetails.add(new ItemMaster(record));
+		}
+		addItemsToInventoryMaster(vendorId, freshItemDetails);
+
+		// #7
+		this.vvDetailService.createDefaultVendorVersionEntry(vendorId);
+
+		response.setIsError(Boolean.FALSE);
 		return response;
 
 	}
