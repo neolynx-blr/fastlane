@@ -2,7 +2,9 @@ package com.neolynx.curator.manager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -76,6 +78,29 @@ public class CacheCurator {
 		}
 
 		session.close();
+	}
+
+	public void removeDifferentialInventoryCache(Long vendorId) {
+
+		int invalidateCount = 0;
+
+		Set<String> differentialCacheKeys = this.differentialInventoryCache.asMap().keySet();
+		LOGGER.debug(
+				"Will iterate over [{}] keys in the differential inventory cache to remove for all keys for vendor [{}]",
+				differentialCacheKeys.size(), vendorId);
+
+		for (String key : differentialCacheKeys) {
+
+			if (StringUtils.startsWith(key, String.valueOf(vendorId) + Constants.VENDOR_VERSION_KEY_SEPARATOR)) {
+				invalidateCount++;
+				LOGGER.debug("Removing key [{}] from the differential inventory cache", key);
+				this.differentialInventoryCache.invalidate(key);
+			}
+
+		}
+
+		LOGGER.debug("End up removing [{}] keys from the differential inventory cache.", invalidateCount);
+
 	}
 
 	@SuppressWarnings("unchecked")

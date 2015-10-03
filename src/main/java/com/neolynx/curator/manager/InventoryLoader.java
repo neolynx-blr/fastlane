@@ -1,6 +1,7 @@
 package com.neolynx.curator.manager;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -14,7 +15,11 @@ import com.neolynx.common.model.ItemMaster;
 import com.neolynx.common.model.ResponseAudit;
 import com.neolynx.common.util.CSVReader;
 import com.neolynx.curator.core.InventoryMaster;
+import com.neolynx.curator.core.VendorVersionDetail;
+import com.neolynx.curator.core.VendorVersionDifferential;
 import com.neolynx.curator.db.InventoryMasterDAO;
+import com.neolynx.curator.db.VendorVersionDetailDAO;
+import com.neolynx.curator.db.VendorVersionDifferentialDAO;
 import com.neolynx.vendor.model.CurationConfig;
 
 /**
@@ -22,15 +27,23 @@ import com.neolynx.vendor.model.CurationConfig;
  */
 public class InventoryLoader {
 
+	private final CacheCurator cacheCurator;
 	private final CurationConfig curationConfig;
 	private final InventoryMasterDAO invMasterDAO;
+	private final VendorVersionDetailDAO vendorVersionDetailDAO;
+	private final VendorVersionDifferentialDAO vendorVersionDifferentialDAO;
 
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryLoader.class);
 
-	public InventoryLoader(InventoryMasterDAO invMasterDAO, CurationConfig curationConfig) {
+	public InventoryLoader(InventoryMasterDAO invMasterDAO, VendorVersionDetailDAO vendorVersionDetailDAO,
+			VendorVersionDifferentialDAO vendorVersionDifferentialDAO, CurationConfig curationConfig,
+			CacheCurator cacheCurator) {
 		super();
 		this.invMasterDAO = invMasterDAO;
+		this.cacheCurator = cacheCurator;
 		this.curationConfig = curationConfig;
+		this.vendorVersionDetailDAO = vendorVersionDetailDAO;
+		this.vendorVersionDifferentialDAO = vendorVersionDifferentialDAO;
 	}
 
 	public ResponseAudit freshInventoryLoad(Long vendorId) {
@@ -52,13 +65,42 @@ public class InventoryLoader {
 			}
 
 			/*
-			 * TODO For now assume this will only be called for a new vendor only
+			 * TODO For now assume this will only be called for a new vendor
+			 * only
 			 * 
 			 * Before you add up fresh inventory for the vendor, you'll need to
 			 * remove all previous details for this vendor include cache entries
 			 * and different data versions.
 			 */
-			response = addItemsToInventoryMaster(vendorId, freshItemDetails);
+
+			this.vendorVersionDetailDAO.deleteByVendorId(vendorId);
+			List<VendorVersionDetail> vendorVersionDetails = this.vendorVersionDetailDAO.findByVendor(vendorId);
+			
+			this.vendorVersionDifferentialDAO.deleteByVendorId(vendorId);
+			List<VendorVersionDifferential> vendorVersionDifferentialDetails = this.vendorVersionDifferentialDAO.findByVendor(vendorId);
+
+			if (CollectionUtils.isEmpty(vendorVersionDetails) && CollectionUtils.isEmpty(vendorVersionDifferentialDetails)) {
+
+				/**
+				 * TODO Add some wait here to ensure this doesn't overlap with
+				 * cache object being created in parallel
+				 */
+				
+				// Remove from differential cache
+				this.cacheCurator.removeDifferentialInventoryCache(vendorId);
+
+				response = addItemsToInventoryMaster(vendorId, freshItemDetails);
+				
+				VendorVersionDetail newVendorVersionDetail = new VendorVersionDetail();
+				newVendorVersionDetail.setVendorId(vendorId);
+				newVendorVersionDetail.setLatestSyncedVersionId(0L);
+				newVendorVersionDetail.setLastModifiedOn(new Date(System.currentTimeMillis()));
+				
+				this.vendorVersionDetailDAO.create(newVendorVersionDetail);
+				
+			} else {
+
+			}
 
 		} else {
 

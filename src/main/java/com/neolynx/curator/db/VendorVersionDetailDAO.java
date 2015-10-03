@@ -4,6 +4,7 @@ import io.dropwizard.hibernate.AbstractDAO;
 
 import java.util.List;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.hibernate.SessionFactory;
 
 import com.google.common.base.Optional;
@@ -28,6 +29,14 @@ public class VendorVersionDetailDAO extends AbstractDAO<VendorVersionDetail> {
 	public List<VendorVersionDetail> findByVendor(Long vendorId) {
 		return list(namedQuery("com.example.helloworld.core.VendorVersionDetail.findByVendor").setParameter("vendorId",
 				vendorId));
+	}
+
+	public void deleteByVendorId(Long vendorId) {
+		List<VendorVersionDetail> vendorVersionDetails = findByVendor(vendorId);
+		if (CollectionUtils.isNotEmpty(vendorVersionDetails)) {
+			VendorVersionDetail vvdRow = vendorVersionDetails.get(0);
+			this.currentSession().delete(vvdRow);
+		}
 	}
 
 }

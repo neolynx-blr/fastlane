@@ -40,15 +40,20 @@ import com.neolynx.curator.core.VendorVersionDetail;
 import com.neolynx.curator.core.VendorVersionDifferential;
 import com.neolynx.curator.db.InventoryMasterDAO;
 import com.neolynx.curator.db.PersonDAO;
+import com.neolynx.curator.db.VendorVersionDetailDAO;
+import com.neolynx.curator.db.VendorVersionDifferentialDAO;
 import com.neolynx.curator.filter.DateRequiredFeature;
 import com.neolynx.curator.health.TemplateHealthCheck;
 import com.neolynx.curator.manager.CacheCurator;
+import com.neolynx.curator.manager.CacheEvaluator;
 import com.neolynx.curator.manager.InventoryCurator;
 import com.neolynx.curator.manager.InventoryEvaluator;
 import com.neolynx.curator.manager.InventoryLoader;
+import com.neolynx.curator.resources.CacheResource;
 import com.neolynx.curator.resources.FilteredResource;
 import com.neolynx.curator.resources.HelloWorldResource;
-import com.neolynx.curator.resources.InventoryResource;
+import com.neolynx.curator.resources.UserResource;
+import com.neolynx.curator.resources.VendorResource;
 import com.neolynx.curator.resources.PeopleResource;
 import com.neolynx.curator.resources.PersonResource;
 import com.neolynx.curator.resources.ProtectedResource;
@@ -137,6 +142,9 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			
 			final InventoryCurator invCurator = new InventoryCurator(hibernateBundle.getSessionFactory());
 			final InventoryMasterDAO invMasterDAO = new InventoryMasterDAO(hibernateBundle.getSessionFactory());
+			
+			final VendorVersionDetailDAO vendorVersionDetailDAO = new VendorVersionDetailDAO(hibernateBundle.getSessionFactory());
+			final VendorVersionDifferentialDAO vendorVersionDifferentialDAO = new VendorVersionDifferentialDAO(hibernateBundle.getSessionFactory());
 
 
 			/*
@@ -178,8 +186,9 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * Contains the logic of serving the requests including latest
 			 * vendor inventory and since a specific version
 			 */
-			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, configuration.getCurationConfig());
+			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, vendorVersionCache);
 			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache);
+			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, vendorVersionDetailDAO, vendorVersionDifferentialDAO, configuration.getCurationConfig(), cacheCurator);
 
 			LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");
 			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
@@ -187,7 +196,12 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, cacheCurator));
 
 			LOGGER.debug("Completed seting up periodic cache updates...");
-			environment.jersey().register(new InventoryResource(inventoryEvaluator, inventoryLoader));
+			
+			
+			environment.jersey().register(new CacheResource(cacheEvaluator));
+			environment.jersey().register(new UserResource(inventoryEvaluator));
+			environment.jersey().register(new VendorResource(inventoryEvaluator, inventoryLoader));
+			
 		}
 
 		final Template template = configuration.buildTemplate();
