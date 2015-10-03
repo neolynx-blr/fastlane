@@ -12,12 +12,14 @@ public class InventoryEvaluator {
 	private final LoadingCache<Long, Long> vendorVersionCache;
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryEvaluator.class);
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	private final LoadingCache<String, InventoryResponse> recentItemCache;
 
 	public InventoryEvaluator(LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache) {
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemCache) {
 		super();
 		this.differentialInventoryCache = differentialInventoryCache;
 		this.vendorVersionCache = vendorVersionCache;
+		this.recentItemCache = recentItemCache;
 	}
 
 	// Simply pull the data from the cache
@@ -63,7 +65,27 @@ public class InventoryEvaluator {
 			LOGGER.debug("The latest version found for vendor [{}] is [{}], looking for differential data now.",
 					vendorId, latestVersionId);
 			inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId
-					+ Constants.VENDOR_VERSION_KEY_SEPARATOR + latestVersionId);
+					+ Constants.CACHE_KEY_SEPARATOR_STRING + latestVersionId);
+		}
+
+		return inventoryResponse;
+	}
+
+	public InventoryResponse getLatestItemForVendorBarcode(Long vendorId, Long barcode) {
+
+		InventoryResponse inventoryResponse = null;
+
+		if (vendorId == null || barcode == null) {
+			LOGGER.debug("Invalid request received for NULL vendor id or NULL barcode.");
+			inventoryResponse = new InventoryResponse();
+			inventoryResponse.setIsError(Boolean.TRUE);
+			inventoryResponse.setVendorId(vendorId);
+
+		} else {
+			inventoryResponse = this.recentItemCache.getIfPresent(vendorId + Constants.CACHE_KEY_SEPARATOR_STRING
+					+ barcode);
+			LOGGER.debug("The latest for item with vendor [{}], barcode [{}]  is found and being returned.", vendorId,
+					barcode);
 		}
 
 		return inventoryResponse;

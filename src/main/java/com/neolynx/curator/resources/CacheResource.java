@@ -34,8 +34,14 @@ public class CacheResource {
 	@Path("/{vendorId}")
 	@GET
 	@UnitOfWork
-	public List<CacheDetail> getCacheDetails(@PathParam(value = "vendorId") Long vendorId) {
-		return this.cacheEvaluator.getCacheDetails(vendorId);
+	public List<CacheDetail> getVendorCacheDetails(@PathParam(value = "vendorId") Long vendorId) {
+		return this.cacheEvaluator.getVendorCacheDetails(vendorId);
 	}
 
+	@Path("/recentItems")
+	@GET
+	@UnitOfWork
+	public List<CacheDetail> getVendorCacheDetails() {
+		return this.cacheEvaluator.getRecentItemsCacheDetails();
+	}
 }

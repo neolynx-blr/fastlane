@@ -24,8 +24,9 @@ public class DataLoaderJob implements Managed {
 
 	private final CacheCurator cacheCurator;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<String, InventoryResponse> recentItemsCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
-
+	
 	static Logger LOGGER = LoggerFactory.getLogger(DataLoaderJob.class);
 
 	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DataLoader-%d").setDaemon(true)
@@ -33,8 +34,9 @@ public class DataLoaderJob implements Managed {
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 
 	public DataLoaderJob(LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, CacheCurator cacheCurator) {
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemsCache, CacheCurator cacheCurator) {
 		this.cacheCurator = cacheCurator;
+		this.recentItemsCache = recentItemsCache;
 		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
@@ -50,7 +52,7 @@ public class DataLoaderJob implements Managed {
 		LOGGER.debug(
 				"Starting up data-loader job with initial sizes of caches as [{}] for differential cache and [{}] for vendor-version cache",
 				this.differentialInventoryCache.size(), this.vendorVersionCache.size());
-		executorService.execute(new CacheSetup(this.differentialInventoryCache, this.vendorVersionCache,
+		executorService.execute(new CacheSetup(this.differentialInventoryCache, this.vendorVersionCache, this.recentItemsCache,
 				this.cacheCurator));
 	}
 

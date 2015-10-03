@@ -6,7 +6,7 @@ package com.neolynx.curator.util;
 public class Constants {
 	
 	public static final String ITEM_CODE_SEPARATOR = ",";
-	public static final String VENDOR_VERSION_KEY_SEPARATOR = "-";
+	public static final String CACHE_KEY_SEPARATOR_STRING = "-";
 	
 	public static final String COMMA_SEPARATOR = ",";
 	public static final String HYPHEN_SEPARATOR = "-";

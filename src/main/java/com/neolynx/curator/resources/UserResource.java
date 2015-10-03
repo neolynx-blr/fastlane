@@ -28,7 +28,21 @@ public class UserResource {
 		this.inventoryEvaluator = inventoryEvaluator;
 	}
 
-	@Path("/{vendorId}/{versionId}")
+	@Path("/{vendorId}/current/all")
+	@GET
+	@UnitOfWork
+	public InventoryResponse getLatestInventory(@PathParam(value = "vendorId") Long vendorId) {
+		return this.inventoryEvaluator.getLatestInventory(vendorId);
+	}
+
+	@Path("/{vendorId}/current/{barcode}")
+	@GET
+	@UnitOfWork
+	public InventoryResponse getLatestItemRecord(@PathParam(value = "vendorId") Long vendorId, @PathParam(value = "barcode") Long barcode) {
+		return this.inventoryEvaluator.getLatestItemForVendorBarcode(vendorId, barcode);
+	}
+
+	@Path("/{vendorId}/{versionId}/all")
 	@GET
 	@UnitOfWork
 	public InventoryResponse getInventoryDifferential(@PathParam(value = "vendorId") Long vendorId,
@@ -36,11 +50,4 @@ public class UserResource {
 		return this.inventoryEvaluator.getInventoryDifferential(vendorId, dataVersionId);
 	}
 	
-	@Path("/{vendorId}")
-	@GET
-	@UnitOfWork
-	public InventoryResponse getLatestInventory(@PathParam(value = "vendorId") Long vendorId) {
-		return this.inventoryEvaluator.getLatestInventory(vendorId);
-	}
-
 }

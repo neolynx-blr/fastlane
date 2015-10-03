@@ -15,14 +15,16 @@ public class CacheSetup implements Runnable {
 
 	private final CacheCurator cacheCurator;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<String, InventoryResponse> recentItemsCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheSetup.class);
 
 	public CacheSetup(LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, CacheCurator cacheCurator) {
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemsCache, CacheCurator cacheCurator) {
 		super();
 		this.cacheCurator = cacheCurator;
+		this.recentItemsCache = recentItemsCache;
 		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
@@ -37,7 +39,7 @@ public class CacheSetup implements Runnable {
 	public void run() {
 
 		/*
-		 * TODO: Right now both the cache are thoroughly checked and updated if
+		 * TODO: Right now all the cache are thoroughly checked and updated if
 		 * needed. For optimization, we can keep a time stamp of last update and
 		 * only look into these against the last_modified column of the tables.
 		 */
@@ -49,15 +51,16 @@ public class CacheSetup implements Runnable {
 				// Check for new inventory every 'X' seconds.
 				Thread.sleep(10000);
 
-				LOGGER.debug("Wokeup with differential cache-size of [{}] and vendor-version cache-size of [{}]",
-						this.differentialInventoryCache.size(), this.vendorVersionCache.size());
+				LOGGER.debug("Wokeup with differential cache-size of [{}], vendor-barcode cache-size [{}] and vendor-version cache-size of [{}]",
+						this.differentialInventoryCache.size(), this.recentItemsCache.size(), this.vendorVersionCache.size());
 
+				this.cacheCurator.processRecentItemRecordsCache();
 				this.cacheCurator.processVendorVersionCache();
 				this.cacheCurator.processDifferentialInventoryCache();
 
 				LOGGER.debug(
-						"Leaving with cache-size of [{}] entries in differential and [{}] in vendor-version caches",
-						this.differentialInventoryCache.size(), this.vendorVersionCache.size());
+						"Leaving with cache-size of [{}] entries in differential, [{}] entries in vendor-barcode cache and [{}] in vendor-version caches",
+						this.differentialInventoryCache.size(), this.recentItemsCache.size(), this.vendorVersionCache.size());
 
 			} catch (InterruptedException e) {
 				e.printStackTrace();

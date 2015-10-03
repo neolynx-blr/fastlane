@@ -20,15 +20,18 @@ public class CacheEvaluator {
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheEvaluator.class);
 
+	private final LoadingCache<String, InventoryResponse> recentItemsCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
-	public CacheEvaluator(LoadingCache<String, InventoryResponse> differentialInventoryCache) {
+	public CacheEvaluator(LoadingCache<String, InventoryResponse> differentialInventoryCache,
+			LoadingCache<String, InventoryResponse> recentItemsCache) {
 		super();
 		this.differentialInventoryCache = differentialInventoryCache;
+		this.recentItemsCache = recentItemsCache;
 	}
 
 	// Simply pull the data from the cache for given vendor
-	public List<CacheDetail> getCacheDetails(Long vendorId) {
+	public List<CacheDetail> getVendorCacheDetails(Long vendorId) {
 
 		List<CacheDetail> cacheResponse = new ArrayList<CacheDetail>();
 		LOGGER.trace("Request received for cache details of vendor [{}]", vendorId);
@@ -43,11 +46,10 @@ public class CacheEvaluator {
 
 			for (String key : keySet) {
 
-				if (key.startsWith(vendorId + Constants.VENDOR_VERSION_KEY_SEPARATOR)) {
+				if (key.startsWith(vendorId + Constants.CACHE_KEY_SEPARATOR_STRING)) {
 
 					CacheDetail cDetail = new CacheDetail();
-					cDetail.setVersionId(Long.parseLong(key.substring(key
-							.indexOf(Constants.VENDOR_VERSION_KEY_SEPARATOR) + 1)));
+					cDetail.setVersionId(Long.parseLong(key.substring(key.indexOf(Constants.CACHE_KEY_SEPARATOR_STRING) + 1)));
 					cDetail.setResponse(this.differentialInventoryCache.getIfPresent(key));
 					cacheResponse.add(cDetail);
 					versionEntriesCount++;
@@ -57,6 +59,29 @@ public class CacheEvaluator {
 			}
 			LOGGER.debug("Returning [{}] version cache entries for vendor [{}]", versionEntriesCount, vendorId);
 		}
+
+		return cacheResponse;
+	}
+
+	// Simply pull the data from the cache for given vendor
+	public List<CacheDetail> getRecentItemsCacheDetails() {
+
+		List<CacheDetail> cacheResponse = new ArrayList<CacheDetail>();
+
+		int versionEntriesCount = 0;
+		ConcurrentMap<String, InventoryResponse> cacheMap = this.recentItemsCache.asMap();
+		Set<String> keySet = cacheMap.keySet();
+
+		for (String key : keySet) {
+
+			CacheDetail cDetail = new CacheDetail();
+			cDetail.setResponse(this.recentItemsCache.getIfPresent(key));
+			cDetail.setVersionId(cDetail.getResponse() == null ? null : cDetail.getResponse().getNewDataVersionId());
+			cacheResponse.add(cDetail);
+			versionEntriesCount++;
+
+		}
+		LOGGER.debug("Returning [{}] entries for items from recent-items cache.", versionEntriesCount);
 
 		return cacheResponse;
 	}

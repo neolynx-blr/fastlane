@@ -83,6 +83,7 @@ logging:
     com.neolynx: INFO
     com.neolynx.curator.manager.Processor: INFO
     com.neolynx.curator.manager.InventoryLoader: DEBUG
+    com.neolynx.curator.manager.CacheCurator: DEBUG
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

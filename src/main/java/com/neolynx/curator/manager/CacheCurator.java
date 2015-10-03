@@ -31,20 +31,21 @@ public class CacheCurator {
 
 	private final SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<String, InventoryResponse> recentItemsCache;
 	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheCurator.class);
 
 	public CacheCurator(SessionFactory sessionFactory,
 			LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache) {
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemsCache) {
 		super();
 		this.sessionFactory = sessionFactory;
 		this.differentialInventoryCache = differentialInventoryCache;
 		this.vendorVersionCache = vendorVersionCache;
+		this.recentItemsCache = recentItemsCache;
 	}
 
-	@SuppressWarnings("unchecked")
 	public void processVendorVersionCache() {
 
 		Session session = sessionFactory.openSession();
@@ -58,6 +59,7 @@ public class CacheCurator {
 		Query vendorDetailQuery = session.createSQLQuery(" select vvd.* from vendor_version_detail vvd ").addEntity(
 				"vendor_version_detail", VendorVersionDetail.class);
 
+		@SuppressWarnings("unchecked")
 		List<VendorVersionDetail> vendorVersionDetails = vendorDetailQuery.list();
 
 		for (VendorVersionDetail instance : vendorVersionDetails) {
@@ -84,7 +86,7 @@ public class CacheCurator {
 		// TODO Handle failure scenarios
 		this.vendorVersionCache.invalidate(vendorId);
 	}
-	
+
 	public void removeDifferentialInventoryCache(Long vendorId) {
 
 		int invalidateCount = 0;
@@ -96,7 +98,7 @@ public class CacheCurator {
 
 		for (String key : differentialCacheKeys) {
 
-			if (StringUtils.startsWith(key, String.valueOf(vendorId) + Constants.VENDOR_VERSION_KEY_SEPARATOR)) {
+			if (StringUtils.startsWith(key, String.valueOf(vendorId) + Constants.CACHE_KEY_SEPARATOR_STRING)) {
 				invalidateCount++;
 				LOGGER.debug("Removing key [{}] from the differential inventory cache", key);
 				this.differentialInventoryCache.invalidate(key);
@@ -137,7 +139,7 @@ public class CacheCurator {
 			 * differential is built?
 			 */
 
-			String key = vendorId + Constants.VENDOR_VERSION_KEY_SEPARATOR + versionId;
+			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + versionId;
 			InventoryResponse cachedEntry = this.differentialInventoryCache.getIfPresent(key);
 
 			if (cachedEntry != null && cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
@@ -238,4 +240,74 @@ public class CacheCurator {
 
 	}
 
+	@SuppressWarnings("unchecked")
+	public void processRecentItemRecordsCache() {
+
+		Session session = sessionFactory.openSession();
+		Query diffQuery = session
+				.createSQLQuery(
+						"select vim.* from vendor_item_master vim where created_on > current_timestamp - interval '1 days' order by created_on ")
+				.addEntity("vendor_item_master", VendorItemMaster.class);
+		
+		List<VendorItemMaster> recentVendorItemData = diffQuery.list();
+		LOGGER.debug("Found [{}] records created in last day that would be added to the recent-items cache", recentVendorItemData.size());
+		
+		/*
+		 * TODO For now not worrying about a fresh load of full inventory that
+		 * could have taken place in last 1 day. All that inventory will get
+		 * loaded.
+		 */
+		for (VendorItemMaster vendorItemData : recentVendorItemData) {
+
+			InventoryResponse inventoryResponse = new InventoryResponse();
+
+			Long vendorId = vendorItemData.getVendorId();
+			Long barcode = vendorItemData.getBarcode();
+			Long lastSyncedVersionId = vendorItemData.getVersionId();
+
+			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
+			InventoryResponse cachedEntry = this.recentItemsCache.getIfPresent(key);
+
+			if (cachedEntry != null && cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
+				LOGGER.debug(
+						"Skipping the recent item cache refresh of vendor-barcode [{}-{}] to latest version [{}].",
+						vendorId, barcode, lastSyncedVersionId);
+				continue;
+			} else {
+				LOGGER.debug(
+						"Refreshing item cache for vendor-barcode [{}-{}] as older version [{}] against latest [{}]",
+						vendorId, barcode, cachedEntry == null ? "Null" : cachedEntry.getNewDataVersionId(),
+						lastSyncedVersionId);
+			}
+
+			// Otherwise, update cache
+			inventoryResponse.setVendorId(vendorId);
+			inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
+			inventoryResponse.setCurrentDataVersionId(lastSyncedVersionId);
+			inventoryResponse.setItemsUpdated(new ArrayList<ItemResponse>());
+
+			ItemResponse itemData = new ItemResponse();
+			itemData.setBarcode(vendorItemData.getBarcode());
+			itemData.setDescription(vendorItemData.getDescription());
+			itemData.setDiscountType(vendorItemData.getDiscountType());
+			itemData.setDiscountValue(vendorItemData.getDiscountValue());
+			itemData.setImageJSON(vendorItemData.getImageJSON());
+			itemData.setItemCode(vendorItemData.getItemCode());
+			itemData.setMrp(vendorItemData.getMrp());
+			itemData.setName(vendorItemData.getName());
+			itemData.setPrice(vendorItemData.getPrice());
+			itemData.setProductId(vendorItemData.getProductId());
+			itemData.setTagline(vendorItemData.getTagLine());
+			itemData.setVersionId(vendorItemData.getVersionId());
+
+			inventoryResponse.getItemsUpdated().add(itemData);
+
+			String newKey = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
+			LOGGER.debug("Adding key [{}] to the recent items cache with data [{}]", newKey, inventoryResponse.toString());
+			this.recentItemsCache.put(newKey, inventoryResponse);
+		}
+
+		session.close();
+
+	}
 }

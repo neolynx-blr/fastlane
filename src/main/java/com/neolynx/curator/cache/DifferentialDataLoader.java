@@ -49,7 +49,7 @@ public class DifferentialDataLoader extends CacheLoader<String, InventoryRespons
 		}
 
 		InventoryResponse inventoryResponse = new InventoryResponse();
-		List<String> vendorVersion = new StrTokenizer(vendorVersionKey, Constants.VENDOR_VERSION_KEY_SEPARATOR)
+		List<String> vendorVersion = new StrTokenizer(vendorVersionKey, Constants.CACHE_KEY_SEPARATOR_STRING)
 				.getTokenList();
 
 		Long vendorId = Long.parseLong(vendorVersion.get(0));

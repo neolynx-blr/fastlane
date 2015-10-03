@@ -15,6 +15,7 @@ import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.slf4j.Logger;
@@ -180,6 +181,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			LOGGER.debug("Setting up caches for Vendor Version and Version Differential Data...");
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
 			final LoadingCache<String, InventoryResponse> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
+			final LoadingCache<String, InventoryResponse> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
 
 			LOGGER.debug("Setting up the vendor-version metadata in DB based on latest inventory...");
 			invCurator.processVendorVersionMeta(differentialInventoryCache, vendorVersionCache);
@@ -192,7 +194,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * crashed last time in the middle or immediately post the DB
 			 * operation etc.
 			 */
-			final CacheCurator cacheCurator = new CacheCurator(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache);
+			final CacheCurator cacheCurator = new CacheCurator(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache, recentItemsCache);
 			cacheCurator.processVendorVersionCache();
 			cacheCurator.processDifferentialInventoryCache();
 
@@ -202,14 +204,14 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * Contains the logic of serving the requests including latest
 			 * vendor inventory and since a specific version
 			 */
-			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache);
-			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache);
+			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, recentItemsCache);
+			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache, recentItemsCache);
 			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, configuration.getCurationConfig(), cacheCurator, pmService, vvDiffService, vvDetailService, vendorItemService);
 
 			LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");
 			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
 			LOGGER.debug("Setting up lifecycle for Version-Differential cache loaders...");
-			environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, cacheCurator));
+			environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, recentItemsCache, cacheCurator));
 
 			LOGGER.debug("Completed seting up periodic cache updates...");
 			
