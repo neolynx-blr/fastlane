@@ -2,18 +2,26 @@ package com.neolynx.curator.core;
 
 import java.security.Principal;
 
+import lombok.Data;
+
+@Data
 public class User implements Principal {
-    private final String name;
+	
+    private final Account accountDetail;
+    
+	/* (non-Javadoc)
+	 * @see java.security.Principal#getName()
+	 */
+	@Override
+	public String getName() {
+		return this.getAccountDetail().getUserName();
+	}
 
-    public User(String name) {
-        this.name = name;
-    }
+	public User(Account accountDetail) {
+		super();
+		this.accountDetail = accountDetail;
+	}
 
-    public String getName() {
-        return name;
-    }
 
-    public int getId() {
-        return (int) (Math.random() * 100);
-    }
+
 }

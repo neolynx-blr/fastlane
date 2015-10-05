@@ -1,9 +1,11 @@
 package com.neolynx.curator.resources;
 
+import io.dropwizard.auth.Auth;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import java.util.List;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -11,6 +13,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import com.neolynx.common.model.CacheDetail;
+import com.neolynx.curator.core.User;
 import com.neolynx.curator.manager.CacheEvaluator;
 
 /**
@@ -20,7 +23,7 @@ import com.neolynx.curator.manager.CacheEvaluator;
  * Created by nitesh.garg on Oct 3, 2015
  */
 
-@Path("/fastlane/cache")
+@Path("/curator/cache")
 @Produces(MediaType.APPLICATION_JSON)
 public class CacheResource {
 
@@ -33,15 +36,17 @@ public class CacheResource {
 
 	@Path("/{vendorId}")
 	@GET
+	@RolesAllowed("Administrator, Analyst")
 	@UnitOfWork
-	public List<CacheDetail> getVendorCacheDetails(@PathParam(value = "vendorId") Long vendorId) {
+	public List<CacheDetail> getVendorCacheDetails(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
 		return this.cacheEvaluator.getVendorCacheDetails(vendorId);
 	}
 
 	@Path("/recentItems")
 	@GET
+	@RolesAllowed("Administrator, Analyst")
 	@UnitOfWork
-	public List<CacheDetail> getVendorCacheDetails() {
+	public List<CacheDetail> getVendorCacheDetails(@Auth User user) {
 		return this.cacheEvaluator.getRecentItemsCacheDetails();
 	}
 }

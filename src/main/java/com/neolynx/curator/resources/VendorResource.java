@@ -1,7 +1,9 @@
 package com.neolynx.curator.resources;
 
+import io.dropwizard.auth.Auth;
 import io.dropwizard.hibernate.UnitOfWork;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -14,6 +16,7 @@ import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.InventoryRequest;
 import com.neolynx.common.model.InventoryResponse;
 import com.neolynx.common.model.ResponseAudit;
+import com.neolynx.curator.core.User;
 import com.neolynx.curator.manager.InventoryEvaluator;
 import com.neolynx.curator.manager.InventoryLoader;
 
@@ -24,7 +27,7 @@ import com.neolynx.curator.manager.InventoryLoader;
  * Created by nitesh.garg on Oct 3, 2015
  */
 
-@Path("/fastlane/vendor")
+@Path("/curator/vendor")
 @Produces(MediaType.APPLICATION_JSON)
 public class VendorResource {
 
@@ -39,24 +42,27 @@ public class VendorResource {
 
 	@Path("/{vendorId}/lastSyncId")
 	@GET
+	@RolesAllowed("Administrator")
 	@UnitOfWork
-	public InventoryResponse getLastKnownSyncId(@PathParam(value = "vendorId") Long vendorId) {
+	public InventoryResponse getLastKnownSyncId(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
 		// TODO
 		return evaluator.getLatestInventory(vendorId);
 	}
 
 	@Path("/{vendorId}/freshLoad")
 	@GET
+	@RolesAllowed("Administrator")
 	@UnitOfWork
-	public BaseResponse loadFreshInventoryDetailsFromCSV(@PathParam(value = "vendorId") Long vendorId) {
+	public BaseResponse loadFreshInventoryDetailsFromCSV(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
 		return loader.freshInventoryLoad(vendorId);
 	}
 
 	@Path("/load")
 	@POST
 	@UnitOfWork
+	@RolesAllowed("Administrator")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public ResponseAudit postInventoryUpdate(InventoryRequest request) {
+	public ResponseAudit postInventoryUpdate(@Auth User user, InventoryRequest request) {
 		System.out.println("Request received from vendor::" + request.getVendorId());
 		return loader.loadNewInventory(request);
 

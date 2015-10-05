@@ -17,7 +17,7 @@ import com.neolynx.curator.manager.InventoryEvaluator;
  * Created by nitesh.garg on Oct 3, 2015
  */
 
-@Path("/fastlane/inventory")
+@Path("/curator/inventory")
 @Produces(MediaType.APPLICATION_JSON)
 public class UserResource {
 	

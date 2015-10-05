@@ -18,13 +18,13 @@ public class ProtectedResource {
     @PermitAll
     @GET
     public String showSecret(@Auth User user) {
-        return String.format("Hey there, %s. You know the secret! %d", user.getName(), user.getId());
+        return String.format("Hey there, %s. You know the secret! %d", user.getName(), user.getAccountDetail().getId());
     }
 
     @RolesAllowed("ADMIN")
     @GET
     @Path("admin")
     public String showAdminSecret(@Auth User user) {
-        return String.format("Hey there, %s. It looks like you are an admin. %d", user.getName(), user.getId());
+        return String.format("Hey there, %s. It looks like you are an admin. %d", user.getName(), user.getAccountDetail().getId());
     }
 }

@@ -1,13 +1,16 @@
 package com.neolynx.vendor;
 
+import io.dropwizard.auth.Auth;
 import io.dropwizard.hibernate.UnitOfWork;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import com.neolynx.common.model.BaseResponse;
+import com.neolynx.curator.core.User;
 import com.neolynx.vendor.manager.InventoryService;
 
 /**
@@ -30,8 +33,9 @@ public class ClientResource {
 
 	@Path("/generate-inventory-master/")
 	@GET
+	@RolesAllowed("Administrator")
 	@UnitOfWork
-	public BaseResponse generateInventoryMaster() {
+	public BaseResponse generateInventoryMaster(@Auth User user) {
 		return this.inventoryService.generateInventoryMasterCSV();
 	}
 

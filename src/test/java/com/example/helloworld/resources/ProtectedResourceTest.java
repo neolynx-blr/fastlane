@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 public class ProtectedResourceTest {
     private static final BasicCredentialAuthFilter<User> BASIC_AUTH_HANDLER =
             new BasicCredentialAuthFilter.Builder<User>()
-                    .setAuthenticator(new ExampleAuthenticator())
+                    .setAuthenticator(new ExampleAuthenticator(null))
                     .setAuthorizer(new ExampleAuthorizer())
                     .setPrefix("Basic")
                     .setRealm("SUPER SECRET STUFF")

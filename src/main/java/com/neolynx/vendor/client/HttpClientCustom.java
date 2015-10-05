@@ -30,7 +30,10 @@ public class HttpClientCustom {
 		HttpClient httpClient = HttpClientBuilder.create().build();
 
 		// Create new getRequest with below mentioned URL
-		HttpPost getRequest = new HttpPost("http://localhost:8080/fastlane/vendor/load/");
+		HttpPost getRequest = new HttpPost("http://localhost:8080/curator/vendor/load/");
+		String authStr = "nitesh:passwd";
+		String encoding = java.util.Base64.getEncoder().encodeToString(authStr.getBytes());
+		getRequest.setHeader("Authorization", "Basic " + encoding);
 
 		// Add additional header to getRequest which accepts
 		// application/xml data

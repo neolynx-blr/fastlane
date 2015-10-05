@@ -14,6 +14,8 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +32,7 @@ import com.neolynx.curator.auth.ExampleAuthorizer;
 import com.neolynx.curator.cache.DifferentialDataLoader;
 import com.neolynx.curator.cache.VendorVersionLoader;
 import com.neolynx.curator.cli.RenderCommand;
+import com.neolynx.curator.core.Account;
 import com.neolynx.curator.core.InventoryMaster;
 import com.neolynx.curator.core.Person;
 import com.neolynx.curator.core.ProductMaster;
@@ -48,6 +51,7 @@ import com.neolynx.curator.db.VendorVersionDetailDAO;
 import com.neolynx.curator.db.VendorVersionDifferentialDAO;
 import com.neolynx.curator.filter.DateRequiredFeature;
 import com.neolynx.curator.health.TemplateHealthCheck;
+import com.neolynx.curator.manager.AccountService;
 import com.neolynx.curator.manager.CacheCurator;
 import com.neolynx.curator.manager.CacheEvaluator;
 import com.neolynx.curator.manager.InventoryCurator;
@@ -60,14 +64,15 @@ import com.neolynx.curator.manager.VendorVersionService;
 import com.neolynx.curator.resources.CacheResource;
 import com.neolynx.curator.resources.FilteredResource;
 import com.neolynx.curator.resources.HelloWorldResource;
-import com.neolynx.curator.resources.UserResource;
-import com.neolynx.curator.resources.VendorResource;
 import com.neolynx.curator.resources.PeopleResource;
 import com.neolynx.curator.resources.PersonResource;
 import com.neolynx.curator.resources.ProtectedResource;
+import com.neolynx.curator.resources.UserResource;
+import com.neolynx.curator.resources.VendorResource;
 import com.neolynx.curator.resources.ViewResource;
 import com.neolynx.curator.task.DaemonJob;
 import com.neolynx.curator.task.DataLoaderJob;
+import com.neolynx.curator.util.PasswordHash;
 import com.neolynx.vendor.ClientResource;
 import com.neolynx.vendor.job.InventorySync;
 import com.neolynx.vendor.manager.InventoryService;
@@ -82,7 +87,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 	private final HibernateBundle<FastlaneConfiguration> hibernateBundle = new HibernateBundle<FastlaneConfiguration>(
 			Person.class, VendorItemMaster.class, VendorItemHistory.class, ProductMaster.class, ItemResponse.class,
-			InventoryMaster.class, VendorVersionDetail.class, VendorVersionDifferential.class) {
+			InventoryMaster.class, VendorVersionDetail.class, VendorVersionDifferential.class, Account.class) {
 		@Override
 		public DataSourceFactory getDataSourceFactory(FastlaneConfiguration configuration) {
 			return configuration.getDataSourceFactory();
@@ -122,6 +127,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 	public void run(FastlaneConfiguration configuration, Environment environment) {
 
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
+		final AccountService accountService = new AccountService(hibernateBundle.getSessionFactory());
 
 		/**
 		 * Currently same project is used for both server side as well as vendor
@@ -131,6 +137,21 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 		 * configurations being is also supported and is how everything is being
 		 * tested currently.
 		 */
+		
+		try {
+			String passwordHash = PasswordHash.createHash("passwd");
+			System.out.println("Hash for password:" + passwordHash);
+			System.out.println("Password Match:"+ PasswordHash.validatePassword("passwd", passwordHash));
+			passwordHash = PasswordHash.createHash("analyst");
+			System.out.println("Hash for password:" + passwordHash);
+			System.out.println("Password Match:"+ PasswordHash.validatePassword("analyst", passwordHash));
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidKeySpecException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		if (configuration.getClientConfig()) {
 
@@ -226,13 +247,15 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 		environment.healthChecks().register("template", new TemplateHealthCheck(template));
 		environment.jersey().register(DateRequiredFeature.class);
+		
 		environment.jersey().register(
 				new AuthDynamicFeature(new BasicCredentialAuthFilter.Builder<User>()
-						.setAuthenticator(new ExampleAuthenticator()).setAuthorizer(new ExampleAuthorizer())
+						.setAuthenticator(new ExampleAuthenticator(accountService))
+						.setAuthorizer(new ExampleAuthorizer())
 						.setRealm("SUPER SECRET STUFF").buildAuthFilter()));
-
 		environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
 		environment.jersey().register(RolesAllowedDynamicFeature.class);
+		
 		environment.jersey().register(new HelloWorldResource(template));
 		environment.jersey().register(new ViewResource());
 		environment.jersey().register(new ProtectedResource());
