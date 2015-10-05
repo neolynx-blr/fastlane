@@ -20,6 +20,9 @@ public class CurationConfig implements Serializable {
 	private String inventoryFileName;
 	private String lastSyncIdFileName;
 	private String backupFileNameForInventory;
+	
+	private String vendorUserName;
+	private String vendorPassword;
 
 	private String inventoryMasterFileName;
 

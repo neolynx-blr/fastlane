@@ -11,27 +11,39 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neolynx.common.model.InventoryRequest;
 import com.neolynx.common.model.ResponseAudit;
+import com.neolynx.vendor.model.CurationConfig;
 
 /**
  * Created by nitesh.garg on 12-Sep-2015
  */
 public class HttpClientCustom {
 
+	final CurationConfig curationConfig;
+	static Logger LOGGER = LoggerFactory.getLogger(HttpClientCustom.class);
+
+	public HttpClientCustom(CurationConfig curationConfig) {
+		super();
+		this.curationConfig = curationConfig;
+	}
+
 	public ResponseAudit postData(InventoryRequest request) {
 
 		ResponseAudit responseAudit = new ResponseAudit();
 		// create HTTP Client
-		//TODO Create some pool and/or stay-alive/persistent connection
+		// TODO Create some pool and/or stay-alive/persistent connection
 		HttpClient httpClient = HttpClientBuilder.create().build();
 
 		// Create new getRequest with below mentioned URL
 		HttpPost getRequest = new HttpPost("http://localhost:8080/curator/vendor/load/");
-		String authStr = "nitesh:passwd";
+		String authStr = this.curationConfig.getVendorUserName() + ":" + this.curationConfig.getVendorPassword();
 		String encoding = java.util.Base64.getEncoder().encodeToString(authStr.getBytes());
 		getRequest.setHeader("Authorization", "Basic " + encoding);
 
@@ -50,9 +62,9 @@ public class HttpClientCustom {
 			HttpEntity entity = callResponse.getEntity();
 
 			if (entity != null) {
-				
+
 				BufferedReader br = new BufferedReader(new InputStreamReader((callResponse.getEntity().getContent())));
-				
+
 				StringBuilder response = new StringBuilder();
 				String output;
 
@@ -60,12 +72,12 @@ public class HttpClientCustom {
 				while ((output = br.readLine()) != null) {
 					response.append(output);
 				}
-				
+
 				System.out.println("============Output:============");
 				System.out.println(response.toString());
-				
+
 				responseAudit = mapper.readValue(response.toString(), ResponseAudit.class);
-				System.out.println("Data response from server is ["+responseAudit.toString()+"]");
+				System.out.println("Data response from server is [" + responseAudit.toString() + "]");
 
 			}
 
@@ -75,15 +87,18 @@ public class HttpClientCustom {
 						+ callResponse.getStatusLine().toString());
 				throw new RuntimeException("Failed : HTTP error code : " + callResponse.getStatusLine());
 			}
-			
-		} catch (UnsupportedEncodingException | JsonProcessingException e) {
+
+		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch(JsonParseException jpe) {
+			LOGGER.error("Unable to process response JSON, very likely indicating credentials issue");
+			responseAudit.setIsError(Boolean.TRUE);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
+		} 
+
 		return responseAudit;
 
 	}

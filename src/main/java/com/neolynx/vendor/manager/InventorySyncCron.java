@@ -318,7 +318,8 @@ public class InventorySyncCron implements Runnable {
 				if (CollectionUtils.isNotEmpty(records)) {
 
 					List<Long> successIds = new ArrayList<Long>();
-
+					HttpClientCustom client = new HttpClientCustom(this.curationConfig);
+					
 					InventoryRequest request = new InventoryRequest();
 					request.setItemsUpdated(new ArrayList<ItemMaster>());
 					request.setVendorId(this.curationConfig.getVendorId());
@@ -334,7 +335,7 @@ public class InventorySyncCron implements Runnable {
 
 						if (request.getItemsUpdated().size() == this.curationConfig.getMaxRowCountForServerPost()) {
 							
-							HttpClientCustom client = new HttpClientCustom();
+							
 							ResponseAudit response = client.postData(request);
 							
 							LOGGER.info("Sent chunk of [{}] inventory records, and received [{}] success and [{}] failures.",
@@ -347,7 +348,7 @@ public class InventorySyncCron implements Runnable {
 					}
 
 					if (request.getItemsUpdated().size() > 0) {
-						HttpClientCustom client = new HttpClientCustom();
+
 						ResponseAudit response = client.postData(request);
 						
 						LOGGER.info("Sent chunk of [{}] inventory records, and received [{}] success and [{}] failures.",

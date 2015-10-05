@@ -145,6 +145,9 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			passwordHash = PasswordHash.createHash("analyst");
 			System.out.println("Hash for password:" + passwordHash);
 			System.out.println("Password Match:"+ PasswordHash.validatePassword("analyst", passwordHash));
+			passwordHash = PasswordHash.createHash("vendor");
+			System.out.println("Hash for password:" + passwordHash);
+			System.out.println("Password Match:"+ PasswordHash.validatePassword("vendor", passwordHash));
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

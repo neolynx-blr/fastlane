@@ -9,6 +9,8 @@ serverConfig: true
 CurationConfig:
 
   vendorId: 89
+  vendorUserName: vendor
+  vendorPassword: vendor
   maxRowCountForServerPost: 5
   inventoryMasterFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_master.csv
   inventoryFileName: /Users/nitesh.garg/Documents/restart/fastlane/src/main/resources/data/inventory_sync.csv

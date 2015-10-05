@@ -7,6 +7,7 @@ create table account (
 	
 insert into account (user_name, password_hash, role) values ('nitesh', '1000:d6b9d42984c26f228dae1699fbed0290ffe525239799b1de:2cdd7136d9c7fc61df699d4e8bea34c3e523fa46c89f6f2e', 'Administrator');
 insert into account (user_name, password_hash, role) values ('analyst', '1000:c7354b5296f99dac0a7288b1aac6ba08bf0a486920f7c157:4069108b52212a169b7fd432b3e75fe89fcbb06dc0b34a99', 'Analyst');
+insert into account (user_name, password_hash, role) values ('vendor', '1000:18ee47af9a316a27155876219f73078e1797e9f7632277b9:6d67b8018cf99d8d51142161fe4b430194437c510ff56a4e', 'Vendor');
 
 drop table if exists discount_type;
 create table discount_type (

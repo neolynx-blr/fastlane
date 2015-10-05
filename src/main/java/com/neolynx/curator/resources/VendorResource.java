@@ -42,7 +42,7 @@ public class VendorResource {
 
 	@Path("/{vendorId}/lastSyncId")
 	@GET
-	@RolesAllowed("Administrator")
+	@RolesAllowed("Administrator, Vendor")
 	@UnitOfWork
 	public InventoryResponse getLastKnownSyncId(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
 		// TODO
@@ -60,7 +60,7 @@ public class VendorResource {
 	@Path("/load")
 	@POST
 	@UnitOfWork
-	@RolesAllowed("Administrator")
+	@RolesAllowed("Administrator, Vendor")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public ResponseAudit postInventoryUpdate(@Auth User user, InventoryRequest request) {
 		System.out.println("Request received from vendor::" + request.getVendorId());
