@@ -679,7 +679,7 @@ public class InventoryCurator {
 				session.getTransaction().commit();
 
 			}
-
+			
 			LOGGER.info("Refreshing the cache entry for vendor [{}]", vendorId);
 			// TODO : What if this fails? No backup for this one
 			vendorVersionCache.refresh(vendorId);
@@ -687,5 +687,7 @@ public class InventoryCurator {
 
 		}
 
+		session.close();
+		
 	}
 }
