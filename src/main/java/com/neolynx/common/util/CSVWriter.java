@@ -10,7 +10,7 @@ import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.neolynx.common.model.Error;
+import com.neolynx.common.model.BaseResponse;
 import com.neolynx.curator.util.StringUtilsCustom;
 
 /**
@@ -21,12 +21,12 @@ public class CSVWriter {
 	static Logger LOGGER = LoggerFactory.getLogger(CSVWriter.class);
 	private final CSVFormat csvFileFormat = CSVFormat.DEFAULT.withRecordSeparator(Constant.NEW_LINE_SEPARATOR);
 
-	public List<Error> clearFileContents(String fileName, String[] fileHeader) {
+	public BaseResponse clearFileContents(String fileName, String[] fileHeader) {
 		// TODO Find a better way
 		return writeCSVRecords(fileName, new ArrayList<String[]>(), fileHeader);
 	}
 
-	public List<Error> writeLastSyncIdentifierRecord(String fileName, String lastSyncId) {
+	public BaseResponse writeLastSyncIdentifierRecord(String fileName, String lastSyncId) {
 
 		List<String[]> records = new ArrayList<String[]>();
 		records.add(new String[] { String.valueOf(lastSyncId), String.valueOf(System.currentTimeMillis()) });
@@ -34,7 +34,7 @@ public class CSVWriter {
 
 	}
 
-	public List<Error> writeLoadStatusRecords(String fileName, List<Long> successIds) {
+	public BaseResponse writeLoadStatusRecords(String fileName, List<Long> successIds) {
 
 		List<String[]> records = new ArrayList<String[]>();
 		for (Long successId : successIds) {
@@ -43,17 +43,17 @@ public class CSVWriter {
 		return writeCSVRecords(fileName, records, Constant.STATUS_FILE_HEADER);
 	}
 
-	public List<Error> writeInventoryRecords(String fileName, List<String[]> inventoryRecords) {
+	public BaseResponse writeInventoryRecords(String fileName, List<String[]> inventoryRecords) {
 		return writeCSVRecords(fileName, inventoryRecords, Constant.INVENTORY_FILE_HEADER);
 	}
 
-	private List<Error> writeCSVRecords(String fileName, List<String[]> records, String[] fileHeader) {
+	private BaseResponse writeCSVRecords(String fileName, List<String[]> records, String[] fileHeader) {
 
 		FileWriter fileWriter = null;
 		CSVPrinter csvFilePrinter = null;
 
 		//TODO Handle error codes/messages
-		List<Error> errorResponse = new ArrayList<Error>();
+		BaseResponse errorResponse = new BaseResponse();
 
 		LOGGER.debug("Adding [{}] records to file [{}] using header [{}]", records.size(),
 				StringUtilsCustom.extractFileName(fileName), fileHeader.toString());

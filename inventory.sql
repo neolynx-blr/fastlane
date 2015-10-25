@@ -50,9 +50,9 @@ create table product_master (
 drop table if exists vendor_item_master;
 create table vendor_item_master (
 	id serial primary key,
-	vendor_id bigint not null,
+	vendor_id integer not null,
 	item_code varchar(128) not null,
-	product_id bigint not null,
+	product_id integer not null,
 	version_id bigint not null,
 	barcode bigint not null,
 	mrp decimal(8, 2) not null,
@@ -69,7 +69,7 @@ create table vendor_item_master (
 drop table if exists vendor_item_history;
 create table vendor_item_history (
 	id serial primary key,
-	vendor_id bigint not null,
+	vendor_id integer not null,
 	item_code varchar(128),
 	version_id bigint not null,
 	barcode bigint not null,
@@ -78,7 +78,7 @@ create table vendor_item_history (
 	image_json varchar(512),
 	discount_type smallint,
 	discount_value decimal(8,2),
-	product_id bigint not null,
+	product_id integer not null,
 	name varchar(256) not null,
 	description varchar(1024),
 	tag_line varchar(256), 
@@ -87,7 +87,7 @@ create table vendor_item_history (
 drop table if exists vendor_version_detail;
 create table vendor_version_detail (
 	id serial primary key,
-	vendor_id bigint not null unique,
+	vendor_id integer not null unique,
 	latest_synced_version_id bigint,
 	valid_version_ids varchar(16184),
 	last_modified_on timestamp not null);
@@ -95,7 +95,7 @@ create table vendor_version_detail (
 drop table if exists vendor_version_differential;
 create table vendor_version_differential (
 	id serial primary key,
-	vendor_id bigint not null,
+	vendor_id integer not null,
 	version_id bigint not null,
 	last_synced_version_id bigint not null,
 	delta_item_codes varchar(64736),
@@ -110,6 +110,98 @@ insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_mod
 insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (2, 0, now());
 insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (71, 0, now());
 insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (89, 0, now());
+insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (281, 0, now());
+
+drop table if exists vendor_detail;
+create table vendor_detail (
+	id serial primary key,
+	vendor_id integer not null unique,
+	name varchar(512) not null,
+	abbr char(3) not null,
+	tin varchar(32) not null,
+	tagline varchar(512));
+	
+drop table if exists vendor_location_detail;
+create table vendor_location_detail (
+	id serial primary key,
+	vendor_id integer not null unique,
+	address varchar(2048) not null,
+	google_map_url varchar(512),
+	latitude real,
+	longitude real);
+	
+drop table if exists vendor_contact_detail;
+create table vendor_contact_detail (
+	id serial primary key,
+	vendor_id integer not null unique,
+	phone varchar(128),
+	mobile varchar(64));
+	
+drop table if exists user_detail;
+create table user_details (
+	id serial primary key,
+	first_name varchar(128),
+	last_name varchar(256),
+	screen_name varchar(64),
+	email varchar(256) unique,
+	registered_phone varchar(16) unique,
+	other_phone varchar(128),
+	device_id varchar(2048));
+	
+drop table if exists user_location_detail;
+create table user_location_detail (
+	id serial primary key,
+	user_id integer not null,
+	address_tag varchar(64),
+	address varchar(2048) not null,
+	google_map_url varchar(512),
+	latitude real,
+	longitude real);
+	
+drop table if exists order_status;
+create table order_status (
+	id smallint primary key,
+	name varchar(16) not null,
+	description varchar(128));
+	
+insert into order_status (id, name, description) values (1, 'Created', 'Order details have been submitted on server side and is ready for payment.');
+insert into order_status (id, name, description) values (2, 'Updated', 'Order details have been updated since initial submission and is ready for payment.');
+insert into order_status (id, name, description) values (3, 'Set For Delivery', 'Order has been paid for and ready for delivery.');
+insert into order_status (id, name, description) values (4, 'Completed', 'Order has been paid for and is either picked-up or delivered.');	
+
+	
+drop table if exists vendor_user_order_mapper;
+create table vendor_user_order_mapper (
+	id bigserial primary key,
+	vendor_id integer not null,
+	user_id integer not null,
+	order_id varchar(16) not null unique,
+	status smallint not null,
+	last_modified_on timestamp not null);
+		
+drop table if exists order_detail;
+create table order_detail (
+	id bigserial primary key,
+	order_id varchar(16) not null unique,
+	status varchar(32) not null,
+	
+	item_list varchar(2048),
+	item_list_delivery varchar(2048),
+	delivery_address_id integer,
+	
+	vendor_id integer not null,
+	generated_barcode varchar(32),
+	server_data_version_id bigint not null,
+	device_data_version_id bigint not null,
+	
+	net_amount real not null,
+	tax_amount real,
+	discount_amount real,
+	
+	created_on timestamp not null,  
+	last_modified_on timestamp not null
+);
+
 
 insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234567890, 'Zespri Kiwi - Green', 'Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals.', 'Zespri Kiwi - Green, 1 pc', 1, 'http://bigbasket.com/media/uploads/p/l/40024625_1-zespri-kiwi-green.jpg');
 insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234567891, 'Fresho Apple - Washington', 'Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent ''heart disease'', ''smoker''s risk'' and aid lung functions.', 'Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)', 1, 'http://bigbasket.com/media/uploads/p/l/10000008_15-fresho-apple-washington.jpg');
@@ -163,6 +255,29 @@ insert into inventory_master (vendor_id,item_code,version_id,name,description,ta
 insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values(2,'U0006',22,'C','C-Description','C-Tagline', 1239, 5.3, 5.1, null, null, null, now());
 insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values(2,'U0007',23,'D','D-Description','D-Tagline', 1240, 6.3, 6.1, null, null, null, now());
 insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values(2,'U0008',4,'E','E-Description','E-Tagline', 1241, 7.3, 7.1, null, null, null, now());
+
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0001', 1,'SENSODYNE TOOTHPASTE - FRESH GEL (FOR SENSITIVE TEETH)','Sensodyne Toothpaste - Fresh Gel (for Sensitive Teeth), 80 gm','', 9876543210, 100, 95.0, 'http://bigbasket.com/media/uploads/p/l/286939_1-sensodyne-toothpaste-fresh-gel-for-sensitive-teeth.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0002', 1,'SENSODYNE TOOTHBRUSH - ULTRA SENSITIVE (SOFT)','Sensodyne Toothbrush - Ultra Sensitive (Soft), 1 nos Pouch','X-Tagline', 9876543211, 50, 47.50, 'http://bigbasket.com/media/uploads/p/l/100517749_1-sensodyne-toothbrush-ultra-sensitive-soft.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0003', 1,'AASHIRVAAD ATTA - WHOLE WHEAT','Aashirvaad Atta - Whole Wheat, 10 kg Pouch','X-Tagline', 9876543212, 400, 345.0, 'http://bigbasket.com/media/uploads/p/l/126906_2-aashirvaad-atta-whole-wheat.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0004', 1,'NANDINI PURE GHEE','Nandini Pure Ghee, 1 lt Pouch','A taste of purity, Nandini Ghee prepared from pure butter', 9876543213, 385, 358.0, 'http://bigbasket.com/media/uploads/p/l/213273_1-nandini-pure-ghee.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0005', 1,'FRESHO POMEGRANATE - KESAR','Fresho Pomegranate - Kesar, 4 pcs ( approx. 800 to 1000 gm )','Pomegranate is a reddish-pink colored fruit packed up with countless seeds which are encompassed by juice-filled sacs.', 9876543214, 139, 125.0, 'http://bigbasket.com/media/uploads/p/l/10000269_10-fresho-pomegranate-kesar.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0006', 1,'FRESHO CHILLI GREEN BIG - GRADE A','Fresho Chilli Green Big - Grade A , 100 gm','Green chillies have an attractive fresh flavor and a sharp bite.', 9876543215, 3.0, 3.0, 'http://bigbasket.com/media/uploads/p/l/10000081_14-fresho-chilli-green-big-grade-a.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0007', 1,'SUGAR','BB Royal Sugar, 1 kg Pouch','Sugar is completed from organic sugar cane, the grains are light cream highlighted.', 9876543216, 45, 49, 'http://bigbasket.com/media/uploads/p/l/10000447_6-bb-royal-sugar.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0008', 1,'BEST SPECIAL RICE','Best Special Rice, 1 kg Pouch','Recommended By India Culinary Forum', 9876543217, 160, 150, 'http://bigbasket.com/media/uploads/p/l/20004911_2-best-special-rice.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0009', 1,'FORTUNE MUSTARD OIL - (KACHI GHANI)','','', 9876543218, 152, 142, 'http://bigbasket.com/media/uploads/p/l/276756_3-fortune-mustard-oil-kachi-ghani.jpg', null, null, now());
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,discount_type,discount_value,created_on) values 
+(281,'I0010', 1,'FORTUNE RICE BRAN OIL - HEALTH','Fortune Rice Bran Oil - Health, 2 ltr Can','', 9876543219, 230, 230, 'http://bigbasket.com/media/uploads/p/l/40006905_2-fortune-rice-bran-oil-health.jpg', null, null, now());
+
+
 
 select im.*
 from inventory_master im

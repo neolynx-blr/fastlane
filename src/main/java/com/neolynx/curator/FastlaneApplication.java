@@ -34,6 +34,7 @@ import com.neolynx.curator.cache.VendorVersionLoader;
 import com.neolynx.curator.cli.RenderCommand;
 import com.neolynx.curator.core.Account;
 import com.neolynx.curator.core.InventoryMaster;
+import com.neolynx.curator.core.OrderDetail;
 import com.neolynx.curator.core.Person;
 import com.neolynx.curator.core.ProductMaster;
 import com.neolynx.curator.core.Template;
@@ -43,6 +44,7 @@ import com.neolynx.curator.core.VendorItemMaster;
 import com.neolynx.curator.core.VendorVersionDetail;
 import com.neolynx.curator.core.VendorVersionDifferential;
 import com.neolynx.curator.db.InventoryMasterDAO;
+import com.neolynx.curator.db.OrderDetailDAO;
 import com.neolynx.curator.db.PersonDAO;
 import com.neolynx.curator.db.ProductMasterDAO;
 import com.neolynx.curator.db.VendorItemHistoryDAO;
@@ -57,6 +59,8 @@ import com.neolynx.curator.manager.CacheEvaluator;
 import com.neolynx.curator.manager.InventoryCurator;
 import com.neolynx.curator.manager.InventoryEvaluator;
 import com.neolynx.curator.manager.InventoryLoader;
+import com.neolynx.curator.manager.OrderProcessor;
+import com.neolynx.curator.manager.PriceEvaluator;
 import com.neolynx.curator.manager.ProductMasterService;
 import com.neolynx.curator.manager.VendorItemService;
 import com.neolynx.curator.manager.VendorVersionDifferentialService;
@@ -64,6 +68,7 @@ import com.neolynx.curator.manager.VendorVersionService;
 import com.neolynx.curator.resources.CacheResource;
 import com.neolynx.curator.resources.FilteredResource;
 import com.neolynx.curator.resources.HelloWorldResource;
+import com.neolynx.curator.resources.OrderResource;
 import com.neolynx.curator.resources.PeopleResource;
 import com.neolynx.curator.resources.PersonResource;
 import com.neolynx.curator.resources.ProtectedResource;
@@ -87,7 +92,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 	private final HibernateBundle<FastlaneConfiguration> hibernateBundle = new HibernateBundle<FastlaneConfiguration>(
 			Person.class, VendorItemMaster.class, VendorItemHistory.class, ProductMaster.class, ItemResponse.class,
-			InventoryMaster.class, VendorVersionDetail.class, VendorVersionDifferential.class, Account.class) {
+			InventoryMaster.class, VendorVersionDetail.class, VendorVersionDifferential.class, Account.class, OrderDetail.class) {
 		@Override
 		public DataSourceFactory getDataSourceFactory(FastlaneConfiguration configuration) {
 			return configuration.getDataSourceFactory();
@@ -127,6 +132,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 	public void run(FastlaneConfiguration configuration, Environment environment) {
 
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
+		final OrderDetailDAO orderDetailDAO = new OrderDetailDAO(hibernateBundle.getSessionFactory());
 		final AccountService accountService = new AccountService(hibernateBundle.getSessionFactory());
 
 		/**
@@ -187,6 +193,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final VendorVersionDifferentialService vvDiffService = new VendorVersionDifferentialService(vendorVersionDiffDAO);
 			final VendorVersionService vvDetailService = new VendorVersionService(vendorVersionDetailDAO);
 			final VendorItemService vendorItemService = new VendorItemService(vendorItemMasterDAO, vendorItemHistoryDAO);
+			
 
 			/*
 			 * Meant for DB updates, basically setting up new inventory if any
@@ -209,6 +216,9 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 			LOGGER.debug("Setting up the vendor-version metadata in DB based on latest inventory...");
 			invCurator.processVendorVersionMeta(differentialInventoryCache, vendorVersionCache);
+			
+			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
+			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator);
 
 			/*
 			 * Check the tables based on inventory updates and setup the caches
@@ -243,6 +253,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			environment.jersey().register(new CacheResource(cacheEvaluator));
 			environment.jersey().register(new UserResource(inventoryEvaluator));
 			environment.jersey().register(new VendorResource(inventoryEvaluator, inventoryLoader));
+			environment.jersey().register(new OrderResource(orderProcessor));
 			
 		}
 

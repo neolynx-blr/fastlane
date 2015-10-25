@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.Error;
+import com.neolynx.common.model.ErrorCode;
 import com.neolynx.common.model.InventoryRequest;
 import com.neolynx.common.model.ItemMaster;
 import com.neolynx.common.model.ResponseAudit;
@@ -76,8 +77,7 @@ public class InventoryLoader {
 			LOGGER.debug(
 					"No records found while uploading fresh inventory for vendor [{}]. Skipping the operation and returning error.",
 					vendorId);
-			response.getErrorDetails().add(
-					new Error("V001", "No records are available for vendor to replace existing inventory."));
+			response.getErrorDetail().add(ErrorCode.MISSING_INVENTORY_FOR_LOAD);
 			return response;
 		}
 
@@ -106,8 +106,7 @@ public class InventoryLoader {
 			LOGGER.debug(
 					"Unable to remove version differentials for vendor [{}], still found [{}] pending entries. Skipping the fresh inventory load",
 					vendorId, vendorVersionDiffDetails.size());
-			response.getErrorDetails().add(
-					new Error("VVDiff001", "Unable to remove vendor data from version differential details."));
+			response.getErrorDetail().add(ErrorCode.FAILED_CLEANING_VENDOR_DIFFERENTIAL_CACHE);
 			return response;
 		}
 
@@ -118,8 +117,7 @@ public class InventoryLoader {
 			LOGGER.debug(
 					"Unable to remove version details for vendor [{}], still found [{}] pending entries. Skipping the fresh inventory load",
 					vendorId, vendorVersionDetails.size());
-			response.getErrorDetails().add(
-					new Error("VVDtl001", "Unable to remove vendor data from version differential details."));
+			response.getErrorDetail().add(ErrorCode.FAILED_CLEANING_VENDOR_VERSION_CACHE);
 			return response;
 		}
 
@@ -130,8 +128,7 @@ public class InventoryLoader {
 			LOGGER.debug(
 					"Unable to remove vendor [{}] from product-master details, still found [{}] pending entries. Skipping the fresh inventory load",
 					vendorId, productMasterDetailsForVendor.size());
-			response.getErrorDetails().add(
-					new Error("PM001", "Unable to remove vendor data from product master details."));
+			response.getErrorDetail().add(ErrorCode.FAILED_CLEANING_VENDOR_PRODUCT_MASTER_RECORDS);
 			return response;
 		}
 
@@ -142,8 +139,7 @@ public class InventoryLoader {
 			LOGGER.debug(
 					"Unable to remove vendor [{}] from vendor-item-master details, still found [{}] pending entries. Skipping the fresh inventory load",
 					vendorId, itemRecordsForVendor.size());
-			response.getErrorDetails().add(
-					new Error("VIM001", "Unable to remove vendor data from item master details."));
+			response.getErrorDetail().add(ErrorCode.FAILED_CLEANING_VENDOR_ITEM_MASTER_RECORDS);
 			return response;
 		}
 

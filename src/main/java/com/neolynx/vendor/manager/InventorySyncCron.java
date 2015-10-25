@@ -9,6 +9,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.Error;
 import com.neolynx.common.model.InventoryRequest;
 import com.neolynx.common.model.ItemMaster;
@@ -223,10 +224,10 @@ public class InventorySyncCron implements Runnable {
 
 				// Write records to backup file
 				int retryAttempts = 0;
-				List<Error> backupWriterErrorList = writer.writeInventoryRecords(
+				BaseResponse backupWriterErrorList = writer.writeInventoryRecords(
 						this.curationConfig.getBackupFileNameForInventory(), finalRecordsForLoad);
 				
-				while (CollectionUtils.isNotEmpty(backupWriterErrorList) && retryAttempts < 3) {
+				while (backupWriterErrorList.getIsError() && retryAttempts < 3) {
 					
 					retryAttempts++;
 					LOGGER.debug("Attempt [{}] for loading records to backup file failed, trying again...", retryAttempts);
@@ -235,13 +236,13 @@ public class InventorySyncCron implements Runnable {
 					
 				}
 				
-				if (CollectionUtils.isEmpty(backupWriterErrorList)) {
+				if (!backupWriterErrorList.getIsError()) {
 
 					LOGGER.debug("Successfully added [{}] records to be loaded into the backup file. Generating main file and cleaning up the status/sync files.", finalRecordsForLoad.size());
 					
 					retryAttempts = 0;
-					List<Error> mainWriterErrorList = writer.writeInventoryRecords(this.curationConfig.getInventoryFileName(), finalRecordsForLoad);
-					while (CollectionUtils.isNotEmpty(mainWriterErrorList) && retryAttempts < 3) {
+					BaseResponse mainWriterErrorList = writer.writeInventoryRecords(this.curationConfig.getInventoryFileName(), finalRecordsForLoad);
+					while (mainWriterErrorList.getIsError() && retryAttempts < 3) {
 						
 						retryAttempts++;
 						LOGGER.debug("Attempt [{}] for loading records to main inventory file failed, trying again...", retryAttempts);
@@ -251,7 +252,7 @@ public class InventorySyncCron implements Runnable {
 					}
 
 					
-					if (CollectionUtils.isEmpty(mainWriterErrorList)) {
+					if (!mainWriterErrorList.getIsError()) {
 
 						LOGGER.debug("Successfully added [{}] records to the main file. Cleaning up the backup/status/sync files.", finalRecordsForLoad.size());
 						writer.clearFileContents(this.curationConfig.getBackupFileNameForInventory(), Constant.INVENTORY_FILE_HEADER);
@@ -261,15 +262,15 @@ public class InventorySyncCron implements Runnable {
 						mainWriterErrorList = writer.clearFileContents(this.curationConfig.getInventoryFileName(), Constant.INVENTORY_FILE_HEADER);
 					}
 
-					if(CollectionUtils.isEmpty(mainWriterErrorList)) {
+					if(!mainWriterErrorList.getIsError()) {
 						LOGGER.debug("Clearing the last status file ...", latestLastModifiedTimeStamp);
-						List<Error> statusWriterErrorList = writer.clearFileContents(this.curationConfig.getStatusFileName(), Constant.STATUS_FILE_HEADER);
+						BaseResponse statusWriterErrorList = writer.clearFileContents(this.curationConfig.getStatusFileName(), Constant.STATUS_FILE_HEADER);
 
-						if(CollectionUtils.isEmpty(statusWriterErrorList)) {
+						if(!statusWriterErrorList.getIsError()) {
 							LOGGER.debug("Updating the last sync time to [{}] ...", latestLastModifiedTimeStamp);
-							List<Error> syncWriterErrorList = writer.writeLastSyncIdentifierRecord(this.curationConfig.getLastSyncIdFileName(), latestLastModifiedTimeStamp);
+							BaseResponse syncWriterErrorList = writer.writeLastSyncIdentifierRecord(this.curationConfig.getLastSyncIdFileName(), latestLastModifiedTimeStamp);
 							
-							if(CollectionUtils.isEmpty(syncWriterErrorList)) {
+							if(!syncWriterErrorList.getIsError()) {
 								LOGGER.debug("All files updated successfully.");
 							}
 						}

@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.neolynx.common.model.BaseResponse;
-import com.neolynx.common.model.Error;
+import com.neolynx.common.model.ErrorCode;
 import com.neolynx.common.model.ItemMaster;
 import com.neolynx.common.util.CSVWriter;
 import com.neolynx.vendor.manager.intf.VendorAdapter;
@@ -51,30 +51,22 @@ public class InventoryService {
 			}
 
 			int retryAttempts = 0;
-			List<Error> errorList = new ArrayList<Error>();
 
 			do {
 				retryAttempts++;
-				errorList = writer.writeInventoryRecords(this.curationConfig.getInventoryMasterFileName(),
+				response = writer.writeInventoryRecords(this.curationConfig.getInventoryMasterFileName(),
 						allRecordsForLoad);
-			} while (CollectionUtils.isNotEmpty(errorList) && retryAttempts < 3);
+			} while (response.getIsError() && retryAttempts < 3);
 
-			if (CollectionUtils.isEmpty(errorList)) {
+			if (!response.getIsError()) {
 				LOGGER.debug("Successfully added [{}] records to the inventory-master CSV file [{}].",
 						allRecordsForLoad.size(), this.curationConfig.getInventoryMasterFileNamePrint());
-
-				response.setIsError(Boolean.FALSE);
-
-			} else {
-
-				response.setErrorDetails(errorList);
-
-			}
-
+			} 
 		} else {
 
 			LOGGER.info("No records found while extracting all vendor side inventory, skipping the creation of CSV file.");
-			response.getErrorDetails().add(new Error("M001", "Missing data while generating inventory master data file for the vendor."));
+			response.setIsError(Boolean.TRUE);
+			response.getErrorDetail().add(ErrorCode.MISSING_VENDOR_INVENTORY_DATA);
 
 		}
 
