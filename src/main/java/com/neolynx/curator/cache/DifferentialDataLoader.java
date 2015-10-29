@@ -2,7 +2,6 @@ package com.neolynx.curator.cache;
 
 import io.dropwizard.hibernate.UnitOfWork;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -13,18 +12,16 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheLoader;
-import com.neolynx.common.model.InventoryResponse;
-import com.neolynx.common.model.ItemResponse;
-import com.neolynx.curator.core.VendorItemMaster;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.curator.core.VendorVersionDifferential;
 import com.neolynx.curator.util.Constants;
-import com.neolynx.curator.util.StringUtilsCustom;
 
 /**
  * Created by nitesh.garg on 06-Sep-2015
  */
-public class DifferentialDataLoader extends CacheLoader<String, InventoryResponse> {
+public class DifferentialDataLoader extends CacheLoader<String, InventoryInfo> {
 
 	private SessionFactory sessionFactory;
 	static Logger LOGGER = LoggerFactory.getLogger(DifferentialDataLoader.class);
@@ -41,14 +38,14 @@ public class DifferentialDataLoader extends CacheLoader<String, InventoryRespons
 	@SuppressWarnings("unchecked")
 	@UnitOfWork
 	@Override
-	public InventoryResponse load(String vendorVersionKey) throws Exception {
+	public InventoryInfo load(String vendorVersionKey) throws Exception {
 
 		if (vendorVersionKey == null) {
 			LOGGER.debug("Tried loading differential data for NULL vendor-version-id combination, obviously failed.");
 			return null;
 		}
 
-		InventoryResponse inventoryResponse = new InventoryResponse();
+		InventoryInfo inventoryInfo = new InventoryInfo();
 		List<String> vendorVersion = new StrTokenizer(vendorVersionKey, Constants.CACHE_KEY_SEPARATOR_STRING)
 				.getTokenList();
 
@@ -57,15 +54,12 @@ public class DifferentialDataLoader extends CacheLoader<String, InventoryRespons
 
 		LOGGER.debug("Looking to load differential cache for vendor-version [{}-{}]", vendorId, versionId);
 
-		inventoryResponse.setVendorId(vendorId);
-		inventoryResponse.setCurrentDataVersionId(versionId);
-
 		Session session = sessionFactory.openSession();
 
 		// Check the DB data for this vendor-version combination
 		Query diffQuery = session
 				.createSQLQuery(
-						" select vvd.* from vendor_version_differential vvd where vendor_id = :vendorId and version_id = :versionId ")
+						" select vvd.* from vendor_version_differential vvd where vendor_id = :vendorId and version_id = :versionId and last_synced_version_id != 0 ")
 				.addEntity("vendor_version_differential", VendorVersionDifferential.class)
 				.setParameter("vendorId", vendorId).setParameter("versionId", versionId);
 
@@ -75,87 +69,15 @@ public class DifferentialDataLoader extends CacheLoader<String, InventoryRespons
 			LOGGER.debug("Unable to find DB entry for Vendor-Version [{}-{}]", vendorId, versionId);
 		} else {
 
-			List<VendorItemMaster> vendorItemMasterList;
-
 			VendorVersionDifferential diffInstance = vendorVersionDifferentials.get(0);
-			Long lastSyncedVersionId = diffInstance.getLastSyncedVersionId();
 
-			inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
-
-			/*
-			 * Check the version you are trying to load against the latest know
-			 * data version for that vendor. If same version, simply load the
-			 * latest data for that version, or else looks at the item code
-			 * differentials and load the data accordingly. Note that in case
-			 * the vendor_item_master has got further updated in the meanwhile,
-			 * nothing will be returned from these queries but the cache will
-			 * eventually be refreshed.
-			 * 
-			 * TODO This can potentially lead to older version returned for
-			 * slightly longer. This should add check on the client side to
-			 * double check latest version at the time of order finalisation
-			 * and/or submission.
-			 */
-			if (versionId.compareTo(lastSyncedVersionId) == 0) {
-
-				Query query = session
-						.createSQLQuery(
-								"select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id <= :lastSyncedVersionId "
-										+ " order by vim.item_code ")
-						.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("vendorId", vendorId)
-						.setParameter("lastSyncedVersionId", lastSyncedVersionId);
-
-				vendorItemMasterList = query.list();
-				LOGGER.debug("For Vendor [{}], pulling the latest inventory containing [{}] items", vendorId,
-						vendorItemMasterList.size());
-
-			} else {
-
-				Query query = session
-						.createSQLQuery(
-								"select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id <= :lastSyncedVersionId and item_code in (:itemCodes) "
-										+ " order by vim.item_code ")
-						.addEntity("vendor_item_master", VendorItemMaster.class)
-						.setParameter("vendorId", vendorId)
-						.setParameter("lastSyncedVersionId", lastSyncedVersionId)
-						.setParameter("itemCodes",
-								StringUtilsCustom.convertStringToTokens(diffInstance.getDeltaItemCodes()));
-
-				vendorItemMasterList = query.list();
-				LOGGER.debug("For Vendor [{}] found [{}] items as differential", vendorId, vendorItemMasterList.size());
-
-			}
-
-			if (CollectionUtils.isNotEmpty(vendorItemMasterList)) {
-				inventoryResponse.setItemsUpdated(new ArrayList<ItemResponse>());
-				LOGGER.debug("New differential data found for vendor-version [{}-{}]", vendorId, versionId);
-			}
-
-			for (VendorItemMaster vendorItemData : vendorItemMasterList) {
-
-				ItemResponse itemData = new ItemResponse();
-				itemData.setBarcode(vendorItemData.getBarcode());
-				itemData.setDescription(vendorItemData.getDescription());
-				itemData.setDiscountType(vendorItemData.getDiscountType());
-				itemData.setDiscountValue(vendorItemData.getDiscountValue());
-				itemData.setImageJSON(vendorItemData.getImageJSON());
-				itemData.setItemCode(vendorItemData.getItemCode());
-				itemData.setMrp(vendorItemData.getMrp());
-				itemData.setName(vendorItemData.getName());
-				itemData.setPrice(vendorItemData.getPrice());
-				itemData.setProductId(vendorItemData.getProductId());
-				itemData.setTagline(vendorItemData.getTagLine());
-				itemData.setVersionId(vendorItemData.getVersionId());
-
-				inventoryResponse.getItemsUpdated().add(itemData);
-				LOGGER.debug("Adding new differential data with item-code [{}] for vendor-version [{}-{}]",
-						itemData.getItemCode(), vendorId, versionId);
-			}
+			ObjectMapper mapper = new ObjectMapper();
+			inventoryInfo = mapper.readValue(diffInstance.getDifferentialData(), InventoryInfo.class);
 		}
 
 		session.close();
-		inventoryResponse.setIsError(Boolean.FALSE);
-		return inventoryResponse;
+
+		return inventoryInfo;
 	}
 
 }

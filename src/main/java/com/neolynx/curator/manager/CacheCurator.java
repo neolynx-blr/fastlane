@@ -1,5 +1,6 @@
 package com.neolynx.curator.manager;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -11,9 +12,14 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.InventoryResponse;
-import com.neolynx.common.model.ItemResponse;
+import com.neolynx.common.model.client.ItemInfo;
+import com.neolynx.common.model.client.ProductInfo;
+import com.neolynx.common.model.client.InventoryInfo;
+import com.neolynx.common.model.client.price.DiscountDetail;
+import com.neolynx.common.model.client.price.ItemPrice;
+import com.neolynx.common.model.client.price.TaxDetail;
 import com.neolynx.curator.core.VendorItemMaster;
 import com.neolynx.curator.core.VendorVersionDetail;
 import com.neolynx.curator.core.VendorVersionDifferential;
@@ -31,14 +37,14 @@ public class CacheCurator {
 
 	private final SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
-	private final LoadingCache<String, InventoryResponse> recentItemsCache;
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	private final LoadingCache<String, InventoryInfo> recentItemsCache;
+	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheCurator.class);
 
 	public CacheCurator(SessionFactory sessionFactory,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemsCache) {
+			LoadingCache<String, InventoryInfo> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemsCache) {
 		super();
 		this.sessionFactory = sessionFactory;
 		this.differentialInventoryCache = differentialInventoryCache;
@@ -128,7 +134,7 @@ public class CacheCurator {
 		 */
 		for (VendorVersionDifferential diffInstance : vendorVersionDifferentials) {
 
-			InventoryResponse inventoryResponse = new InventoryResponse();
+			InventoryInfo inventoryResponse = new InventoryInfo();
 
 			Long vendorId = diffInstance.getVendorId();
 			Long versionId = diffInstance.getVersionId();
@@ -140,7 +146,7 @@ public class CacheCurator {
 			 */
 
 			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + versionId;
-			InventoryResponse cachedEntry = this.differentialInventoryCache.getIfPresent(key);
+			InventoryInfo cachedEntry = this.differentialInventoryCache.getIfPresent(key);
 
 			if (cachedEntry != null && cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
 				LOGGER.debug(
@@ -210,26 +216,43 @@ public class CacheCurator {
 			}
 
 			if (!vendorItemMasterList.isEmpty()) {
-				inventoryResponse.setItemsUpdated(new ArrayList<ItemResponse>());
+				inventoryResponse.setItemsUpdated(new ArrayList<ItemInfo>());
 			}
 
 			for (VendorItemMaster vendorItemData : vendorItemMasterList) {
 
-				ItemResponse itemData = new ItemResponse();
-				itemData.setBarcode(vendorItemData.getBarcode());
-				itemData.setDescription(vendorItemData.getDescription());
-				itemData.setDiscountType(vendorItemData.getDiscountType());
-				itemData.setDiscountValue(vendorItemData.getDiscountValue());
-				itemData.setImageJSON(vendorItemData.getImageJSON());
-				itemData.setItemCode(vendorItemData.getItemCode());
-				itemData.setMrp(vendorItemData.getMrp());
-				itemData.setName(vendorItemData.getName());
-				itemData.setPrice(vendorItemData.getPrice());
-				itemData.setProductId(vendorItemData.getProductId());
-				itemData.setTagline(vendorItemData.getTagLine());
-				itemData.setVersionId(vendorItemData.getVersionId());
+				ItemInfo itemInfo = new ItemInfo();
+				ProductInfo productInfo = new ProductInfo();
+				ItemPrice itemPrice = new ItemPrice();
 
-				inventoryResponse.getItemsUpdated().add(itemData);
+				productInfo.setName(vendorItemData.getName());
+				productInfo.setTagLine(vendorItemData.getTagLine());
+				productInfo.setImageJSON(vendorItemData.getImageJSON());
+				productInfo.setDescription(vendorItemData.getDescription());
+
+				try {
+					ObjectMapper mapper = new ObjectMapper();
+
+					itemPrice.setTaxDetail(StringUtils.isNotEmpty(vendorItemData.getTaxJSON()) ? mapper.readValue(
+							vendorItemData.getTaxJSON(), TaxDetail.class) : null);
+					itemPrice.setDiscountDetail(StringUtils.isNotEmpty(vendorItemData.getDiscountJSON()) ? mapper
+							.readValue(vendorItemData.getDiscountJSON(), DiscountDetail.class) : null);
+					
+				} catch (IOException e) {
+					LOGGER.error("Received error [{}] while deserializin the tax or discount JSONs [{}], [{}]",
+							vendorItemData.getTaxJSON().trim(), vendorItemData.getDiscountJSON().trim(), e.getMessage());
+				}
+
+				itemPrice.setMrp(vendorItemData.getMrp());
+				itemPrice.setPrice(vendorItemData.getPrice());
+
+				itemInfo.setItemPrice(itemPrice);
+				itemInfo.setProductInfo(productInfo);
+
+				itemInfo.setBarcode(vendorItemData.getBarcode());
+				itemInfo.setItemCode(vendorItemData.getItemCode());
+
+				inventoryResponse.getItemsUpdated().add(itemInfo);
 
 			}
 
@@ -248,10 +271,11 @@ public class CacheCurator {
 				.createSQLQuery(
 						"select vim.* from vendor_item_master vim where created_on > current_timestamp - interval '1 days' order by created_on ")
 				.addEntity("vendor_item_master", VendorItemMaster.class);
-		
+
 		List<VendorItemMaster> recentVendorItemData = diffQuery.list();
-		LOGGER.debug("Found [{}] records created in last day that would be added to the recent-items cache", recentVendorItemData.size());
-		
+		LOGGER.debug("Found [{}] records created in last day that would be added to the recent-items cache",
+				recentVendorItemData.size());
+
 		/*
 		 * TODO For now not worrying about a fresh load of full inventory that
 		 * could have taken place in last 1 day. All that inventory will get
@@ -259,14 +283,14 @@ public class CacheCurator {
 		 */
 		for (VendorItemMaster vendorItemData : recentVendorItemData) {
 
-			InventoryResponse inventoryResponse = new InventoryResponse();
+			InventoryInfo inventoryResponse = new InventoryInfo();
 
 			Long vendorId = vendorItemData.getVendorId();
-			Long barcode = vendorItemData.getBarcode();
+			String barcode = vendorItemData.getBarcode();
 			Long lastSyncedVersionId = vendorItemData.getVersionId();
 
 			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
-			InventoryResponse cachedEntry = this.recentItemsCache.getIfPresent(key);
+			InventoryInfo cachedEntry = this.recentItemsCache.getIfPresent(key);
 
 			if (cachedEntry != null && cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
 				LOGGER.debug(
@@ -284,26 +308,44 @@ public class CacheCurator {
 			inventoryResponse.setVendorId(vendorId);
 			inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
 			inventoryResponse.setCurrentDataVersionId(lastSyncedVersionId);
-			inventoryResponse.setItemsUpdated(new ArrayList<ItemResponse>());
+			inventoryResponse.setItemsUpdated(new ArrayList<ItemInfo>());
 
-			ItemResponse itemData = new ItemResponse();
-			itemData.setBarcode(vendorItemData.getBarcode());
-			itemData.setDescription(vendorItemData.getDescription());
-			itemData.setDiscountType(vendorItemData.getDiscountType());
-			itemData.setDiscountValue(vendorItemData.getDiscountValue());
-			itemData.setImageJSON(vendorItemData.getImageJSON());
-			itemData.setItemCode(vendorItemData.getItemCode());
-			itemData.setMrp(vendorItemData.getMrp());
-			itemData.setName(vendorItemData.getName());
-			itemData.setPrice(vendorItemData.getPrice());
-			itemData.setProductId(vendorItemData.getProductId());
-			itemData.setTagline(vendorItemData.getTagLine());
-			itemData.setVersionId(vendorItemData.getVersionId());
+			ItemInfo itemInfo = new ItemInfo();
+			ProductInfo productInfo = new ProductInfo();
+			ItemPrice itemPrice = new ItemPrice();
 
-			inventoryResponse.getItemsUpdated().add(itemData);
+			productInfo.setName(vendorItemData.getName());
+			productInfo.setTagLine(vendorItemData.getTagLine());
+			productInfo.setImageJSON(vendorItemData.getImageJSON());
+			productInfo.setDescription(vendorItemData.getDescription());
+
+			try {
+				ObjectMapper mapper = new ObjectMapper();
+
+				itemPrice.setTaxDetail(StringUtils.isNotEmpty(vendorItemData.getTaxJSON()) ? mapper.readValue(
+						vendorItemData.getTaxJSON(), TaxDetail.class) : null);
+				itemPrice.setDiscountDetail(StringUtils.isNotEmpty(vendorItemData.getDiscountJSON()) ? mapper
+						.readValue(vendorItemData.getDiscountJSON(), DiscountDetail.class) : null);
+				
+			} catch (IOException e) {
+				LOGGER.error("Received error [{}] while deserializin the tax or discount JSONs [{}], [{}]",
+						vendorItemData.getTaxJSON().trim(), vendorItemData.getDiscountJSON().trim(), e.getMessage());
+			}
+
+			itemPrice.setMrp(vendorItemData.getMrp());
+			itemPrice.setPrice(vendorItemData.getPrice());
+
+			itemInfo.setItemPrice(itemPrice);
+			itemInfo.setProductInfo(productInfo);
+
+			itemInfo.setBarcode(vendorItemData.getBarcode());
+			itemInfo.setItemCode(vendorItemData.getItemCode());
+
+			inventoryResponse.getItemsUpdated().add(itemInfo);
 
 			String newKey = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
-			LOGGER.debug("Adding key [{}] to the recent items cache with data [{}]", newKey, inventoryResponse.toString());
+			LOGGER.debug("Adding key [{}] to the recent items cache with data [{}]", newKey,
+					inventoryResponse.toString());
 			this.recentItemsCache.put(newKey, inventoryResponse);
 		}
 

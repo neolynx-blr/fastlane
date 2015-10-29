@@ -41,7 +41,10 @@ public class VendorItemMaster {
 	private Long versionId;
 
 	@Column(name = "barcode", nullable = false)
-	private Long barcode;
+	private String barcode;
+
+	@Column(name = "image_json")
+	private String imageJSON;
 
 	@Column(name = "mrp", nullable = false)
 	private Double mrp;
@@ -49,15 +52,15 @@ public class VendorItemMaster {
 	@Column(name = "price")
 	private Double price;
 
-	@Column(name = "image_json")
-	private String imageJSON;
-
-	@Column(name = "discount_type")
-	private Integer discountType;
-
-	@Column(name = "discount_value")
-	private Double discountValue;
+	@Column(name = "base_price")
+	private Double basePrice;
 	
+	@Column(name = "discount_json")
+	private String discountJSON;
+	
+	@Column(name = "tax_json")
+	private String taxJSON;
+
 	@Column(name = "name", nullable = false)
 	private String name;
 

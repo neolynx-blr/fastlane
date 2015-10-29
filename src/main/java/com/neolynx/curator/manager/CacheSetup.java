@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
 
 /**
  * Created by nitesh.garg on 06-Sep-2015
@@ -15,13 +15,13 @@ public class CacheSetup implements Runnable {
 
 	private final CacheCurator cacheCurator;
 	private final LoadingCache<Long, Long> vendorVersionCache;
-	private final LoadingCache<String, InventoryResponse> recentItemsCache;
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	private final LoadingCache<String, InventoryInfo> recentItemsCache;
+	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheSetup.class);
 
-	public CacheSetup(LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemsCache, CacheCurator cacheCurator) {
+	public CacheSetup(LoadingCache<String, InventoryInfo> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemsCache, CacheCurator cacheCurator) {
 		super();
 		this.cacheCurator = cacheCurator;
 		this.recentItemsCache = recentItemsCache;

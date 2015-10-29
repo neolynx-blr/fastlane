@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.CacheDetail;
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
+import com.neolynx.curator.cache.model.CacheDetail;
 import com.neolynx.curator.util.Constants;
 
 /**
@@ -20,11 +20,11 @@ public class CacheEvaluator {
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheEvaluator.class);
 
-	private final LoadingCache<String, InventoryResponse> recentItemsCache;
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	private final LoadingCache<String, InventoryInfo> recentItemsCache;
+	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
-	public CacheEvaluator(LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<String, InventoryResponse> recentItemsCache) {
+	public CacheEvaluator(LoadingCache<String, InventoryInfo> differentialInventoryCache,
+			LoadingCache<String, InventoryInfo> recentItemsCache) {
 		super();
 		this.differentialInventoryCache = differentialInventoryCache;
 		this.recentItemsCache = recentItemsCache;
@@ -41,7 +41,7 @@ public class CacheEvaluator {
 		} else {
 
 			int versionEntriesCount = 0;
-			ConcurrentMap<String, InventoryResponse> cacheMap = this.differentialInventoryCache.asMap();
+			ConcurrentMap<String, InventoryInfo> cacheMap = this.differentialInventoryCache.asMap();
 			Set<String> keySet = cacheMap.keySet();
 
 			for (String key : keySet) {
@@ -69,7 +69,7 @@ public class CacheEvaluator {
 		List<CacheDetail> cacheResponse = new ArrayList<CacheDetail>();
 
 		int versionEntriesCount = 0;
-		ConcurrentMap<String, InventoryResponse> cacheMap = this.recentItemsCache.asMap();
+		ConcurrentMap<String, InventoryInfo> cacheMap = this.recentItemsCache.asMap();
 		Set<String> keySet = cacheMap.keySet();
 
 		for (String key : keySet) {

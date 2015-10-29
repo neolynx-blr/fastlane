@@ -9,8 +9,8 @@ import java.util.Map;
 import org.apache.commons.collections4.map.HashedMap;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.InventoryResponse;
-import com.neolynx.common.model.ItemResponse;
+import com.neolynx.common.model.client.ItemInfo;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.order.ItemDetail;
 import com.neolynx.curator.util.Constants;
 
@@ -21,14 +21,14 @@ import com.neolynx.curator.util.Constants;
 public class PriceEvaluator {
 	
 	final LoadingCache<Long, Long> vendorVersionCache;
-	final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
 	/**
 	 * @param vendorVersionCache
 	 * @param differentialInventoryCache
 	 */
 	public PriceEvaluator(LoadingCache<Long, Long> vendorVersionCache,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache) {
+			LoadingCache<String, InventoryInfo> differentialInventoryCache) {
 		super();
 		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;
@@ -64,14 +64,14 @@ public class PriceEvaluator {
 		}
 		
 		
-		InventoryResponse inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + newDataVersionId);
+		InventoryInfo inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + newDataVersionId);
 		
-		Map<String, ItemResponse> itemLatestDataMap = new HashedMap<String, ItemResponse>();
+		Map<String, ItemInfo> itemLatestDataMap = new HashedMap<String, ItemInfo>();
 		
 		/**
 		 * TODO This should probably be added to cache as well.
 		 */
-		for(ItemResponse itemResponse : inventoryResponse.getItemsUpdated()) {
+		for(ItemInfo itemResponse : inventoryResponse.getItemsUpdated()) {
 			itemLatestDataMap.put(itemResponse.getItemCode(), itemResponse);
 		}
 		

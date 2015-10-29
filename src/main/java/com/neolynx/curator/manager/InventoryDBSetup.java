@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
 
 /**
  * Created by nitesh.garg on 04-Sep-2015
@@ -27,12 +27,12 @@ public class InventoryDBSetup implements Runnable {
 
 	private SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryDBSetup.class);
 
 	public InventoryDBSetup(SessionFactory sessionFactory,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache,
+			LoadingCache<String, InventoryInfo> differentialInventoryCache,
 			LoadingCache<Long, Long> vendorVersionCache) {
 		super();
 		this.sessionFactory = sessionFactory;
@@ -63,7 +63,10 @@ public class InventoryDBSetup implements Runnable {
 				LOGGER.debug("Woken up and processing new inventory...");
 				curator.processNewInventory();
 				LOGGER.debug("Processing new metadata for vendor-version...");
-				curator.processVendorVersionMeta(this.differentialInventoryCache, this.vendorVersionCache);
+				//curator.processVendorVersionMeta(this.differentialInventoryCache, this.vendorVersionCache);
+				// TODO Handle the JSON parsing exception
+				curator.processVendorVersionMeta(this.vendorVersionCache);
+				curator.processVendorVersionMetaNew(this.differentialInventoryCache);
 				LOGGER.debug(
 						"Completed. The cache sizes being [{}] and [{}] for differential data and version details.",
 						this.differentialInventoryCache.size(), this.vendorVersionCache.size());

@@ -12,7 +12,7 @@ import org.hibernate.SessionFactory;
 
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.curator.manager.InventoryDBSetup;
 
 /**
@@ -22,12 +22,12 @@ public class DaemonJob implements Managed {
 	
 	private SessionFactory sessionFactory; 
 	private final LoadingCache<Long, Long> vendorVersionCache;
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 	
 	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DaemonJob-%d").setDaemon(true).build();
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 	
-	public DaemonJob(SessionFactory sessionFactory, LoadingCache<String, InventoryResponse> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
+	public DaemonJob(SessionFactory sessionFactory, LoadingCache<String, InventoryInfo> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
 		this.sessionFactory = sessionFactory;
 		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;

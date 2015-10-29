@@ -1,4 +1,6 @@
-package com.neolynx.common.model;
+package com.neolynx.curator.cache.model;
+
+import com.neolynx.common.model.client.InventoryInfo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,7 +14,7 @@ import lombok.EqualsAndHashCode;
 public class CacheDetail {
 
 	private Long versionId;
-	private InventoryResponse response;
+	private InventoryInfo response;
 	
 	
 }

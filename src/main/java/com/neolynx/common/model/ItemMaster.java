@@ -20,7 +20,7 @@ public class ItemMaster implements Serializable {
 
 	private Long id;
 
-	private Long barcode;
+	private String barcode;
 	private String itemCode;
 	private Long versionId;
 
@@ -33,8 +33,8 @@ public class ItemMaster implements Serializable {
 
 	private String imageJSON;
 
-	private Integer discountType;
-	private Double discountValue;
+	private String taxJSON;
+	private String discountJSON;
 
 	private Date lastModifiedOn;
 
@@ -56,7 +56,7 @@ public class ItemMaster implements Serializable {
 		String[] vendorInventoryRecord = new String[] { String.valueOf(uniqueId), this.getItemCode(),
 				String.valueOf(System.currentTimeMillis()), this.getName(), this.getDescription(), this.getTagline(),
 				String.valueOf(this.getBarcode()), String.valueOf(this.getMrp()), String.valueOf(this.getPrice()),
-				this.getImageJSON(), String.valueOf(this.getDiscountType()), String.valueOf(this.getDiscountValue()),
+				this.getImageJSON(), this.getDiscountJSON(), this.getTaxJSON(),
 				String.valueOf(this.getLastModifiedOn()) };
 
 		return vendorInventoryRecord;
@@ -72,7 +72,7 @@ public class ItemMaster implements Serializable {
 			this.setVersionId(System.currentTimeMillis());
 
 			this.setItemCode(record.get("item_code"));
-			this.setBarcode(Long.parseLong(record.get("barcode")));
+			this.setBarcode(record.get("barcode"));
 
 			this.setName(record.get("name"));
 			this.setDescription(record.get("description"));
@@ -83,19 +83,8 @@ public class ItemMaster implements Serializable {
 			this.setMrp(Double.parseDouble(record.get("mrp")));
 			this.setPrice(Double.parseDouble(record.get("price")));
 
-			String discountType = record.get("discount_type");
-			if (discountType == null || discountType.trim().equalsIgnoreCase("null")) {
-				this.setDiscountType(null);
-			} else {
-				this.setDiscountType(Integer.parseInt(record.get("discount_type")));
-			}
-
-			String discountValue = record.get("discount_value");
-			if (discountValue == null || discountValue.trim().equalsIgnoreCase("null")) {
-				this.setDiscountValue(null);
-			} else {
-				this.setDiscountValue(Double.parseDouble(record.get("discount_value")));
-			}
+			this.setTaxJSON(record.get("tax_json"));
+			this.setDiscountJSON(record.get("discount_json"));
 
 			// TODO
 			String lastModifiedOn = record.get("last_modified_on");
@@ -115,8 +104,8 @@ public class ItemMaster implements Serializable {
 	public ItemMaster() {
 	}
 
-	public ItemMaster(Long id, Long barcode, String itemCode, Long versionId, String name, String tagline,
-			String description, Double mrp, Double price, String imageJSON, Integer discountType, Double discountValue,
+	public ItemMaster(Long id, String barcode, String itemCode, Long versionId, String name, String tagline,
+			String description, Double mrp, Double price, String imageJSON, String discountJSON, String taxJSON,
 			Date lastModifiedOn) {
 		super();
 		this.id = id;
@@ -129,8 +118,8 @@ public class ItemMaster implements Serializable {
 		this.mrp = mrp;
 		this.price = price;
 		this.imageJSON = imageJSON;
-		this.discountType = discountType;
-		this.discountValue = discountValue;
+		this.discountJSON = discountJSON;
+		this.taxJSON = taxJSON;
 		this.lastModifiedOn = lastModifiedOn;
 	}
 

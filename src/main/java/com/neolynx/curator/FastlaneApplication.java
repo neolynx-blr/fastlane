@@ -23,10 +23,16 @@ import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.InventoryResponse;
 import com.neolynx.common.model.ItemResponse;
+import com.neolynx.common.model.client.InventoryInfo;
+import com.neolynx.common.model.client.price.DiscountDetail;
+import com.neolynx.common.model.client.price.DiscountInfo;
+import com.neolynx.common.model.client.price.TaxDetail;
+import com.neolynx.common.model.client.price.TaxInfo;
 import com.neolynx.curator.auth.ExampleAuthenticator;
 import com.neolynx.curator.auth.ExampleAuthorizer;
 import com.neolynx.curator.cache.DifferentialDataLoader;
@@ -154,6 +160,48 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			passwordHash = PasswordHash.createHash("vendor");
 			System.out.println("Hash for password:" + passwordHash);
 			System.out.println("Password Match:"+ PasswordHash.validatePassword("vendor", passwordHash));
+			
+			DiscountInfo discount1 = new DiscountInfo();
+			discount1.setDiscountedItemCode("ITEM201");
+			discount1.setDiscountType(6);
+			discount1.setDiscountValue(2.0);
+			discount1.setRequiredCountForDiscount(8);
+			
+			DiscountInfo discount2 = new DiscountInfo();
+			discount1.setDiscountType(1);
+			discount1.setDiscountValue(20.0);
+
+			DiscountDetail discountDetail = new DiscountDetail();
+			discountDetail.getDiscountInfo().add(discount1);
+			discountDetail.getDiscountInfo().add(discount2);
+			
+			ObjectMapper mapper = new ObjectMapper();
+			try {
+				System.out.println(mapper.writeValueAsString(discountDetail));
+			} catch (JsonProcessingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			TaxInfo tax1 = new TaxInfo();
+			tax1.setTaxType(1);
+			tax1.setTaxValue(20.0);
+			
+			TaxInfo tax2 = new TaxInfo();
+			tax2.setTaxType(2);
+			tax2.setTaxValue(10.0);
+			
+			TaxDetail taxDetail = new TaxDetail();
+			taxDetail.getTaxInfo().add(tax1);
+			taxDetail.getTaxInfo().add(tax2);
+			
+			try {
+				System.out.println(mapper.writeValueAsString(taxDetail));
+			} catch (JsonProcessingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -211,11 +259,17 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 			LOGGER.debug("Setting up caches for Vendor Version and Version Differential Data...");
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
-			final LoadingCache<String, InventoryResponse> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
-			final LoadingCache<String, InventoryResponse> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
+			final LoadingCache<String, InventoryInfo> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
+			final LoadingCache<String, InventoryInfo> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
 
 			LOGGER.debug("Setting up the vendor-version metadata in DB based on latest inventory...");
-			invCurator.processVendorVersionMeta(differentialInventoryCache, vendorVersionCache);
+			try {
+				invCurator.processVendorVersionMeta(vendorVersionCache);
+				invCurator.processVendorVersionMetaNew(differentialInventoryCache);
+			} catch (JsonProcessingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
 			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator);

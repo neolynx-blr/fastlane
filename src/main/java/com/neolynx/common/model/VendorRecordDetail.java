@@ -23,7 +23,7 @@ public class VendorRecordDetail extends ItemMaster {
 		String[] vendorInventoryRecord = new String[] { String.valueOf(this.getUniqueId()), this.getItemCode(),
 				String.valueOf(this.getVersionId()), this.getName(), this.getDescription(), this.getTagline(),
 				String.valueOf(this.getBarcode()), String.valueOf(this.getMrp()), String.valueOf(this.getPrice()),
-				this.getImageJSON(), String.valueOf(this.getDiscountType()), String.valueOf(this.getDiscountValue()) };
+				this.getImageJSON(), this.getDiscountJSON(), this.getTaxJSON() };
 		
 		return vendorInventoryRecord;
 

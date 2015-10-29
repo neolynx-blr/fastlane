@@ -24,13 +24,14 @@ public class VendorItemHistory {
 	public VendorItemHistory(VendorItemMaster vendorItemMaster) {
 		this.setBarcode(vendorItemMaster.getBarcode());
 		this.setDescription(vendorItemMaster.getDescription());
-		this.setDiscountType(vendorItemMaster.getDiscountType());
-		this.setDiscountValue(vendorItemMaster.getDiscountValue());
 		this.setImageJSON(vendorItemMaster.getImageJSON());
 		this.setItemCode(vendorItemMaster.getItemCode());
 		this.setMrp(vendorItemMaster.getMrp());
 		this.setName(vendorItemMaster.getName());
 		this.setPrice(vendorItemMaster.getPrice());
+		this.setBasePrice(vendorItemMaster.getBasePrice());
+		this.setDiscountJSON(vendorItemMaster.getDiscountJSON());
+		this.setTaxJSON(vendorItemMaster.getTaxJSON());
 		this.setProductId(vendorItemMaster.getProductId());
 		this.setTagLine(vendorItemMaster.getTagLine());
 		this.setVendorId(vendorItemMaster.getVendorId());
@@ -51,7 +52,10 @@ public class VendorItemHistory {
 	private String itemCode;
 
 	@Column(name = "barcode", nullable = false)
-	private Long barcode;
+	private String barcode;
+
+	@Column(name = "image_json")
+	private String imageJSON;
 
 	@Column(name = "mrp", nullable = false)
 	private Double mrp;
@@ -59,14 +63,8 @@ public class VendorItemHistory {
 	@Column(name = "price")
 	private Double price;
 
-	@Column(name = "image_json")
-	private String imageJSON;
-
-	@Column(name = "discount_type")
-	private Integer discountType;
-
-	@Column(name = "discount_value")
-	private Double discountValue;
+	@Column(name = "base_price")
+	private Double basePrice;
 
 	@Column(name = "product_id", nullable = false)
 	private Long productId;
@@ -79,5 +77,11 @@ public class VendorItemHistory {
 
 	@Column(name = "tag_line")
 	private String tagLine;
+	
+	@Column(name = "discount_json")
+	private String discountJSON;
+	
+	@Column(name = "tax_json")
+	private String taxJSON;
 
 }

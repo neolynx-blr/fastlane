@@ -37,9 +37,18 @@ public class VendorVersionDifferential {
 
 	@Column(name = "last_synced_version_id")
 	private Long lastSyncedVersionId;
+	
+	@Column(name="is_this_latest_version")
+	private Boolean isThisLatestVersion;
 
 	@Column(name = "delta_item_codes")
 	private String deltaItemCodes;
+
+	@Column(name = "differential_data")
+	private String differentialData;
+
+	@Column(name = "price_differential_data")
+	private String priceDifferentialData;
 
 	@Column(name = "last_modified_on", nullable = false)
 	private Date lastModifiedOn;

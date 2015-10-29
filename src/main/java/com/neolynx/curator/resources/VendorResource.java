@@ -14,8 +14,8 @@ import javax.ws.rs.core.MediaType;
 
 import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.InventoryRequest;
-import com.neolynx.common.model.InventoryResponse;
 import com.neolynx.common.model.ResponseAudit;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.curator.core.User;
 import com.neolynx.curator.manager.InventoryEvaluator;
 import com.neolynx.curator.manager.InventoryLoader;
@@ -44,7 +44,7 @@ public class VendorResource {
 	@GET
 	@RolesAllowed("Administrator, Vendor")
 	@UnitOfWork
-	public InventoryResponse getLastKnownSyncId(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
+	public InventoryInfo getLastKnownSyncId(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
 		// TODO
 		return evaluator.getLatestInventory(vendorId);
 	}

@@ -8,7 +8,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.curator.manager.InventoryEvaluator;
 
 /**
@@ -31,21 +31,21 @@ public class UserResource {
 	@Path("/{vendorId}/current/all")
 	@GET
 	@UnitOfWork
-	public InventoryResponse getLatestInventory(@PathParam(value = "vendorId") Long vendorId) {
+	public InventoryInfo getLatestInventory(@PathParam(value = "vendorId") Long vendorId) {
 		return this.inventoryEvaluator.getLatestInventory(vendorId);
 	}
 
 	@Path("/{vendorId}/current/{barcode}")
 	@GET
 	@UnitOfWork
-	public InventoryResponse getLatestItemRecord(@PathParam(value = "vendorId") Long vendorId, @PathParam(value = "barcode") Long barcode) {
+	public InventoryInfo getLatestItemRecord(@PathParam(value = "vendorId") Long vendorId, @PathParam(value = "barcode") Long barcode) {
 		return this.inventoryEvaluator.getLatestItemForVendorBarcode(vendorId, barcode);
 	}
 
 	@Path("/{vendorId}/{versionId}/all")
 	@GET
 	@UnitOfWork
-	public InventoryResponse getInventoryDifferential(@PathParam(value = "vendorId") Long vendorId,
+	public InventoryInfo getInventoryDifferential(@PathParam(value = "vendorId") Long vendorId,
 			@PathParam(value = "versionId") Long dataVersionId) {
 		return this.inventoryEvaluator.getInventoryDifferential(vendorId, dataVersionId);
 	}

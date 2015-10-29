@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.curator.manager.CacheCurator;
 import com.neolynx.curator.manager.CacheSetup;
 
@@ -24,8 +24,8 @@ public class DataLoaderJob implements Managed {
 
 	private final CacheCurator cacheCurator;
 	private final LoadingCache<Long, Long> vendorVersionCache;
-	private final LoadingCache<String, InventoryResponse> recentItemsCache;
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	private final LoadingCache<String, InventoryInfo> recentItemsCache;
+	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 	
 	static Logger LOGGER = LoggerFactory.getLogger(DataLoaderJob.class);
 
@@ -33,8 +33,8 @@ public class DataLoaderJob implements Managed {
 			.build();
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
 
-	public DataLoaderJob(LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemsCache, CacheCurator cacheCurator) {
+	public DataLoaderJob(LoadingCache<String, InventoryInfo> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemsCache, CacheCurator cacheCurator) {
 		this.cacheCurator = cacheCurator;
 		this.recentItemsCache = recentItemsCache;
 		this.vendorVersionCache = vendorVersionCache;

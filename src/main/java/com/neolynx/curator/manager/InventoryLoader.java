@@ -200,8 +200,8 @@ public class InventoryLoader {
 
 				inventoryMaster.setCreatedOn(new java.sql.Date(System.currentTimeMillis()));
 				inventoryMaster.setDescription(instance.getDescription());
-				inventoryMaster.setDiscountType(instance.getDiscountType());
-				inventoryMaster.setDiscountValue(instance.getDiscountValue());
+				inventoryMaster.setDiscountJSON(instance.getDiscountJSON());
+				inventoryMaster.setTaxJSON(instance.getTaxJSON());
 				inventoryMaster.setImageJSON(instance.getImageJSON());
 				inventoryMaster.setMrp(instance.getMrp());
 				inventoryMaster.setPrice(instance.getPrice());

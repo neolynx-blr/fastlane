@@ -4,18 +4,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.curator.util.Constants;
 
 public class InventoryEvaluator {
 
 	private final LoadingCache<Long, Long> vendorVersionCache;
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryEvaluator.class);
-	private final LoadingCache<String, InventoryResponse> differentialInventoryCache;
-	private final LoadingCache<String, InventoryResponse> recentItemCache;
+	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
+	private final LoadingCache<String, InventoryInfo> recentItemCache;
 
-	public InventoryEvaluator(LoadingCache<String, InventoryResponse> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryResponse> recentItemCache) {
+	public InventoryEvaluator(LoadingCache<String, InventoryInfo> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemCache) {
 		super();
 		this.differentialInventoryCache = differentialInventoryCache;
 		this.vendorVersionCache = vendorVersionCache;
@@ -23,15 +23,15 @@ public class InventoryEvaluator {
 	}
 
 	// Simply pull the data from the cache
-	public InventoryResponse getInventoryDifferential(Long vendorId, Long dataVersionId) {
+	public InventoryInfo getInventoryDifferential(Long vendorId, Long dataVersionId) {
 
-		InventoryResponse inventoryResponse = null;
+		InventoryInfo inventoryResponse = null;
 		LOGGER.debug("Request received for inventory differential for vendor-version [{}-{}]", vendorId, dataVersionId);
 
 		if (vendorId == null || dataVersionId == null) {
 			LOGGER.debug("Invalid request received for missing vendor and/or version id.");
 
-			inventoryResponse = new InventoryResponse();
+			inventoryResponse = new InventoryInfo();
 			inventoryResponse.setIsError(Boolean.TRUE);
 			inventoryResponse.setVendorId(vendorId);
 			inventoryResponse.setCurrentDataVersionId(dataVersionId);
@@ -50,13 +50,13 @@ public class InventoryEvaluator {
 		return inventoryResponse;
 	}
 
-	public InventoryResponse getLatestInventory(Long vendorId) {
+	public InventoryInfo getLatestInventory(Long vendorId) {
 
-		InventoryResponse inventoryResponse = null;
+		InventoryInfo inventoryResponse = null;
 
 		if (vendorId == null) {
 			LOGGER.debug("Invalid request received for NULL vendor id.");
-			inventoryResponse = new InventoryResponse();
+			inventoryResponse = new InventoryInfo();
 			inventoryResponse.setIsError(Boolean.TRUE);
 			inventoryResponse.setVendorId(vendorId);
 
@@ -71,13 +71,13 @@ public class InventoryEvaluator {
 		return inventoryResponse;
 	}
 
-	public InventoryResponse getLatestItemForVendorBarcode(Long vendorId, Long barcode) {
+	public InventoryInfo getLatestItemForVendorBarcode(Long vendorId, Long barcode) {
 
-		InventoryResponse inventoryResponse = null;
+		InventoryInfo inventoryResponse = null;
 
 		if (vendorId == null || barcode == null) {
 			LOGGER.debug("Invalid request received for NULL vendor id or NULL barcode.");
-			inventoryResponse = new InventoryResponse();
+			inventoryResponse = new InventoryInfo();
 			inventoryResponse.setIsError(Boolean.TRUE);
 			inventoryResponse.setVendorId(vendorId);
 

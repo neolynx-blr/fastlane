@@ -1,5 +1,6 @@
 package com.neolynx.curator.cache;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,19 +9,25 @@ import org.apache.commons.lang3.text.StrTokenizer;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.jadira.usertype.spi.utils.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheLoader;
-import com.neolynx.common.model.InventoryResponse;
-import com.neolynx.common.model.ItemResponse;
+import com.neolynx.common.model.client.ItemInfo;
+import com.neolynx.common.model.client.ProductInfo;
+import com.neolynx.common.model.client.InventoryInfo;
+import com.neolynx.common.model.client.price.DiscountDetail;
+import com.neolynx.common.model.client.price.ItemPrice;
+import com.neolynx.common.model.client.price.TaxDetail;
 import com.neolynx.curator.core.VendorItemMaster;
 import com.neolynx.curator.util.Constants;
 
 /**
  * Created by nitesh.garg on Oct 3, 2015
  */
-public class RecentItemLoader extends CacheLoader<String, InventoryResponse> {
+public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 
 	private SessionFactory sessionFactory;
 	static Logger LOGGER = LoggerFactory.getLogger(RecentItemLoader.class);
@@ -35,14 +42,14 @@ public class RecentItemLoader extends CacheLoader<String, InventoryResponse> {
 	 * @see com.google.common.cache.CacheLoader#load(java.lang.Object)
 	 */
 	@Override
-	public InventoryResponse load(String vendorBarcodeKey) throws Exception {
+	public InventoryInfo load(String vendorBarcodeKey) throws Exception {
 
 		if (vendorBarcodeKey == null) {
 			LOGGER.debug("Tried loading recent data for NULL vendor-barcode-id combination, obviously failed.");
 			return null;
 		}
 
-		InventoryResponse inventoryResponse = new InventoryResponse();
+		InventoryInfo inventoryResponse = new InventoryInfo();
 		List<String> vendorBarcode = new StrTokenizer(vendorBarcodeKey, Constants.CACHE_KEY_SEPARATOR_STRING)
 				.getTokenList();
 
@@ -72,25 +79,42 @@ public class RecentItemLoader extends CacheLoader<String, InventoryResponse> {
 			inventoryResponse.setVendorId(vendorId);
 			inventoryResponse.setCurrentDataVersionId(vendorItemData.getVersionId());
 			inventoryResponse.setNewDataVersionId(vendorItemData.getVersionId());
-			inventoryResponse.setItemsUpdated(new ArrayList<ItemResponse>());
+			inventoryResponse.setItemsUpdated(new ArrayList<ItemInfo>());
 
-			ItemResponse itemData = new ItemResponse();
-			itemData.setBarcode(vendorItemData.getBarcode());
-			itemData.setDescription(vendorItemData.getDescription());
-			itemData.setDiscountType(vendorItemData.getDiscountType());
-			itemData.setDiscountValue(vendorItemData.getDiscountValue());
-			itemData.setImageJSON(vendorItemData.getImageJSON());
-			itemData.setItemCode(vendorItemData.getItemCode());
-			itemData.setMrp(vendorItemData.getMrp());
-			itemData.setName(vendorItemData.getName());
-			itemData.setPrice(vendorItemData.getPrice());
-			itemData.setProductId(vendorItemData.getProductId());
-			itemData.setTagline(vendorItemData.getTagLine());
-			itemData.setVersionId(vendorItemData.getVersionId());
+			ItemInfo itemInfo = new ItemInfo();
+			ProductInfo productInfo = new ProductInfo();
+			ItemPrice itemPrice = new ItemPrice();
 
-			inventoryResponse.getItemsUpdated().add(itemData);
+			productInfo.setName(vendorItemData.getName());
+			productInfo.setTagLine(vendorItemData.getTagLine());
+			productInfo.setImageJSON(vendorItemData.getImageJSON());
+			productInfo.setDescription(vendorItemData.getDescription());
+
+			try {
+				ObjectMapper mapper = new ObjectMapper();
+
+				itemPrice.setTaxDetail(StringUtils.isNotEmpty(vendorItemData.getTaxJSON()) ? mapper.readValue(
+						vendorItemData.getTaxJSON(), TaxDetail.class) : null);
+				itemPrice.setDiscountDetail(StringUtils.isNotEmpty(vendorItemData.getDiscountJSON()) ? mapper
+						.readValue(vendorItemData.getDiscountJSON(), DiscountDetail.class) : null);
+				
+			} catch (IOException e) {
+				LOGGER.error("Received error [{}] while deserializin the tax or discount JSONs [{}], [{}]",
+						vendorItemData.getTaxJSON().trim(), vendorItemData.getDiscountJSON().trim(), e.getMessage());
+			}
+
+			itemPrice.setMrp(vendorItemData.getMrp());
+			itemPrice.setPrice(vendorItemData.getPrice());
+
+			itemInfo.setItemPrice(itemPrice);
+			itemInfo.setProductInfo(productInfo);
+
+			itemInfo.setBarcode(vendorItemData.getBarcode());
+			itemInfo.setItemCode(vendorItemData.getItemCode());
+
+			inventoryResponse.getItemsUpdated().add(itemInfo);
 			LOGGER.debug("Adding recent data with item-code [{}] for vendor-version-barcode [{}-{}-{}]",
-					itemData.getItemCode(), vendorId, itemData.getVersionId(), barcode);
+					itemInfo.getItemCode(), vendorId, inventoryResponse.getNewDataVersionId(), barcode);
 		}
 
 		session.close();

@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import com.neolynx.common.model.BaseResponse;
-import com.neolynx.common.model.InventoryResponse;
+import com.neolynx.common.model.client.InventoryInfo;
 
 /**
  * Created by nitesh.garg on Oct 22, 2015
@@ -40,7 +40,7 @@ public class Response extends BaseResponse {
 	 */
 	
 	// Option A
-	private InventoryResponse inventoryResponse;
+	private InventoryInfo inventoryResponse;
 	
 	/**
 	 * Option B

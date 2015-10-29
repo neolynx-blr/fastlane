@@ -44,7 +44,7 @@ public class ProductMaster implements Comparable<ProductMaster> {
 	private String tagLine;
 
 	@Column(name = "barcode", nullable = false)
-	private Long barcode;
+	private String barcode;
 
 	/*
 	 * (non-Javadoc)
@@ -60,14 +60,14 @@ public class ProductMaster implements Comparable<ProductMaster> {
 		if (this.getName().trim().equalsIgnoreCase(o.getName().trim())
 				&& this.getDescription().trim().equalsIgnoreCase(o.getDescription().trim())
 				&& this.getTagLine().trim().equalsIgnoreCase(o.getTagLine().trim())
-				&& this.getBarcode().compareTo(o.getBarcode()) == 0) {
+				&& this.getBarcode().trim().equalsIgnoreCase(o.getBarcode())) {
 			return 0;
 		} else {
 			
 			/*
 			System.out.println("Something didn't match");
 
-			if (this.getBarcode().compareTo(o.getBarcode()) == 0) {
+			if (this.getBarcode().trim().equalsIgnoreCase(o.getBarcode())) {
 				System.out.println("Barcode matched");
 			} else {
 				System.out.println("Barcode didn't match" + this.getBarcode() + "&" + o.getBarcode());

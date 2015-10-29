@@ -13,8 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.cache.LoadingCache;
 import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.ErrorCode;
-import com.neolynx.common.model.InventoryResponse;
-import com.neolynx.common.model.ResponseAudit;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.order.CartCalculator;
 import com.neolynx.common.model.order.CartDetail;
 import com.neolynx.common.model.order.ClosureRequest;
@@ -39,14 +38,14 @@ public class OrderProcessor {
 	final OrderDetailDAO orderDetailDAO;
 	final PriceEvaluator priceEvaluator;
 	final LoadingCache<Long, Long> vendorVersionCache;
-	final LoadingCache<String, InventoryResponse> differentialInventoryCache;
+	final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 	
 	/**
 	 * @param orderDetailDAO
 	 */
 	public OrderProcessor(OrderDetailDAO orderDetailDAO,
 			LoadingCache<Long, Long> vendorVersionCache,
-			LoadingCache<String, InventoryResponse> differentialInventoryCache,
+			LoadingCache<String, InventoryInfo> differentialInventoryCache,
 			PriceEvaluator priceEvaluator) {
 		super();
 		this.orderDetailDAO = orderDetailDAO;
@@ -196,7 +195,7 @@ public class OrderProcessor {
 		response.setDeviceDataVersionId(cartDetail.getDeviceDataVersionId());
 
 		if (latestVersionId.compareTo(cartDetail.getDeviceDataVersionId()) != 0) {
-			InventoryResponse inventoryResponse = this.differentialInventoryCache
+			InventoryInfo inventoryResponse = this.differentialInventoryCache
 					.getIfPresent(vendorId
 							+ Constants.CACHE_KEY_SEPARATOR_STRING
 							+ latestVersionId);
@@ -323,7 +322,7 @@ public class OrderProcessor {
 
 		if (latestVersionId > cartDetail.getDeviceDataVersionId()) {
 			
-			InventoryResponse inventoryResponse = this.differentialInventoryCache
+			InventoryInfo inventoryResponse = this.differentialInventoryCache
 					.getIfPresent(vendorId
 							+ Constants.CACHE_KEY_SEPARATOR_STRING
 							+ latestVersionId);
