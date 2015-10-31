@@ -1,6 +1,9 @@
 package com.neolynx.common.model.client;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,8 +32,12 @@ public class InventoryInfo extends BaseResponse {
 	private Long newDataVersionId;
 	private Long currentDataVersionId;
 	
-	private List<ItemInfo> itemsAdded;
-	private List<ItemInfo> itemsUpdated;
-	private List<ItemInfo> itemsRemoved;
+	private Set<String> deletedItems = new HashSet<String>();
+	private Map<String, ItemInfo> addedItems = new HashMap<String, ItemInfo>();
+	private Map<String, ItemInfo> updatedItems = new HashMap<String, ItemInfo>();
+
+	public Boolean checkItemCodeInDifferential(String itemCode) {
+		return Boolean.FALSE;
+	}
 	
 }

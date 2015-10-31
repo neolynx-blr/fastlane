@@ -1,7 +1,7 @@
 package com.neolynx.curator.cache;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheLoader;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.client.ItemInfo;
 import com.neolynx.common.model.client.ProductInfo;
-import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.client.price.DiscountDetail;
 import com.neolynx.common.model.client.price.ItemPrice;
 import com.neolynx.common.model.client.price.TaxDetail;
@@ -79,7 +79,7 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			inventoryResponse.setVendorId(vendorId);
 			inventoryResponse.setCurrentDataVersionId(vendorItemData.getVersionId());
 			inventoryResponse.setNewDataVersionId(vendorItemData.getVersionId());
-			inventoryResponse.setItemsUpdated(new ArrayList<ItemInfo>());
+			inventoryResponse.setUpdatedItems(new HashMap<String, ItemInfo>());
 
 			ItemInfo itemInfo = new ItemInfo();
 			ProductInfo productInfo = new ProductInfo();
@@ -112,7 +112,7 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			itemInfo.setBarcode(vendorItemData.getBarcode());
 			itemInfo.setItemCode(vendorItemData.getItemCode());
 
-			inventoryResponse.getItemsUpdated().add(itemInfo);
+			inventoryResponse.getUpdatedItems().put(itemInfo.getItemCode(), itemInfo);
 			LOGGER.debug("Adding recent data with item-code [{}] for vendor-version-barcode [{}-{}-{}]",
 					itemInfo.getItemCode(), vendorId, inventoryResponse.getNewDataVersionId(), barcode);
 		}

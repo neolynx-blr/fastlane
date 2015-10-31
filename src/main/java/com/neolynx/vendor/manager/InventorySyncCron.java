@@ -52,7 +52,7 @@ public class InventorySyncCron implements Runnable {
 
 			try {
 
-				Thread.sleep(15000);
+				Thread.sleep(45000);
 
 				/*
 				 * The processor class practically does the following, in order

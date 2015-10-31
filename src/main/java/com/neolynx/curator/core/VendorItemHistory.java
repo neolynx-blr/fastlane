@@ -21,6 +21,10 @@ import lombok.Data;
 @NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.VendorItemHistory.findByVendor", query = "SELECT p FROM VendorItemHistory p where vendorId = :vendorId") })
 public class VendorItemHistory {
 
+	public VendorItemHistory() {
+		super();
+	}
+	
 	public VendorItemHistory(VendorItemMaster vendorItemMaster) {
 		this.setBarcode(vendorItemMaster.getBarcode());
 		this.setDescription(vendorItemMaster.getDescription());

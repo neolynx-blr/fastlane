@@ -70,10 +70,10 @@ public class PriceEvaluator {
 		
 		/**
 		 * TODO This should probably be added to cache as well.
-		 */
+		 *
 		for(ItemInfo itemResponse : inventoryResponse.getItemsUpdated()) {
 			itemLatestDataMap.put(itemResponse.getItemCode(), itemResponse);
-		}
+		}*/
 		
 		for(ItemDetail instance : itemDetails) {
 			

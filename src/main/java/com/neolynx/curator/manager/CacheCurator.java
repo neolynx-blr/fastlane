@@ -1,7 +1,7 @@
 package com.neolynx.curator.manager;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -14,9 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
+import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.client.ItemInfo;
 import com.neolynx.common.model.client.ProductInfo;
-import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.client.price.DiscountDetail;
 import com.neolynx.common.model.client.price.ItemPrice;
 import com.neolynx.common.model.client.price.TaxDetail;
@@ -42,8 +42,7 @@ public class CacheCurator {
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheCurator.class);
 
-	public CacheCurator(SessionFactory sessionFactory,
-			LoadingCache<String, InventoryInfo> differentialInventoryCache,
+	public CacheCurator(SessionFactory sessionFactory, LoadingCache<String, InventoryInfo> differentialInventoryCache,
 			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemsCache) {
 		super();
 		this.sessionFactory = sessionFactory;
@@ -120,6 +119,64 @@ public class CacheCurator {
 	public void processDifferentialInventoryCache() {
 
 		Session session = sessionFactory.openSession();
+		Query diffQuery = session
+				.createSQLQuery(
+						"select vvd.* from vendor_version_differential vvd where last_synced_version_id != 0 and is_valid = 't' and is_this_latest_version != 't' order by last_modified_on ")
+				.addEntity("vendor_version_differential", VendorVersionDifferential.class);
+
+		List<VendorVersionDifferential> vendorVersionDifferentials = diffQuery.list();
+
+		/*
+		 * Basically iterate over all the latest differential data from DB, and
+		 * check in last synced data is same as latest version for that vendor
+		 * known in the cache. If same, do nothing, or else pull the data for
+		 * latest version from DB and update the cache.
+		 */
+		for (VendorVersionDifferential diffInstance : vendorVersionDifferentials) {
+
+			Long vendorId = diffInstance.getVendorId();
+			Long versionId = diffInstance.getVersionId();
+			Long lastSyncedVersionId = diffInstance.getLastSyncedVersionId();
+
+			/*
+			 * If the latest known version for vendor same as for which the
+			 * differential is built?
+			 */
+
+			ObjectMapper mapper = new ObjectMapper();
+			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + versionId;
+			InventoryInfo cachedEntry = this.differentialInventoryCache.getIfPresent(key);
+
+			if (cachedEntry == null || cachedEntry.getNewDataVersionId() == null
+					|| cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) != 0) {
+
+				LOGGER.debug(
+						"Time to refresh differential cache for vendor-version [{}-{}] as cache has version [{}] as against latest [{}]",
+						vendorId, versionId, cachedEntry == null ? "Null" : cachedEntry.getNewDataVersionId(),
+						lastSyncedVersionId);
+				try {
+					this.differentialInventoryCache.put(key,
+							mapper.readValue(diffInstance.getDifferentialData(), InventoryInfo.class));
+				} catch (IOException e) {
+					LOGGER.error(
+							"Received error [{}] while deserializing the InventoryInfo from the DB while building differential cache for vendor [{}], version [{}] against last sync version [{}]",
+							e.getMessage(), vendorId, versionId, lastSyncedVersionId);
+				}
+				continue;
+			}
+
+			LOGGER.debug("Skipping the differential cache refresh of vendor-version [{}-{}] to latest version [{}].",
+					vendorId, versionId, lastSyncedVersionId);
+		}
+
+		session.close();
+
+	}
+
+	@SuppressWarnings("unchecked")
+	public void processDifferentialInventoryCacheOld() {
+
+		Session session = sessionFactory.openSession();
 		Query diffQuery = session.createSQLQuery(
 				"select vvd.* from vendor_version_differential vvd order by last_modified_on ").addEntity(
 				"vendor_version_differential", VendorVersionDifferential.class);
@@ -148,7 +205,8 @@ public class CacheCurator {
 			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + versionId;
 			InventoryInfo cachedEntry = this.differentialInventoryCache.getIfPresent(key);
 
-			if (cachedEntry != null && cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
+			if (cachedEntry != null && cachedEntry.getNewDataVersionId() != null
+					&& cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
 				LOGGER.debug(
 						"Skipping the differential cache refresh of vendor-version [{}-{}] to latest version [{}].",
 						vendorId, versionId, lastSyncedVersionId);
@@ -216,7 +274,7 @@ public class CacheCurator {
 			}
 
 			if (!vendorItemMasterList.isEmpty()) {
-				inventoryResponse.setItemsUpdated(new ArrayList<ItemInfo>());
+				inventoryResponse.setUpdatedItems(new HashMap<String, ItemInfo>());
 			}
 
 			for (VendorItemMaster vendorItemData : vendorItemMasterList) {
@@ -237,7 +295,7 @@ public class CacheCurator {
 							vendorItemData.getTaxJSON(), TaxDetail.class) : null);
 					itemPrice.setDiscountDetail(StringUtils.isNotEmpty(vendorItemData.getDiscountJSON()) ? mapper
 							.readValue(vendorItemData.getDiscountJSON(), DiscountDetail.class) : null);
-					
+
 				} catch (IOException e) {
 					LOGGER.error("Received error [{}] while deserializin the tax or discount JSONs [{}], [{}]",
 							vendorItemData.getTaxJSON().trim(), vendorItemData.getDiscountJSON().trim(), e.getMessage());
@@ -252,7 +310,7 @@ public class CacheCurator {
 				itemInfo.setBarcode(vendorItemData.getBarcode());
 				itemInfo.setItemCode(vendorItemData.getItemCode());
 
-				inventoryResponse.getItemsUpdated().add(itemInfo);
+				inventoryResponse.getUpdatedItems().put(itemInfo.getItemCode(), itemInfo);
 
 			}
 
@@ -308,7 +366,7 @@ public class CacheCurator {
 			inventoryResponse.setVendorId(vendorId);
 			inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
 			inventoryResponse.setCurrentDataVersionId(lastSyncedVersionId);
-			inventoryResponse.setItemsUpdated(new ArrayList<ItemInfo>());
+			inventoryResponse.setUpdatedItems(new HashMap<String, ItemInfo>());
 
 			ItemInfo itemInfo = new ItemInfo();
 			ProductInfo productInfo = new ProductInfo();
@@ -326,7 +384,7 @@ public class CacheCurator {
 						vendorItemData.getTaxJSON(), TaxDetail.class) : null);
 				itemPrice.setDiscountDetail(StringUtils.isNotEmpty(vendorItemData.getDiscountJSON()) ? mapper
 						.readValue(vendorItemData.getDiscountJSON(), DiscountDetail.class) : null);
-				
+
 			} catch (IOException e) {
 				LOGGER.error("Received error [{}] while deserializin the tax or discount JSONs [{}], [{}]",
 						vendorItemData.getTaxJSON().trim(), vendorItemData.getDiscountJSON().trim(), e.getMessage());
@@ -341,7 +399,7 @@ public class CacheCurator {
 			itemInfo.setBarcode(vendorItemData.getBarcode());
 			itemInfo.setItemCode(vendorItemData.getItemCode());
 
-			inventoryResponse.getItemsUpdated().add(itemInfo);
+			inventoryResponse.getUpdatedItems().put(itemInfo.getItemCode(), itemInfo);
 
 			String newKey = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
 			LOGGER.debug("Adding key [{}] to the recent items cache with data [{}]", newKey,

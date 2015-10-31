@@ -114,6 +114,7 @@ logging:
     com.neolynx.curator.manager.Processor: ERROR
     com.neolynx.curator.manager.InventoryLoader: ERROR
     com.neolynx.curator.manager.CacheCurator: ERROR
+    com.neolynx.curator.manager.InventoryCurator: DEBUG
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

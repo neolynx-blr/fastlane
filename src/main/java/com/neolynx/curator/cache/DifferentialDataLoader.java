@@ -2,6 +2,7 @@ package com.neolynx.curator.cache;
 
 import io.dropwizard.hibernate.UnitOfWork;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -59,7 +60,7 @@ public class DifferentialDataLoader extends CacheLoader<String, InventoryInfo> {
 		// Check the DB data for this vendor-version combination
 		Query diffQuery = session
 				.createSQLQuery(
-						" select vvd.* from vendor_version_differential vvd where vendor_id = :vendorId and version_id = :versionId and last_synced_version_id != 0 ")
+						" select vvd.* from vendor_version_differential vvd where vendor_id = :vendorId and version_id = :versionId and last_synced_version_id != 0 and is_valid = 't' and is_this_latest_version != 't' ")
 				.addEntity("vendor_version_differential", VendorVersionDifferential.class)
 				.setParameter("vendorId", vendorId).setParameter("versionId", versionId);
 
@@ -72,7 +73,13 @@ public class DifferentialDataLoader extends CacheLoader<String, InventoryInfo> {
 			VendorVersionDifferential diffInstance = vendorVersionDifferentials.get(0);
 
 			ObjectMapper mapper = new ObjectMapper();
-			inventoryInfo = mapper.readValue(diffInstance.getDifferentialData(), InventoryInfo.class);
+			try {
+				inventoryInfo = mapper.readValue(diffInstance.getDifferentialData(), InventoryInfo.class);
+			} catch (IOException e) {
+				LOGGER.error(
+						"Received error [{}] while deserializing the InventoryInfo from the DB while building differential cache for vendor [{}], version [{}]",
+						e.getMessage(), vendorId, versionId);
+			}
 		}
 
 		session.close();

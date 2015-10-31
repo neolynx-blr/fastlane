@@ -187,6 +187,7 @@ create table vendor_version_differential (
 	differential_data varchar(10000000),
 	price_differential_data varchar(10000000),
 	
+	is_valid boolean not null default 't',
 	last_modified_on timestamp not null,
 	constraint vvd_unique_constraint unique (vendor_id, version_id));
 
@@ -196,12 +197,14 @@ insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_mod
 insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (71, 0, now());
 insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (89, 0, now());
 insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (281, 0, now());
+insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (289, 0, now());
 
 insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (1, 0, 0, 't', now());
 insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (2, 0, 0, 't', now());
 insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (71, 0, 0, 't', now());
 insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (89, 0, 0, 't', now());
 insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (281, 0, 0, 't', now());
+insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (289, 0, 0, 't', now());
 	
 drop table if exists user_detail;
 create table user_detail (

@@ -44,6 +44,9 @@ public class VendorVersionDifferential {
 	@Column(name = "delta_item_codes")
 	private String deltaItemCodes;
 
+	@Column(name="is_valid")
+	private Boolean isValid = Boolean.TRUE;
+	
 	@Column(name = "differential_data")
 	private String differentialData;
 
