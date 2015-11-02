@@ -42,6 +42,14 @@ public class CacheResource {
 		return this.cacheEvaluator.getVendorCacheDetails(vendorId);
 	}
 
+	@Path("/{vendorId}/current")
+	@GET
+	@RolesAllowed("Administrator, Analyst")
+	@UnitOfWork
+	public List<CacheDetail> getVendorCurrentInventoryCacheDetails(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
+		return this.cacheEvaluator.getCurrentInventoryCacheDetails(vendorId);
+	}
+
 	@Path("/recentItems")
 	@GET
 	@RolesAllowed("Administrator, Analyst")

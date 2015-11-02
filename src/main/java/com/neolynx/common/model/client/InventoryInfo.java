@@ -21,23 +21,44 @@ public class InventoryInfo extends BaseResponse {
 	private static final long serialVersionUID = -3415988252429606589L;
 
 	private Long vendorId;
-	
+
 	/**
 	 * This flag indicated if the data contained in the instance of this object
 	 * is focusing on pricing of the inventory contained or else the complete
 	 * information of every item
 	 */
 	private Boolean isDataPriceOriented = Boolean.FALSE;
-	
+
 	private Long newDataVersionId;
 	private Long currentDataVersionId;
-	
+
 	private Set<String> deletedItems = new HashSet<String>();
 	private Map<String, ItemInfo> addedItems = new HashMap<String, ItemInfo>();
 	private Map<String, ItemInfo> updatedItems = new HashMap<String, ItemInfo>();
 
+/*	
 	public Boolean checkItemCodeInDifferential(String itemCode) {
 		return Boolean.FALSE;
 	}
+
+	public Boolean checkIfInstanceDataIsValid() {
+		Boolean response = Boolean.TRUE;
+
+		if (vendorId == null || vendorId < 1) {
+			response = Boolean.FALSE;
+		}
+
+		if (newDataVersionId == null || currentDataVersionId == null || newDataVersionId < currentDataVersionId) {
+			response = Boolean.FALSE;
+		}
+
+		if (this.getDeletedItems() == null || this.getAddedItems() == null || this.getUpdatedItems() == null
+				|| (this.getDeletedItems().size() + this.getAddedItems().size() + this.getUpdatedItems().size() < 1)) {
+			response = Boolean.FALSE;
+		}
+
+		return response;
+	}
+*/
 	
 }

@@ -54,8 +54,9 @@ public class CacheSetup implements Runnable {
 				LOGGER.debug("Wokeup with differential cache-size of [{}], vendor-barcode cache-size [{}] and vendor-version cache-size of [{}]",
 						this.differentialInventoryCache.size(), this.recentItemsCache.size(), this.vendorVersionCache.size());
 
-				this.cacheCurator.processRecentItemRecordsCache();
 				this.cacheCurator.processVendorVersionCache();
+				this.cacheCurator.processCurrentInventoryCache();
+				//this.cacheCurator.processRecentItemRecordsCache();
 				this.cacheCurator.processDifferentialInventoryCache();
 
 				LOGGER.debug(

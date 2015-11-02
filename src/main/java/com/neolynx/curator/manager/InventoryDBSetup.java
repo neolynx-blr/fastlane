@@ -27,16 +27,18 @@ public class InventoryDBSetup implements Runnable {
 
 	private SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<Long, String> currentInventoryCache;
 	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryDBSetup.class);
 
 	public InventoryDBSetup(SessionFactory sessionFactory,
 			LoadingCache<String, InventoryInfo> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache) {
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<Long, String> currentInventoryCache) {
 		super();
 		this.sessionFactory = sessionFactory;
 		this.vendorVersionCache = vendorVersionCache;
+		this.currentInventoryCache = currentInventoryCache;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
@@ -58,15 +60,15 @@ public class InventoryDBSetup implements Runnable {
 
 				Session session = sessionFactory.openSession();
 
-				InventoryCurator curator = new InventoryCurator(sessionFactory);
+				InventoryCurator curator = new InventoryCurator(sessionFactory, this.currentInventoryCache);
 
 				LOGGER.debug("Woken up and processing new inventory...");
 				curator.processNewInventory();
 				LOGGER.debug("Processing new metadata for vendor-version...");
-				//curator.processVendorVersionMeta(this.differentialInventoryCache, this.vendorVersionCache);
 				// TODO Handle the JSON parsing exception
-				curator.processVendorVersionMeta(this.vendorVersionCache);
-				curator.processVendorVersionMetaNew(this.differentialInventoryCache);
+				curator.processDifferentialData(this.differentialInventoryCache);
+				curator.processVendorDetailData(this.vendorVersionCache);
+
 				LOGGER.debug(
 						"Completed. The cache sizes being [{}] and [{}] for differential data and version details.",
 						this.differentialInventoryCache.size(), this.vendorVersionCache.size());

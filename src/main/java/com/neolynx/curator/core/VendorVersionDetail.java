@@ -35,6 +35,9 @@ public class VendorVersionDetail {
 	@Column(name = "valid_version_ids")
 	private String validVersionIds;
 
+	@Column(name = "current_inventory")
+	private String currentInventory;
+	
 	@Column(name = "last_modified_on", nullable = false)
 	private Date lastModifiedOn;
 

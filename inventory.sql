@@ -172,6 +172,7 @@ create table vendor_version_detail (
 	vendor_id integer not null unique,
 	latest_synced_version_id bigint,
 	valid_version_ids varchar(16184),
+	current_inventory varchar(10000000),
 	last_modified_on timestamp not null);
 	
 drop table if exists vendor_version_differential;
@@ -180,6 +181,7 @@ create table vendor_version_differential (
 	
 	vendor_id integer not null,
 	version_id bigint not null,
+	is_valid boolean not null default 't',
 	last_synced_version_id bigint not null,
 	is_this_latest_version boolean not null,
 	
@@ -187,7 +189,6 @@ create table vendor_version_differential (
 	differential_data varchar(10000000),
 	price_differential_data varchar(10000000),
 	
-	is_valid boolean not null default 't',
 	last_modified_on timestamp not null,
 	constraint vvd_unique_constraint unique (vendor_id, version_id));
 

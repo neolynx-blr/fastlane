@@ -38,6 +38,7 @@ public class AccountService {
 			return Optional.of(accountDetails.get(0));
 		}
 
+		session.close();
 		return Optional.absent();
 
 	}

@@ -37,18 +37,21 @@ public class CacheCurator {
 
 	private final SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<Long, String> currentInventoryCache;
 	private final LoadingCache<String, InventoryInfo> recentItemsCache;
 	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(CacheCurator.class);
 
 	public CacheCurator(SessionFactory sessionFactory, LoadingCache<String, InventoryInfo> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemsCache) {
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemsCache,
+			LoadingCache<Long, String> currentInventoryCache) {
 		super();
 		this.sessionFactory = sessionFactory;
 		this.differentialInventoryCache = differentialInventoryCache;
 		this.vendorVersionCache = vendorVersionCache;
 		this.recentItemsCache = recentItemsCache;
+		this.currentInventoryCache = currentInventoryCache;
 	}
 
 	public void processVendorVersionCache() {
@@ -85,6 +88,65 @@ public class CacheCurator {
 		}
 
 		session.close();
+	}
+
+	public void processCurrentInventoryCache() {
+
+		Session session = sessionFactory.openSession();
+		LOGGER.trace("**********************************************************");
+		LOGGER.trace("Entering 'processCurrentInventoryCache' with no parameters");
+
+		Query vendorDetailQuery = session.createSQLQuery(" select vvd.* from vendor_version_detail vvd where latest_synced_version_id > 0 ").addEntity(
+				"vendor_version_detail", VendorVersionDetail.class);
+
+		@SuppressWarnings("unchecked")
+		List<VendorVersionDetail> vendorVersionDetails = vendorDetailQuery.list();
+
+		for (VendorVersionDetail instance : vendorVersionDetails) {
+
+			Long vendorId = instance.getVendorId();
+			Long actualLatestVersion = instance.getLatestSyncedVersionId();
+			
+			LOGGER.debug("Evaluating current inventory cache updates for vendor [{}] to latest version [{}]", vendorId, actualLatestVersion);
+
+			ObjectMapper mapper = new ObjectMapper();
+
+			String currentInventoryData = this.currentInventoryCache.getIfPresent(vendorId);
+			if (currentInventoryData != null) {
+				
+				InventoryInfo cachedInventoryInfo = null;
+				
+				try {
+					cachedInventoryInfo = mapper.readValue(currentInventoryData, InventoryInfo.class);
+					LOGGER.debug(
+							"While checking latest inventory version for vendor [{}], found [{}] in cache and [{}] in DB",
+							vendorId, cachedInventoryInfo.getNewDataVersionId(), actualLatestVersion);
+					if (cachedInventoryInfo.getNewDataVersionId().compareTo(actualLatestVersion) == 0) {
+						continue;
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+					LOGGER.error(
+							"Received error [{}] while deserializing the InventoryInfo from the DB while building current cache for vendor [{}], version [{}] ",
+							e.getMessage(), vendorId, actualLatestVersion);
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					LOGGER.error(
+							"Received error [{}] while deserializing the InventoryInfo from the DB while building current cache for vendor [{}], version [{}] ",
+							ex.getMessage(), vendorId, actualLatestVersion);
+				}
+
+			}
+
+			this.currentInventoryCache.refresh(vendorId);
+			LOGGER.debug("Sent signal for cache refresh with vendor-version [{}-{}]", vendorId, actualLatestVersion);
+
+		}
+
+		session.close();
+		LOGGER.trace("**********************************************************");
+		LOGGER.trace("Exisitng 'processCurrentInventoryCache'");
+
 	}
 
 	public void removeVersionCacheForVendor(Long vendorId) {

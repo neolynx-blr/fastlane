@@ -19,17 +19,21 @@ import com.neolynx.curator.manager.InventoryDBSetup;
  * Created by nitesh.garg on 04-Sep-2015
  */
 public class DaemonJob implements Managed {
-	
-	private SessionFactory sessionFactory; 
+
+	private SessionFactory sessionFactory;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	private final LoadingCache<Long, String> currentInventoryCache;
 	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
-	
-	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DaemonJob-%d").setDaemon(true).build();
+
+	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DaemonJob-%d").setDaemon(true)
+			.build();
 	final ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
-	
-	public DaemonJob(SessionFactory sessionFactory, LoadingCache<String, InventoryInfo> differentialInventoryCache, LoadingCache<Long, Long> vendorVersionCache) {
+
+	public DaemonJob(SessionFactory sessionFactory, LoadingCache<String, InventoryInfo> differentialInventoryCache,
+			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<Long, String> currentInventoryCache) {
 		this.sessionFactory = sessionFactory;
 		this.vendorVersionCache = vendorVersionCache;
+		this.currentInventoryCache = currentInventoryCache;
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
@@ -41,7 +45,8 @@ public class DaemonJob implements Managed {
 	@Override
 	@UnitOfWork
 	public void start() throws Exception {
-		executorService.execute(new InventoryDBSetup(sessionFactory, this.differentialInventoryCache, this.vendorVersionCache));
+		executorService.execute(new InventoryDBSetup(sessionFactory, this.differentialInventoryCache,
+				this.vendorVersionCache, this.currentInventoryCache));
 	}
 
 	/*
@@ -51,12 +56,12 @@ public class DaemonJob implements Managed {
 	 */
 	@Override
 	public void stop() throws Exception {
-		
+
 		System.out.println("Shutting down the executor service...");
 		executorService.shutdown();
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 		System.out.println("Completed.");
-		
+
 	}
 
 }

@@ -35,6 +35,7 @@ import com.neolynx.common.model.client.price.TaxDetail;
 import com.neolynx.common.model.client.price.TaxInfo;
 import com.neolynx.curator.auth.ExampleAuthenticator;
 import com.neolynx.curator.auth.ExampleAuthorizer;
+import com.neolynx.curator.cache.CurrentInventoryLoader;
 import com.neolynx.curator.cache.DifferentialDataLoader;
 import com.neolynx.curator.cache.VendorVersionLoader;
 import com.neolynx.curator.cli.RenderCommand;
@@ -226,7 +227,14 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			
 			LOGGER.debug("Setting up the project for server side configuration...");
 			
-			final InventoryCurator invCurator = new InventoryCurator(hibernateBundle.getSessionFactory());
+			LOGGER.debug("Setting up caches for Vendor Version and Version Differential Data...");
+			
+			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
+			final LoadingCache<Long, String> currentInventoryCache = CacheBuilder.newBuilder().build(new CurrentInventoryLoader(hibernateBundle.getSessionFactory()));
+			final LoadingCache<String, InventoryInfo> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
+			final LoadingCache<String, InventoryInfo> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
+			
+			final InventoryCurator invCurator = new InventoryCurator(hibernateBundle.getSessionFactory(), currentInventoryCache);
 			final InventoryMasterDAO invMasterDAO = new InventoryMasterDAO(hibernateBundle.getSessionFactory());
 			
 			final VendorVersionDetailDAO vendorVersionDetailDAO = new VendorVersionDetailDAO(hibernateBundle.getSessionFactory());
@@ -257,15 +265,11 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			LOGGER.debug("Starting the application by processing any new inventory...");
 			invCurator.processNewInventory();
 
-			LOGGER.debug("Setting up caches for Vendor Version and Version Differential Data...");
-			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
-			final LoadingCache<String, InventoryInfo> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
-			final LoadingCache<String, InventoryInfo> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
 
 			LOGGER.debug("Setting up the vendor-version metadata in DB based on latest inventory...");
 			try {
-				invCurator.processVendorVersionMeta(vendorVersionCache);
-				invCurator.processVendorVersionMetaNew(differentialInventoryCache);
+				invCurator.processVendorDetailData(vendorVersionCache);
+				invCurator.processDifferentialData(differentialInventoryCache);
 			} catch (JsonProcessingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -282,7 +286,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * crashed last time in the middle or immediately post the DB
 			 * operation etc.
 			 */
-			final CacheCurator cacheCurator = new CacheCurator(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache, recentItemsCache);
+			final CacheCurator cacheCurator = new CacheCurator(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache, recentItemsCache, currentInventoryCache);
 			cacheCurator.processVendorVersionCache();
 			cacheCurator.processDifferentialInventoryCache();
 
@@ -292,12 +296,12 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * Contains the logic of serving the requests including latest
 			 * vendor inventory and since a specific version
 			 */
-			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, recentItemsCache);
-			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache, recentItemsCache);
+			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, recentItemsCache, currentInventoryCache);
+			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache, recentItemsCache, currentInventoryCache);
 			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, configuration.getCurationConfig(), cacheCurator, pmService, vvDiffService, vvDetailService, vendorItemService);
 
 			LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");
-			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache));
+			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache, currentInventoryCache));
 			LOGGER.debug("Setting up lifecycle for Version-Differential cache loaders...");
 			environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, recentItemsCache, cacheCurator));
 

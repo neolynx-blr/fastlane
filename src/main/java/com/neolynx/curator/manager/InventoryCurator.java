@@ -42,11 +42,14 @@ import com.neolynx.curator.util.Constants;
 public class InventoryCurator {
 
 	private final SessionFactory sessionFactory;
+	private final LoadingCache<Long, String> currentInventoryCache;
+
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryCurator.class);
-	
-	public InventoryCurator(SessionFactory sessionFactory) {
+
+	public InventoryCurator(SessionFactory sessionFactory, LoadingCache<Long, String> currentInventoryCache) {
 		super();
 		this.sessionFactory = sessionFactory;
+		this.currentInventoryCache = currentInventoryCache;
 	}
 
 	/*
@@ -544,7 +547,7 @@ public class InventoryCurator {
 	 * accordingly updates the caches.
 	 */
 	@SuppressWarnings("unchecked")
-	public void processVendorVersionMeta(LoadingCache<Long, Long> vendorVersionCache) {
+	public void processVendorDetailData(LoadingCache<Long, Long> vendorVersionCache) {
 
 		Session session = this.sessionFactory.openSession();
 
@@ -565,21 +568,52 @@ public class InventoryCurator {
 		// For every vendor where sync in required
 		for (VendorVersionDetail vvdDataRow : vvdDataRows) {
 
+			Long versionId = 0L;
 			Long vendorId = vvdDataRow.getVendorId();
+			InventoryInfo cachedInventory = new InventoryInfo();
 
-			Query maxVendorIdQuery = session.createSQLQuery(
-					" select max(version_id) maxVersionId from vendor_item_master vim where vendor_id = :vendorId ")
-					.setParameter("vendorId", vendorId);
+			ObjectMapper mapper = new ObjectMapper();
+			Query vendorItemMasterQuery = session
+					.createSQLQuery(" select vim.* from vendor_item_master vim where vendor_id = :vendorId ")
+					.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("vendorId", vendorId);
 
-			Long maxVersionId = Long.parseLong(maxVendorIdQuery.list().get(0).toString());
-			LOGGER.info("Working on vendor [{}] whose last and current version ids are [{}] and [{}]", vendorId,
-					vvdDataRow.getLatestSyncedVersionId(), maxVersionId);
+			List<VendorItemMaster> vendorItemMasterList = vendorItemMasterQuery.list();
+
+			if (CollectionUtils.isEmpty(vendorItemMasterList)) {
+				/**
+				 * Very unlikely because we just checked for the entries where
+				 * max version is higher in the item master table.
+				 */
+			}
+
+			for (VendorItemMaster instance : vendorItemMasterList) {
+				if (instance.getVersionId() > versionId) {
+					versionId = instance.getVersionId();
+				}
+				cachedInventory.getAddedItems().put(instance.getItemCode(), new ItemInfo(instance));
+			}
+
+			cachedInventory.setVendorId(vendorId);
+			cachedInventory.setCurrentDataVersionId(versionId);
+			cachedInventory.setNewDataVersionId(versionId);
+
+			try {
+				vvdDataRow.setCurrentInventory(mapper.writeValueAsString(cachedInventory));
+			} catch (Exception e) {
+				LOGGER.debug(
+						"Error [{}] occurred while serializing the latest inventory version [{}] for vendor [{}] and storing in DB",
+						versionId, vendorId);
+				e.printStackTrace();
+			}
+
+			LOGGER.debug("Working on vendor [{}] whose last and current version ids are [{}] and [{}]", vendorId,
+					vvdDataRow.getLatestSyncedVersionId(), versionId);
 
 			// Update the Vendor Version details for updates at some point
-			vvdDataRow.setLatestSyncedVersionId(maxVersionId);
+			vvdDataRow.setLatestSyncedVersionId(versionId);
 			vvdDataRow.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
-			vvdDataRow.setValidVersionIds((StringUtils.isEmpty(vvdDataRow.getValidVersionIds()) ? maxVersionId
-					.toString() : vvdDataRow.getValidVersionIds() + "," + maxVersionId));
+			vvdDataRow.setValidVersionIds((StringUtils.isEmpty(vvdDataRow.getValidVersionIds()) ? versionId.toString()
+					: vvdDataRow.getValidVersionIds() + "," + versionId));
 
 			// Update the vendor-version detail first
 			session.getTransaction().begin();
@@ -587,7 +621,7 @@ public class InventoryCurator {
 			session.merge(vvdDataRow);
 			session.getTransaction().commit();
 
-			LOGGER.info("Refreshing the cache entry for vendor [{}]", vendorId);
+			LOGGER.debug("Refreshing the cache entry for vendor [{}]", vendorId);
 			vendorVersionCache.refresh(vendorId);
 
 		}
@@ -601,479 +635,492 @@ public class InventoryCurator {
 	 * accordingly updates the caches.
 	 */
 	@SuppressWarnings("unchecked")
-	public void processVendorVersionMetaNew(LoadingCache<String, InventoryInfo> differentialInventoryCache)
+	public void processDifferentialData(LoadingCache<String, InventoryInfo> differentialInventoryCache)
 			throws JsonProcessingException {
 
-		try {
 		Session session = this.sessionFactory.openSession();
-
-		/*
-		 * Get the vendor-version combinations where latest known version hasn't
-		 * been synced
-		 */
-
-		Query vendorVersionDifferentialQuery = session
-				.createSQLQuery(
-						"select vvdf.* from vendor_version_differential vvdf where vvdf.is_valid = 't' and vvdf.last_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvdf.vendor_id) order by vendor_id, version_id ")
-				.addEntity("vvdf", VendorVersionDifferential.class);
-
-		List<VendorVersionDifferential> vendorVersionDifferentialList = vendorVersionDifferentialQuery.list();
-
-		LOGGER.debug(
-				"[{}] vendors selected from vendor-version-differential tables to be synced up with the latest version.",
-				vendorVersionDifferentialList.size());
-
-		// For every know vendor-version detail data
-		for (VendorVersionDifferential vendorVersionDifferential : vendorVersionDifferentialList) {
-
-			Long vendorId = vendorVersionDifferential.getVendorId();
-
-			Query vendorMaxVersionQuery = session.createSQLQuery(
-					" select max(version_id) latestVersionId from vendor_item_master vim where vendor_id = :vendorId ")
-					.setParameter("vendorId", vendorId);
-
-			Long lastSyncVersionId = vendorVersionDifferential.getLastSyncedVersionId();
-			Long latestVersionId = Long.parseLong(vendorMaxVersionQuery.list().get(0).toString());
-
-			LOGGER.debug("Working with vendor-version [{}]-[{}] for updating differential data from last sync version [{}] w.r.t. version [{}].",
-					vendorId, vendorVersionDifferential.getVersionId(), lastSyncVersionId, latestVersionId);
-
-			/**
-			 * For the scenarios where the vendor side data is seen for the
-			 * first time for a given vendor, the differential is nothing
-			 * because only known version in the latest version and there is no
-			 * differential data to report. Create an empty row but with latest
-			 * version information.
+		
+		try {
+			
+			/*
+			 * Get the vendor-version combinations where latest known version
+			 * hasn't been synced
 			 */
-			if (vendorVersionDifferential.getIsThisLatestVersion() && lastSyncVersionId.longValue() == 0L) {
+
+			Query vendorVersionDifferentialQuery = session
+					.createSQLQuery(
+							"select vvdf.* from vendor_version_differential vvdf where vvdf.is_valid = 't' and vvdf.last_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvdf.vendor_id) order by vendor_id, version_id ")
+					.addEntity("vvdf", VendorVersionDifferential.class);
+
+			List<VendorVersionDifferential> vendorVersionDifferentialList = vendorVersionDifferentialQuery.list();
+
+			LOGGER.debug(
+					"[{}] vendors selected from vendor-version-differential tables to be synced up with the latest version.",
+					vendorVersionDifferentialList.size());
+
+			// For every know vendor-version detail data
+			for (VendorVersionDifferential vendorVersionDifferential : vendorVersionDifferentialList) {
+
+				Long vendorId = vendorVersionDifferential.getVendorId();
+
+				Query vendorMaxVersionQuery = session
+						.createSQLQuery(
+								" select max(version_id) latestVersionId from vendor_item_master vim where vendor_id = :vendorId ")
+						.setParameter("vendorId", vendorId);
+
+				Long lastSyncVersionId = vendorVersionDifferential.getLastSyncedVersionId();
+				Long latestVersionId = Long.parseLong(vendorMaxVersionQuery.list().get(0).toString());
 
 				LOGGER.debug(
-						"It's the latest version entry with last synced version [{}] is 0 indicating new vendor data load, hence creating the first genuine differential record with latest version [{}]",
-						lastSyncVersionId, latestVersionId);
-
-				vendorVersionDifferential.setVersionId(latestVersionId);
-				vendorVersionDifferential.setLastSyncedVersionId(latestVersionId);
-				vendorVersionDifferential.setLastModifiedOn(new Date(System.currentTimeMillis()));
-
-				session.getTransaction().begin();
-				session.saveOrUpdate(vendorVersionDifferential);
-				session.merge(vendorVersionDifferential);
-				session.getTransaction().commit();
-			}
-			/**
-			 * Now this is the most recent latest version entry which now needs
-			 * to change and contain differentials w.r.t. the latest data 1.
-			 * Create a new latest version entry and 2. Update the now old
-			 * latest version entry
-			 */
-			else if (vendorVersionDifferential.getIsThisLatestVersion()) {
-
-				LOGGER.debug("Working on now-old latest version of data and will need to create a new latest version.");
-				VendorVersionDifferential vendorVersionDifferentialNew = new VendorVersionDifferential();
-				vendorVersionDifferentialNew.setVendorId(vendorId);
-				vendorVersionDifferentialNew.setVersionId(latestVersionId);
-				vendorVersionDifferentialNew.setIsThisLatestVersion(Boolean.TRUE);
-				vendorVersionDifferentialNew.setLastSyncedVersionId(latestVersionId);
-				vendorVersionDifferentialNew.setLastModifiedOn(new Date(System.currentTimeMillis()));
+						"Working with vendor-version [{}]-[{}] for updating differential data from last sync version [{}] w.r.t. version [{}].",
+						vendorId, vendorVersionDifferential.getVersionId(), lastSyncVersionId, latestVersionId);
 
 				/**
-				 * Now look for the last sync version data details to be
-				 * compared with the latest version data details. In case you
-				 * can't find that, delete the differential row completely for
-				 * rather using the most recent data version although this is
-				 * highly unlikely a case. Otherwise, simply compare and update
-				 * the previous latest version entry.
+				 * For the scenarios where the vendor side data is seen for the
+				 * first time for a given vendor, the differential is nothing
+				 * because only known version in the latest version and there is
+				 * no differential data to report. Create an empty row but with
+				 * latest version information.
 				 */
+				if (vendorVersionDifferential.getIsThisLatestVersion() && lastSyncVersionId.longValue() == 0L) {
 
-				Query lastSyncVendorHistoryDataQuery = session
-						.createSQLQuery(
-								" select vih.* from vendor_item_history vih where vendor_id = :vendorId and version_id = :lastSyncVersionId")
-						.addEntity("vih", VendorItemHistory.class).setParameter("vendorId", vendorId)
-						.setParameter("lastSyncVersionId", lastSyncVersionId);
-
-				List<VendorItemHistory> lastSyncItemHistoryDataList = lastSyncVendorHistoryDataQuery.list();
-
-				Query lastSyncVendorMasterDataQuery = session
-						.createSQLQuery(
-								" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :lastSyncVersionId")
-						.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
-						.setParameter("lastSyncVersionId", lastSyncVersionId);
-
-				List<VendorItemMaster> lastSyncItemMasterDataList = lastSyncVendorMasterDataQuery.list();
-
-				if (CollectionUtils.isEmpty(lastSyncItemHistoryDataList) && CollectionUtils.isEmpty(lastSyncItemMasterDataList)) {
-
-					LOGGER.debug("Item data against the last sync version [{}] is no (longer) available, simply remove this row so that users can pull the latest inventory always.", lastSyncVersionId);
-					vendorVersionDifferential.setIsValid(Boolean.FALSE);
-
-				} else {
-
-					int lastSyncMasterDataRows = lastSyncItemMasterDataList==null?0:lastSyncItemMasterDataList.size();
-					int lastSyncHistoryDataRows = lastSyncItemHistoryDataList==null?0:lastSyncItemHistoryDataList.size();
-					int totalLastSyncDataRows = lastSyncMasterDataRows + lastSyncHistoryDataRows; 
-					
-					LOGGER.debug("Found [{}] rows of last version [{}] data to compare with latest data. Of these [{}] are historic and [{}] from master.",
-							totalLastSyncDataRows, lastSyncVersionId, lastSyncHistoryDataRows, lastSyncMasterDataRows);
-
-					Query latestVendorDataQuery = session
-							.createSQLQuery(
-									" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId")
-							.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
-							.setParameter("latestVersionId", latestVersionId);
-
-					List<VendorItemMaster> latestItemDataList = latestVendorDataQuery.list();
 					LOGGER.debug(
-							"Found [{}] rows of latest version [{}] data to compare with [{}] rows of previous latest version [{}]",
-							latestItemDataList.size(), latestVersionId, totalLastSyncDataRows, lastSyncVersionId);
+							"It's the latest version entry with last synced version [{}] is 0 indicating new vendor data load, hence creating the first genuine differential record with latest version [{}]",
+							lastSyncVersionId, latestVersionId);
 
-					vendorVersionDifferential.setIsThisLatestVersion(Boolean.FALSE);
+					vendorVersionDifferential.setVersionId(latestVersionId);
 					vendorVersionDifferential.setLastSyncedVersionId(latestVersionId);
 					vendorVersionDifferential.setLastModifiedOn(new Date(System.currentTimeMillis()));
 
-					Map<String, VendorItemHistory> lastSyncItemDataMap = new HashMap<String, VendorItemHistory>();
-					for (VendorItemHistory instance : lastSyncItemHistoryDataList) {
-						lastSyncItemDataMap.put(instance.getItemCode(), instance);
-					}
+					session.getTransaction().begin();
+					session.saveOrUpdate(vendorVersionDifferential);
+					session.merge(vendorVersionDifferential);
+					session.getTransaction().commit();
+				}
+				/**
+				 * Now this is the most recent latest version entry which now
+				 * needs to change and contain differentials w.r.t. the latest
+				 * data 1. Create a new latest version entry and 2. Update the
+				 * now old latest version entry
+				 */
+				else if (vendorVersionDifferential.getIsThisLatestVersion()) {
 
-					for (VendorItemMaster instance : lastSyncItemMasterDataList) {
-						lastSyncItemDataMap.put(instance.getItemCode(), new VendorItemHistory(instance));
-					}
+					LOGGER.debug("Working on now-old latest version of data and will need to create a new latest version.");
+					VendorVersionDifferential vendorVersionDifferentialNew = new VendorVersionDifferential();
+					vendorVersionDifferentialNew.setVendorId(vendorId);
+					vendorVersionDifferentialNew.setVersionId(latestVersionId);
+					vendorVersionDifferentialNew.setIsThisLatestVersion(Boolean.TRUE);
+					vendorVersionDifferentialNew.setLastSyncedVersionId(latestVersionId);
+					vendorVersionDifferentialNew.setLastModifiedOn(new Date(System.currentTimeMillis()));
+
+					/**
+					 * Now look for the last sync version data details to be
+					 * compared with the latest version data details. In case
+					 * you can't find that, delete the differential row
+					 * completely for rather using the most recent data version
+					 * although this is highly unlikely a case. Otherwise,
+					 * simply compare and update the previous latest version
+					 * entry.
+					 */
 
 					ObjectMapper mapper = new ObjectMapper();
-					StringBuffer deltaItemCodes = new StringBuffer();
+					InventoryInfo lastSyncVersionInventory = null;
 
-					InventoryInfo newInventoryInfo = new InventoryInfo();
-					
-					newInventoryInfo.setVendorId(vendorId);
-					newInventoryInfo.setCurrentDataVersionId(vendorVersionDifferential.getVersionId());
-					newInventoryInfo.setNewDataVersionId(latestVersionId);
-
-					for (VendorItemMaster latestItemData : latestItemDataList) {
-
-						String itemCode = latestItemData.getItemCode();
-						VendorItemHistory lastSyncItemData = lastSyncItemDataMap.get(itemCode);
-
-						deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
-
-						/**
-						 * Comparing an item code among two version, if missing
-						 * in older version, add to the Added list, or else
-						 * update the entry. Note that if not found in latest
-						 * version instead, add to the deleted entry.
-						 */
-						if (lastSyncItemData == null) {
-							newInventoryInfo.getAddedItems().put(itemCode, new ItemInfo(latestItemData));
-							continue;
-						}
-
-						lastSyncItemDataMap.remove(itemCode);
-
-						ItemInfo latestItemInfo = new ItemInfo(latestItemData);
-						ItemInfo lastSyncItemInfo = new ItemInfo(lastSyncItemData);
-
-						newInventoryInfo.getUpdatedItems().put(itemCode,
-								lastSyncItemInfo.generateDifferentialFrom(latestItemInfo));
-
+					String currentLastSyncVersionCache = this.currentInventoryCache.get(vendorId);
+					if (StringUtils.isNotEmpty(currentLastSyncVersionCache)) {
+						lastSyncVersionInventory = mapper.readValue(currentLastSyncVersionCache, InventoryInfo.class);
+					} else {
+						// TODO Pull from DB
 					}
 
-					/**
-					 * For now let's not handle items remaining in the lastSync
-					 * bucket because there is no clear notion of delete in the
-					 * inventory-master.
-					 */
+					if (lastSyncVersionInventory == null || lastSyncVersionInventory.getAddedItems().size() == 0) {
 
-				/*
+						LOGGER.debug(
+								"Item data against the last sync version [{}] is no (longer) available, simply remove this row so that users can pull the latest inventory always.",
+								lastSyncVersionId);
+						vendorVersionDifferential.setIsValid(Boolean.FALSE);
 
-					for (String pendingItemCode : lastSyncItemDataMap.keySet()) {
-
-						deltaItemCodes.append(pendingItemCode + Constants.COMMA_SEPARATOR);
-						newInventoryInfo.getDeletedItems().add(pendingItemCode);
-
-					}
-*/
-					vendorVersionDifferential.setDifferentialData(mapper.writeValueAsString(newInventoryInfo));
-
-					String deltaItemCodesStr = deltaItemCodes.toString();
-					vendorVersionDifferential.setDeltaItemCodes(deltaItemCodesStr.substring(0,
-							deltaItemCodesStr.lastIndexOf(Constants.COMMA_SEPARATOR)));
-
-					LOGGER.debug(
-							"Completed updating differential data row for vendor [{}] with version [{}] to version [{}]",
-							vendorId, lastSyncVersionId, latestVersionId);
-
-				}
-
-				LOGGER.debug("Adding new differential data row for vendor [{}] version [{}]", vendorId, latestVersionId);
-				session.getTransaction().begin();
-				session.save(vendorVersionDifferentialNew);
-
-				session.saveOrUpdate(vendorVersionDifferential);
-				session.merge(vendorVersionDifferential);
-				session.getTransaction().commit();
-
-			}
-			/**
-			 * Work with one of the older version entry
-			 */
-			else {
-				
-				
-				Query lastSyncVendorHistoryDataQuery = session
-						.createSQLQuery(
-								" select vih.* from vendor_item_history vih where vendor_id = :vendorId and version_id = :lastSyncVersionId")
-						.addEntity("vih", VendorItemHistory.class).setParameter("vendorId", vendorId)
-						.setParameter("lastSyncVersionId", lastSyncVersionId);
-
-				List<VendorItemHistory> lastSyncItemHistoryDataList = lastSyncVendorHistoryDataQuery.list();
-
-				Query lastSyncVendorMasterDataQuery = session
-						.createSQLQuery(
-								" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :lastSyncVersionId")
-						.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
-						.setParameter("lastSyncVersionId", lastSyncVersionId);
-
-				List<VendorItemMaster> lastSyncItemMasterDataList = lastSyncVendorMasterDataQuery.list();
-
-
-				int lastSyncMasterDataRows = lastSyncItemMasterDataList==null?0:lastSyncItemMasterDataList.size();
-				int lastSyncHistoryDataRows = lastSyncItemHistoryDataList==null?0:lastSyncItemHistoryDataList.size();
-				int totalLastSyncDataRows = lastSyncMasterDataRows + lastSyncHistoryDataRows; 
-				
-				LOGGER.debug("Found [{}] rows of last version [{}] data to compare with latest data. Of these [{}] are historic and [{}] from master.",
-						totalLastSyncDataRows, lastSyncVersionId, lastSyncHistoryDataRows, lastSyncMasterDataRows);
-				/*
-				Query lastSyncVendorDataQuery = session
-						.createSQLQuery(
-								" select vih.* from vendor_item_history vih where vendor_id = :vendorId and version_id = :lastSyncVersionId")
-						.addEntity("vih", VendorItemHistory.class).setParameter("vendorId", vendorId)
-						.setParameter("lastSyncVersionId", lastSyncVersionId);
-
-				List<VendorItemHistory> lastSyncItemDataList = lastSyncVendorDataQuery.list();*/
-
-				Query latestVendorDataQuery = session
-						.createSQLQuery(
-								" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId")
-						.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
-						.setParameter("latestVersionId", latestVersionId);
-
-				List<VendorItemMaster> latestItemDataList = latestVendorDataQuery.list();
-				
-				LOGGER.debug(
-						"Found [{}] rows of latest version [{}] data to compare with [{}] rows of previous latest version [{}]",
-						latestItemDataList.size(), latestVersionId, totalLastSyncDataRows, lastSyncVersionId);
-
-				ObjectMapper mapper = new ObjectMapper();
-				InventoryInfo previousDifferentialInventoryData = null;
-				try {
-					previousDifferentialInventoryData = mapper.readValue(
-							vendorVersionDifferential.getDifferentialData(), InventoryInfo.class);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				LOGGER.debug(
-						"Previous differential data for version [{}] has [{}] Added, [{}] Updated and [{}] Deleted items from last sync version [{}]",
-						previousDifferentialInventoryData.getCurrentDataVersionId(), previousDifferentialInventoryData
-								.getAddedItems().size(), previousDifferentialInventoryData.getUpdatedItems().size(),
-						previousDifferentialInventoryData.getDeletedItems().size(), previousDifferentialInventoryData
-								.getNewDataVersionId());
-
-				String previousDeltaItemCodes = vendorVersionDifferential.getDeltaItemCodes();
-				StringBuffer deltaItemCodes = new StringBuffer(previousDeltaItemCodes);
-
-				Map<String, VendorItemHistory> lastSyncItemDataMap = new HashMap<String, VendorItemHistory>();
-				for (VendorItemHistory instance : lastSyncItemHistoryDataList) {
-					lastSyncItemDataMap.put(instance.getItemCode(), instance);
-				}
-
-				for (VendorItemMaster instance : lastSyncItemMasterDataList) {
-					lastSyncItemDataMap.put(instance.getItemCode(), new VendorItemHistory(instance));
-				}
-
-				
-				LOGGER.debug("Found [{}] items in the last synced vendor version [{}] which will now be compared to latest data", lastSyncItemDataMap.size(), lastSyncVersionId);
-
-				for (VendorItemMaster latestItemData : latestItemDataList) {
-
-					String itemCode = latestItemData.getItemCode();
-					LOGGER.debug("Working with item-code [{}] from the latest vendor-version [{}]-[{}]", itemCode, vendorId, latestVersionId);
-					
-					VendorItemHistory lastSyncItemData = lastSyncItemDataMap.get(itemCode);
-					
-					if (lastSyncItemData == null) {
-						/**
-						 * New item got added to the latest version. There is no
-						 * chance this could be added/updated to the
-						 * differential but might be present in deleted folder,
-						 * so simply remove if present there and added to
-						 * updated list. Since original version data is not
-						 * being looked at, simply add the complete data to the
-						 * updated list.
-						 */
-						
-						LOGGER.debug("No data found for item-code [{}] in the last synced vendor version [{}]", itemCode, lastSyncVersionId);
-
-						if (previousDifferentialInventoryData.getDeletedItems().contains(itemCode)) {
-							previousDifferentialInventoryData.getDeletedItems().remove(itemCode);
-							previousDifferentialInventoryData.getUpdatedItems().put(itemCode,
-									new ItemInfo(latestItemData));
-						}
-						/**
-						 * If not found in the deleted list, consider new
-						 * addition and add to the "Added" list. There is no
-						 * chance of this missing item from last version to
-						 * be in added/updated list.
-						 */
-						else {
-							previousDifferentialInventoryData.getAddedItems().put(itemCode,
-									new ItemInfo(latestItemData));
-							deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
-						}
-
-						continue;
-					}
-
-					lastSyncItemDataMap.remove(itemCode);
-					ItemInfo latestItemInfo = new ItemInfo(latestItemData);
-
-					if (previousDifferentialInventoryData.getAddedItems().keySet().contains(itemCode)) {
-
-						/**
-						 * Previously the item was added, and now updated in the
-						 * latest version. Now w.r.t. the original version, it's
-						 * still an added item, so simply take the latest data
-						 * and put that in the added bucket.
-						 */
-						
-						LOGGER.debug("This item was previously added in differential, so simply adding the latest version [{}] of this item [{}]", latestVersionId, itemCode);
-						previousDifferentialInventoryData.getAddedItems().replace(itemCode, latestItemInfo);
-
-					} else if (previousDifferentialInventoryData.getDeletedItems().contains(itemCode)) {
-						// Not possible
 					} else {
 
-						/**
-						 * To keep the things simple, just get the data from DB
-						 * and calculate the delta.
-						 */
+						int totalLastSyncDataRows = lastSyncVersionInventory.getAddedItems().size();
 
-						LOGGER.debug("This item was previously updated or missing in differential, so need to do heavy processing.");
-						
-						Query oldVendorDataQuery = session
+						LOGGER.debug("Found [{}] rows of last version [{}] data to compare with latest data",
+								totalLastSyncDataRows, lastSyncVersionId);
+
+						Query latestVendorDataQuery = session
 								.createSQLQuery(
-										" select vih.* from vendor_item_history vih where vendor_id = :vendorId and version_id = :versionId and item_code = :itemCode")
-								.addEntity("vih", VendorItemHistory.class)
-								.setParameter("versionId", previousDifferentialInventoryData.getCurrentDataVersionId())
-								.setParameter("vendorId", vendorId)
-								.setParameter("itemCode", itemCode);
+										" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId")
+								.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
+								.setParameter("latestVersionId", latestVersionId);
 
-						List<VendorItemHistory> oldItemDataList = oldVendorDataQuery.list();
-						LOGGER.debug("Pulled old data from history with version [{}] and found [{}] rows", previousDifferentialInventoryData.getCurrentDataVersionId(), (oldItemDataList == null ? "NULL" : oldItemDataList.size()));
-						
-						ItemInfo oldItemInfo = null;
+						List<VendorItemMaster> latestItemDataList = latestVendorDataQuery.list();
+						LOGGER.debug(
+								"Found [{}] rows of latest version [{}] data to compare with [{}] rows of previous latest version [{}]",
+								latestItemDataList.size(), latestVersionId, totalLastSyncDataRows, lastSyncVersionId);
 
-						if (CollectionUtils.isNotEmpty(oldItemDataList)) {
-							oldItemInfo = new ItemInfo(oldItemDataList.get(0));
+						vendorVersionDifferential.setIsThisLatestVersion(Boolean.FALSE);
+						vendorVersionDifferential.setLastSyncedVersionId(latestVersionId);
+						vendorVersionDifferential.setLastModifiedOn(new Date(System.currentTimeMillis()));
+
+						Map<String, ItemInfo> lastSyncItemDataMap = new HashMap<String, ItemInfo>();
+
+						for (String key : lastSyncVersionInventory.getAddedItems().keySet()) {
+							ItemInfo itemInfo = lastSyncVersionInventory.getAddedItems().get(key);
+							lastSyncItemDataMap.put(itemInfo.getItemCode(), itemInfo);
 						}
 
-						if (oldItemInfo == null) {
-							/**
-							 * Although very unlikely case but just in case the
-							 * original data is not available form the DB, make
-							 * a new Added entry for the version into the
-							 * differential data.
-							 */
-							
-							LOGGER.debug("Looked up original data from history for item-code [{}] using version [{}], but found nothing. Adding it as fresh item from latest version [{}]", itemCode, previousDifferentialInventoryData.getCurrentDataVersionId(), latestVersionId);
-							previousDifferentialInventoryData.getAddedItems().put(itemCode, latestItemInfo);
+						StringBuffer deltaItemCodes = new StringBuffer();
 
-						} else {
-							
-							LOGGER.debug("Looked up original data from history for item-code [{}] using version [{}], and found the data", itemCode, previousDifferentialInventoryData.getCurrentDataVersionId());
-							
-							try {
-							previousDifferentialInventoryData.getUpdatedItems().put(itemCode,
-									oldItemInfo.generateDifferentialFrom(latestItemInfo));
-							} catch(Exception e) {
-								LOGGER.debug("Found error while generating differential of item-info with message [{}]", e.getMessage());
-								e.printStackTrace();
+						InventoryInfo newInventoryInfo = new InventoryInfo();
+
+						newInventoryInfo.setVendorId(vendorId);
+						newInventoryInfo.setCurrentDataVersionId(vendorVersionDifferential.getVersionId());
+						newInventoryInfo.setNewDataVersionId(latestVersionId);
+
+						for (VendorItemMaster latestItemData : latestItemDataList) {
+
+							String itemCode = latestItemData.getItemCode();
+							ItemInfo latestItemInfo = new ItemInfo(latestItemData);
+							ItemInfo lastSyncItemInfo = lastSyncItemDataMap.get(itemCode);
+
+							deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
+
+							/**
+							 * Comparing an item code among two version, if
+							 * missing in older version, add to the Added list,
+							 * or else update the entry. Note that if not found
+							 * in latest version instead, add to the deleted
+							 * entry.
+							 */
+							if (lastSyncItemInfo == null) {
+								newInventoryInfo.getAddedItems().put(itemCode, latestItemInfo);
+								continue;
 							}
+
+							lastSyncItemDataMap.remove(itemCode);
+
+							newInventoryInfo.getUpdatedItems().put(itemCode,
+									lastSyncItemInfo.generateDifferentialFrom(latestItemInfo));
+
 						}
 
 						/**
-						 * If this wasn't previously contained in the delta of
-						 * item codes, add it
+						 * For now let's not handle items remaining in the
+						 * lastSync bucket because there is no clear notion of
+						 * delete in the inventory-master.
 						 */
-						if (!previousDeltaItemCodes.contains(itemCode)) {
-							deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
-						}
 
-					}
+						/*
+						 * 
+						 * for (String pendingItemCode :
+						 * lastSyncItemDataMap.keySet()) {
+						 * 
+						 * deltaItemCodes.append(pendingItemCode +
+						 * Constants.COMMA_SEPARATOR);
+						 * newInventoryInfo.getDeletedItems
+						 * ().add(pendingItemCode);
+						 * 
+						 * }
+						 */
+						vendorVersionDifferential.setDifferentialData(mapper.writeValueAsString(newInventoryInfo));
 
-				}
-
-					/**
-					 * For now let's not handle items remaining in the lastSync
-					 * bucket because there is no clear notion of delete in the
-					 * inventory-master.
-					 */
-
-				/*
-				for (String pendingItemCode : lastSyncItemDataMap.keySet()) {
-
-					if (previousDifferentialInventoryData.getAddedItems().keySet().contains(pendingItemCode)) {
-						previousDifferentialInventoryData.getAddedItems().remove(pendingItemCode);
-					} else if (previousDifferentialInventoryData.getUpdatedItems().keySet().contains(pendingItemCode)) {
-						previousDifferentialInventoryData.getUpdatedItems().remove(pendingItemCode);
-						previousDifferentialInventoryData.getDeletedItems().add(pendingItemCode);
-					}
-
-					deltaItemCodes.append(pendingItemCode + Constants.COMMA_SEPARATOR);
-
-				}*/
-
-				previousDifferentialInventoryData.setNewDataVersionId(latestVersionId);
-				
-				String deltaItemCodesStr = deltaItemCodes.toString();
-					if (StringUtils.isNotEmpty(deltaItemCodesStr)
-							&& deltaItemCodesStr.lastIndexOf(Constants.COMMA_SEPARATOR) > 0) {
+						String deltaItemCodesStr = deltaItemCodes.toString();
 						vendorVersionDifferential.setDeltaItemCodes(deltaItemCodesStr.substring(0,
 								deltaItemCodesStr.lastIndexOf(Constants.COMMA_SEPARATOR)));
+
+						LOGGER.debug(
+								"Completed updating differential data row for vendor [{}] with version [{}] to version [{}]",
+								vendorId, lastSyncVersionId, latestVersionId);
+
 					}
 
-				vendorVersionDifferential.setDifferentialData(mapper
-						.writeValueAsString(previousDifferentialInventoryData));
+					LOGGER.debug("Adding new differential data row for vendor [{}] version [{}]", vendorId,
+							latestVersionId);
+					session.getTransaction().begin();
+					session.save(vendorVersionDifferentialNew);
 
-				vendorVersionDifferential.setLastSyncedVersionId(latestVersionId);
-				vendorVersionDifferential.setLastModifiedOn(new Date(System.currentTimeMillis()));
+					session.saveOrUpdate(vendorVersionDifferential);
+					session.merge(vendorVersionDifferential);
+					session.getTransaction().commit();
 
-				session.getTransaction().begin();
-				session.saveOrUpdate(vendorVersionDifferential);
-				session.merge(vendorVersionDifferential);
-				session.getTransaction().commit();
+				}
+				/**
+				 * Work with one of the older version entry
+				 */
+				else {
 
-				LOGGER.debug(
-						"Completed updating differential data row for vendor [{}] with version [{}] to version [{}]",
-						vendorId, lastSyncVersionId, latestVersionId);
+					ObjectMapper mapper = new ObjectMapper();
+					InventoryInfo lastSyncVersionInventory = null;
 
-				LOGGER.info("Refreshing the cache entry for vendor [{}]", vendorId);
-				differentialInventoryCache.refresh(vendorId + "-" + latestVersionId);
+					String currentLastSyncVersionCache = this.currentInventoryCache.get(vendorId);
+					if (StringUtils.isNotEmpty(currentLastSyncVersionCache)) {
+						lastSyncVersionInventory = mapper.readValue(currentLastSyncVersionCache, InventoryInfo.class);
+					} else {
+						// TODO Pull from DB
+					}
+
+					if (lastSyncVersionInventory == null || lastSyncVersionInventory.getAddedItems().size() == 0) {
+						// TODO Pull from DB
+
+						LOGGER.debug(
+								"Item data against the last sync version [{}] is no (longer) available, simply remove this row so that users can pull the latest inventory always.",
+								lastSyncVersionId);
+						vendorVersionDifferential.setIsValid(Boolean.FALSE);
+
+					} else {
+
+						int totalLastSyncDataRows = lastSyncVersionInventory.getAddedItems().size();
+
+						LOGGER.debug("Found [{}] rows of last version [{}] data to compare with latest data.",
+								totalLastSyncDataRows, lastSyncVersionId);
+
+						Query latestVendorDataQuery = session
+								.createSQLQuery(
+										" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId")
+								.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
+								.setParameter("latestVersionId", latestVersionId);
+
+						List<VendorItemMaster> latestItemDataList = latestVendorDataQuery.list();
+
+						LOGGER.debug(
+								"Found [{}] rows of latest version [{}] data to compare with [{}] rows of previous latest version [{}]",
+								latestItemDataList.size(), latestVersionId, totalLastSyncDataRows, lastSyncVersionId);
+
+						InventoryInfo previousDifferentialInventoryData = null;
+						try {
+							previousDifferentialInventoryData = mapper.readValue(
+									vendorVersionDifferential.getDifferentialData(), InventoryInfo.class);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+
+						LOGGER.debug(
+								"Previous differential data for version [{}] has [{}] Added, [{}] Updated and [{}] Deleted items from last sync version [{}]",
+								previousDifferentialInventoryData.getCurrentDataVersionId(),
+								previousDifferentialInventoryData.getAddedItems().size(),
+								previousDifferentialInventoryData.getUpdatedItems().size(),
+								previousDifferentialInventoryData.getDeletedItems().size(),
+								previousDifferentialInventoryData.getNewDataVersionId());
+
+						String previousDeltaItemCodes = vendorVersionDifferential.getDeltaItemCodes();
+						StringBuffer deltaItemCodes = new StringBuffer(previousDeltaItemCodes);
+
+						Map<String, ItemInfo> lastSyncItemDataMap = new HashMap<String, ItemInfo>();
+
+						for (String key : lastSyncVersionInventory.getAddedItems().keySet()) {
+							ItemInfo itemInfo = lastSyncVersionInventory.getAddedItems().get(key);
+							lastSyncItemDataMap.put(itemInfo.getItemCode(), itemInfo);
+						}
+
+						LOGGER.debug(
+								"Found [{}] items in the last synced vendor version [{}] which will now be compared to latest data",
+								lastSyncItemDataMap.size(), lastSyncVersionId);
+
+						for (VendorItemMaster latestItemData : latestItemDataList) {
+
+							String itemCode = latestItemData.getItemCode();
+							LOGGER.debug("Working with item-code [{}] from the latest vendor-version [{}]-[{}]",
+									itemCode, vendorId, latestVersionId);
+
+							ItemInfo lastSyncItemData = lastSyncItemDataMap.get(itemCode);
+
+							if (lastSyncItemData == null) {
+								/**
+								 * New item got added to the latest version.
+								 * There is no chance this could be
+								 * added/updated to the differential but might
+								 * be present in deleted folder, so simply
+								 * remove if present there and added to updated
+								 * list. Since original version data is not
+								 * being looked at, simply add the complete data
+								 * to the updated list.
+								 */
+
+								LOGGER.debug("No data found for item-code [{}] in the last synced vendor version [{}]",
+										itemCode, lastSyncVersionId);
+
+								if (previousDifferentialInventoryData.getDeletedItems().contains(itemCode)) {
+									previousDifferentialInventoryData.getDeletedItems().remove(itemCode);
+									previousDifferentialInventoryData.getUpdatedItems().put(itemCode,
+											new ItemInfo(latestItemData));
+								}
+								/**
+								 * If not found in the deleted list, consider
+								 * new addition and add to the "Added" list.
+								 * There is no chance of this missing item from
+								 * last version to be in added/updated list.
+								 */
+								else {
+									previousDifferentialInventoryData.getAddedItems().put(itemCode,
+											new ItemInfo(latestItemData));
+									deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
+								}
+
+								continue;
+							}
+
+							lastSyncItemDataMap.remove(itemCode);
+							ItemInfo latestItemInfo = new ItemInfo(latestItemData);
+
+							if (previousDifferentialInventoryData.getAddedItems().keySet().contains(itemCode)) {
+
+								/**
+								 * Previously the item was added, and now
+								 * updated in the latest version. Now w.r.t. the
+								 * original version, it's still an added item,
+								 * so simply take the latest data and put that
+								 * in the added bucket.
+								 */
+
+								LOGGER.debug(
+										"This item was previously added in differential, so simply adding the latest version [{}] of this item [{}]",
+										latestVersionId, itemCode);
+								previousDifferentialInventoryData.getAddedItems().replace(itemCode, latestItemInfo);
+
+							} else if (previousDifferentialInventoryData.getDeletedItems().contains(itemCode)) {
+								// Not possible
+							} else {
+
+								/**
+								 * To keep the things simple, just get the data
+								 * from DB and calculate the delta.
+								 */
+
+								LOGGER.debug("This item was previously updated or missing in differential, so need to do heavy processing.");
+
+								Query oldVendorDataQuery = session
+										.createSQLQuery(
+												" select vih.* from vendor_item_history vih where vendor_id = :vendorId and version_id = :versionId and item_code = :itemCode")
+										.addEntity("vih", VendorItemHistory.class)
+										.setParameter("versionId",
+												previousDifferentialInventoryData.getCurrentDataVersionId())
+										.setParameter("vendorId", vendorId).setParameter("itemCode", itemCode);
+
+								List<VendorItemHistory> oldItemDataList = oldVendorDataQuery.list();
+								LOGGER.debug("Pulled old data from history with version [{}] and found [{}] rows",
+										previousDifferentialInventoryData.getCurrentDataVersionId(),
+										(oldItemDataList == null ? "NULL" : oldItemDataList.size()));
+
+								ItemInfo oldItemInfo = null;
+
+								if (CollectionUtils.isNotEmpty(oldItemDataList)) {
+									oldItemInfo = new ItemInfo(oldItemDataList.get(0));
+								}
+
+								if (oldItemInfo == null) {
+									/**
+									 * Although very unlikely case but just in
+									 * case the original data is not available
+									 * form the DB, make a new Added entry for
+									 * the version into the differential data.
+									 */
+
+									LOGGER.debug(
+											"Looked up original data from history for item-code [{}] using version [{}], but found nothing. Adding it as fresh item from latest version [{}]",
+											itemCode, previousDifferentialInventoryData.getCurrentDataVersionId(),
+											latestVersionId);
+									previousDifferentialInventoryData.getAddedItems().put(itemCode, latestItemInfo);
+
+								} else {
+
+									LOGGER.debug(
+											"Looked up original data from history for item-code [{}] using version [{}], and found the data",
+											itemCode, previousDifferentialInventoryData.getCurrentDataVersionId());
+
+									try {
+										previousDifferentialInventoryData.getUpdatedItems().put(itemCode,
+												oldItemInfo.generateDifferentialFrom(latestItemInfo));
+									} catch (Exception e) {
+										LOGGER.debug(
+												"Found error while generating differential of item-info with message [{}]",
+												e.getMessage());
+										e.printStackTrace();
+									}
+								}
+
+								/**
+								 * If this wasn't previously contained in the
+								 * delta of item codes, add it
+								 */
+								if (!previousDeltaItemCodes.contains(itemCode)) {
+									deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
+								}
+
+							}
+
+						}
+
+						/**
+						 * For now let's not handle items remaining in the
+						 * lastSync bucket because there is no clear notion of
+						 * delete in the inventory-master.
+						 */
+
+						/*
+						 * for (String pendingItemCode :
+						 * lastSyncItemDataMap.keySet()) {
+						 * 
+						 * if
+						 * (previousDifferentialInventoryData.getAddedItems().
+						 * keySet ().contains(pendingItemCode)) {
+						 * previousDifferentialInventoryData
+						 * .getAddedItems().remove(pendingItemCode); } else if
+						 * (previousDifferentialInventoryData
+						 * .getUpdatedItems().
+						 * keySet().contains(pendingItemCode)) {
+						 * previousDifferentialInventoryData
+						 * .getUpdatedItems().remove(pendingItemCode);
+						 * previousDifferentialInventoryData
+						 * .getDeletedItems().add(pendingItemCode); }
+						 * 
+						 * deltaItemCodes.append(pendingItemCode +
+						 * Constants.COMMA_SEPARATOR);
+						 * 
+						 * }
+						 */
+
+						previousDifferentialInventoryData.setNewDataVersionId(latestVersionId);
+
+						String deltaItemCodesStr = deltaItemCodes.toString();
+						if (StringUtils.isNotEmpty(deltaItemCodesStr)
+								&& deltaItemCodesStr.lastIndexOf(Constants.COMMA_SEPARATOR) > 0) {
+							vendorVersionDifferential.setDeltaItemCodes(deltaItemCodesStr.substring(0,
+									deltaItemCodesStr.lastIndexOf(Constants.COMMA_SEPARATOR)));
+						}
+
+						vendorVersionDifferential.setDifferentialData(mapper
+								.writeValueAsString(previousDifferentialInventoryData));
+
+						vendorVersionDifferential.setLastSyncedVersionId(latestVersionId);
+						vendorVersionDifferential.setLastModifiedOn(new Date(System.currentTimeMillis()));
+
+						session.getTransaction().begin();
+						session.saveOrUpdate(vendorVersionDifferential);
+						session.merge(vendorVersionDifferential);
+						session.getTransaction().commit();
+
+						LOGGER.debug(
+								"Completed updating differential data row for vendor [{}] with version [{}] to version [{}]",
+								vendorId, lastSyncVersionId, latestVersionId);
+
+						LOGGER.info("Refreshing the cache entry for vendor [{}]", vendorId);
+						differentialInventoryCache.refresh(vendorId + "-" + latestVersionId);
+					}
+				}
+
+				LOGGER.debug("Finished handling the differential data for venrdor-version-lastversion [{}]-[{}]-[{}]",
+						vendorVersionDifferential.getVendorId(), vendorVersionDifferential.getVersionId(),
+						vendorVersionDifferential.getLastSyncedVersionId());
 
 			}
 
-			LOGGER.debug("Finished handling the differential data for venrdor-version-lastversion [{}]-[{}]-[{}]",
-					vendorVersionDifferential.getVendorId(), vendorVersionDifferential.getVersionId(),
-					vendorVersionDifferential.getLastSyncedVersionId());
-
+		} catch (Exception e) {
+			e.printStackTrace();
+			LOGGER.debug("Something happened somewhere with message [{}]", e.getMessage());
+		} finally {
+			session.close();
 		}
-
-		session.close();
-
-	} catch(Exception e) {
-		e.printStackTrace();
-		LOGGER.debug("Something happened somewhere with message [{}]", e.getMessage());
-	}
 	}
 
 }

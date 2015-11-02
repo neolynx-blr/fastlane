@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
 import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.curator.cache.model.CacheDetail;
@@ -21,13 +22,15 @@ public class CacheEvaluator {
 	static Logger LOGGER = LoggerFactory.getLogger(CacheEvaluator.class);
 
 	private final LoadingCache<String, InventoryInfo> recentItemsCache;
+	private final LoadingCache<Long, String> currentInventoryCache;
 	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 
 	public CacheEvaluator(LoadingCache<String, InventoryInfo> differentialInventoryCache,
-			LoadingCache<String, InventoryInfo> recentItemsCache) {
+			LoadingCache<String, InventoryInfo> recentItemsCache, LoadingCache<Long, String> currentInventoryCache) {
 		super();
 		this.differentialInventoryCache = differentialInventoryCache;
 		this.recentItemsCache = recentItemsCache;
+		this.currentInventoryCache = currentInventoryCache;
 	}
 
 	// Simply pull the data from the cache for given vendor
@@ -59,6 +62,30 @@ public class CacheEvaluator {
 			}
 			LOGGER.debug("Returning [{}] version cache entries for vendor [{}]", versionEntriesCount, vendorId);
 		}
+
+		return cacheResponse;
+	}
+
+	// Simply pull the data from the cache for given vendor
+	public List<CacheDetail> getCurrentInventoryCacheDetails(Long vendorId) {
+
+		List<CacheDetail> cacheResponse = new ArrayList<CacheDetail>();
+
+		ObjectMapper mapper = new ObjectMapper();
+
+		int versionEntriesCount = 0;
+		CacheDetail cDetail = new CacheDetail();
+		String inventoryCacheAsString = this.currentInventoryCache.getIfPresent(vendorId);
+		try {
+			cDetail.setResponse(mapper.readValue(inventoryCacheAsString, InventoryInfo.class));
+		} catch (Exception e) {
+			e.printStackTrace();
+			LOGGER.error("Error [{}] while deserializing the read current inventory from the cache", e.getMessage());
+		}
+		cDetail.setVersionId(cDetail.getResponse() == null ? null : cDetail.getResponse().getNewDataVersionId());
+		cacheResponse.add(cDetail);
+		versionEntriesCount++;
+		LOGGER.debug("Returning [{}] entries for items from recent-items cache.", versionEntriesCount);
 
 		return cacheResponse;
 	}
