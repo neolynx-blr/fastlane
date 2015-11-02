@@ -3,14 +3,11 @@ package com.neolynx.curator.manager;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.StrTokenizer;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -366,187 +363,6 @@ public class InventoryCurator {
 	 * accordingly updates the caches.
 	 */
 	@SuppressWarnings("unchecked")
-	public void processVendorVersionMetaOld(LoadingCache<String, InventoryInfo> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache) {
-
-		boolean vendorDataUpdated = false;
-		Session session = this.sessionFactory.openSession();
-
-		// Get the latest known version for each vendor
-		Query vendorItemMasterQuery = session
-				.createSQLQuery("select vendor_id, max(version_id) max_version_id from vendor_item_master group by vendor_id");
-
-		List<Object[]> vimDataRows = vendorItemMasterQuery.list();
-		LOGGER.debug("[{}] vendors selected from vendor-item-master tables to be checked for any inventory updates.",
-				vimDataRows.size());
-
-		// For every known vendor and it's max version-id
-		for (Object[] vimDataRow : vimDataRows) {
-
-			Long vendorId = (Long) Long.parseLong(vimDataRow[0].toString());
-			Long maxVersionId = (Long) Long.parseLong(vimDataRow[1].toString());
-
-			// Look for the version details and their differentials
-			Query vendorItemCurrentStateQuery = session
-					.createSQLQuery(
-							"select {vvdf.*}, {vvd.*} "
-									+ " from vendor_version_differential vvdf, vendor_version_detail vvd "
-									+ " where vvd.vendor_id = vvdf.vendor_id and vvd.vendor_id = :vendorId ")
-					.addEntity("vvdf", VendorVersionDifferential.class).addEntity("vvd", VendorVersionDetail.class)
-					.setParameter("vendorId", vendorId);
-
-			List<Object[]> vvdDataRows = vendorItemCurrentStateQuery.list();
-			LOGGER.debug(
-					"Looked at vendor version details along with differential data and found [{}] rows for processing against the latest vendor-item-master table",
-					vvdDataRows.size());
-
-			VendorVersionDifferential vendorVersionDifferentialNew = new VendorVersionDifferential();
-			vendorVersionDifferentialNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
-			vendorVersionDifferentialNew.setLastSyncedVersionId(maxVersionId);
-			vendorVersionDifferentialNew.setVendorId(vendorId);
-			vendorVersionDifferentialNew.setVersionId(maxVersionId);
-
-			if (CollectionUtils.isNotEmpty(vvdDataRows)) {
-
-				// For every know vendor-version detail data
-				for (Object[] vvdDataRow : vvdDataRows) {
-
-					VendorVersionDetail vendorVersionDetail = (VendorVersionDetail) vvdDataRow[1];
-					VendorVersionDifferential vendorVersionDifferential = (VendorVersionDifferential) vvdDataRow[0];
-
-					/*
-					 * If the latest known version in item-master is more than
-					 * the previously synced version in detail/differential
-					 * data, need updates to those tables.
-					 */
-					if (vendorVersionDetail.getLatestSyncedVersionId() < maxVersionId) {
-
-						Long lastSyncedVersionId = vendorVersionDetail.getLatestSyncedVersionId();
-
-						LOGGER.debug(
-								"For vendor [{}], the last synced version [{}] is older than latest version [{}] found in vendor-item-master table.",
-								vendorId, lastSyncedVersionId, maxVersionId);
-
-						vendorVersionDetail.setLatestSyncedVersionId(maxVersionId);
-						vendorVersionDetail.setValidVersionIds(vendorVersionDetail.getValidVersionIds() + ","
-								+ maxVersionId);
-						vendorVersionDetail.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
-
-						/*
-						 * Among all the new data for this vendor under
-						 * processing, group the new items by various new
-						 * version ids.
-						 */
-						Query vendorItemDifferentialQuery = session
-								.createSQLQuery(
-										"select vendor_id, version_id, string_agg(item_code, ',') " + "from ("
-												+ "	select vendor_id, version_id, item_code "
-												+ "	from vendor_item_master vim " + " where vim.vendor_id = :vendorId "
-												+ " and vim.version_id > :lastSyncedVersionId "
-												+ " and vim.version_id <= :latestVersionId) vim_inner "
-												+ "group by vendor_id, version_id order by vendor_id, version_id")
-								.setParameter("vendorId", vendorId)
-								.setParameter("lastSyncedVersionId", lastSyncedVersionId)
-								.setParameter("latestVersionId", maxVersionId);
-
-						LOGGER.debug("[{}] different new versions found for vendor [{}] since the last sync up.");
-
-						Object[] diffDataRows = (Object[]) vendorItemDifferentialQuery.list().get(0);
-
-						String newItemDifferential = (String) diffDataRows[2];
-						String existingItemDifferential = vendorVersionDifferential.getDeltaItemCodes();
-
-						vendorVersionDifferential.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
-						vendorVersionDifferential.setLastSyncedVersionId(maxVersionId);
-
-						if (newItemDifferential == null || newItemDifferential.trim().length() < 1) {
-							// Very unlikely state. No operation
-						} else {
-							if (existingItemDifferential == null || existingItemDifferential.trim().length() < 1) {
-								vendorVersionDifferential.setDeltaItemCodes(newItemDifferential);
-
-							} else {
-
-								Set<String> newDeltaItemCodes = new HashSet<String>();
-
-								List<String> newStringTokens = new StrTokenizer(newItemDifferential, ",")
-										.getTokenList();
-								List<String> existingStringTokens = new StrTokenizer(existingItemDifferential, ",")
-										.getTokenList();
-
-								newDeltaItemCodes.addAll(newStringTokens);
-								newDeltaItemCodes.addAll(existingStringTokens);
-
-								StringBuffer updatedDeltaItemCodes = new StringBuffer();
-
-								for (String itemCode : newDeltaItemCodes) {
-									if (updatedDeltaItemCodes.length() < 1) {
-										updatedDeltaItemCodes.append(itemCode);
-									} else {
-										updatedDeltaItemCodes.append("," + itemCode);
-									}
-								}
-
-								vendorVersionDifferential.setDeltaItemCodes(updatedDeltaItemCodes.toString());
-
-							}
-							session.getTransaction().begin();
-
-							session.saveOrUpdate(vendorVersionDifferential);
-							session.merge(vendorVersionDifferential);
-
-							session.save(vendorVersionDifferentialNew);
-
-							session.getTransaction().commit();
-							vendorDataUpdated = true;
-
-						}
-
-					} else {
-						// Everything up-to-date, no-operation
-						System.out.println("Turned out to be a no-op.");
-					}
-
-				}
-
-			} else {
-
-				// New vendor data, do the insertions
-				VendorVersionDetail vendorVersionDetailNew = new VendorVersionDetail();
-
-				vendorVersionDetailNew.setVendorId(vendorId);
-				vendorVersionDetailNew.setLatestSyncedVersionId(maxVersionId);
-				vendorVersionDetailNew.setValidVersionIds(maxVersionId.toString());
-				vendorVersionDetailNew.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
-
-				session.getTransaction().begin();
-				session.save(vendorVersionDetailNew);
-				session.save(vendorVersionDifferentialNew);
-				session.getTransaction().commit();
-
-				LOGGER.info(
-						"Vendor [{}] is seen for the first time and added to it's version details and differential tables using verision [{}]",
-						vendorId, maxVersionId);
-				vendorDataUpdated = true;
-
-			}
-
-			if (vendorDataUpdated) {
-				System.out.println("Found some vendor {" + vendorId + "} data update, will call for cache refreshes.");
-				// TODO : What if this fails? No backup for this one
-				vendorVersionCache.refresh(vendorId);
-				differentialInventoryCache.refresh(vendorId + "-" + vendorVersionCache.getIfPresent(vendorId));
-			}
-
-		}
-
-	}
-
-	/*
-	 * This function looks at any new vendor specific inventory added and
-	 * accordingly updates the caches.
-	 */
-	@SuppressWarnings("unchecked")
 	public void processVendorDetailData(LoadingCache<Long, Long> vendorVersionCache) {
 
 		Session session = this.sessionFactory.openSession();
@@ -639,9 +455,9 @@ public class InventoryCurator {
 			throws JsonProcessingException {
 
 		Session session = this.sessionFactory.openSession();
-		
+
 		try {
-			
+
 			/*
 			 * Get the vendor-version combinations where latest known version
 			 * hasn't been synced
@@ -991,7 +807,7 @@ public class InventoryCurator {
 
 								Query oldVendorDataQuery = session
 										.createSQLQuery(
-												" select vih.* from vendor_item_history vih where vendor_id = :vendorId and version_id = :versionId and item_code = :itemCode")
+												" select vih.* from vendor_item_history vih where vendor_id = :vendorId and item_code = :itemCode and version_id = (select max(version_id) from vendor_item_history vih where vendor_id = :vendorId and version_id <= :versionId and item_code = :itemCode)   ")
 										.addEntity("vih", VendorItemHistory.class)
 										.setParameter("versionId",
 												previousDifferentialInventoryData.getCurrentDataVersionId())

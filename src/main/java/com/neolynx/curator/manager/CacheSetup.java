@@ -56,7 +56,7 @@ public class CacheSetup implements Runnable {
 
 				this.cacheCurator.processVendorVersionCache();
 				this.cacheCurator.processCurrentInventoryCache();
-				//this.cacheCurator.processRecentItemRecordsCache();
+				this.cacheCurator.processRecentItemRecordsCache();
 				this.cacheCurator.processDifferentialInventoryCache();
 
 				LOGGER.debug(

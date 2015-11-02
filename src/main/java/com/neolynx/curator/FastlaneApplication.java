@@ -297,7 +297,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * vendor inventory and since a specific version
 			 */
 			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, recentItemsCache, currentInventoryCache);
-			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, vendorVersionCache, recentItemsCache, currentInventoryCache);
+			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, recentItemsCache, currentInventoryCache);
 			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, configuration.getCurationConfig(), cacheCurator, pmService, vvDiffService, vvDetailService, vendorItemService);
 
 			LOGGER.debug("Setting up lifecycle for periodic DB updates based on new inventory...");

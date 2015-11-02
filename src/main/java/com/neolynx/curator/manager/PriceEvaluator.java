@@ -4,15 +4,10 @@
 package com.neolynx.curator.manager;
 
 import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.collections4.map.HashedMap;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynx.common.model.client.ItemInfo;
 import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.order.ItemDetail;
-import com.neolynx.curator.util.Constants;
 
 /**
  * Created by nitesh.garg on Oct 25, 2015
@@ -64,9 +59,9 @@ public class PriceEvaluator {
 		}
 		
 		
-		InventoryInfo inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + newDataVersionId);
+		//InventoryInfo inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + newDataVersionId);
 		
-		Map<String, ItemInfo> itemLatestDataMap = new HashedMap<String, ItemInfo>();
+		//Map<String, ItemInfo> itemLatestDataMap = new HashedMap<String, ItemInfo>();
 		
 		/**
 		 * TODO This should probably be added to cache as well.

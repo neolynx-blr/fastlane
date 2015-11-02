@@ -10,18 +10,15 @@ import com.neolynx.curator.util.Constants;
 
 public class InventoryEvaluator {
 
-	private final LoadingCache<Long, Long> vendorVersionCache;
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryEvaluator.class);
 	private final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 	private final LoadingCache<String, InventoryInfo> recentItemCache;
 	private final LoadingCache<Long, String> currentInventoryCache;
 
 	public InventoryEvaluator(LoadingCache<String, InventoryInfo> differentialInventoryCache,
-			LoadingCache<Long, Long> vendorVersionCache, LoadingCache<String, InventoryInfo> recentItemCache,
-			LoadingCache<Long, String> currentInventoryCache) {
+			LoadingCache<String, InventoryInfo> recentItemCache, LoadingCache<Long, String> currentInventoryCache) {
 		super();
 		this.differentialInventoryCache = differentialInventoryCache;
-		this.vendorVersionCache = vendorVersionCache;
 		this.recentItemCache = recentItemCache;
 		this.currentInventoryCache = currentInventoryCache;
 	}
@@ -71,10 +68,12 @@ public class InventoryEvaluator {
 			try {
 				inventoryResponse = mapper.readValue(latestInventory, InventoryInfo.class);
 			} catch (Exception e) {
-				LOGGER.error("Unable to deserialize and return latest inventory for vendor [{}] with error message [{}]", vendorId, e.getMessage());
+				LOGGER.error(
+						"Unable to deserialize and return latest inventory for vendor [{}] with error message [{}]",
+						vendorId, e.getMessage());
 
 				e.printStackTrace();
-				
+
 				inventoryResponse = new InventoryInfo();
 				inventoryResponse.setIsError(Boolean.TRUE);
 				inventoryResponse.setVendorId(vendorId);
