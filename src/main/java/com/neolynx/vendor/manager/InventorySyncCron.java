@@ -97,7 +97,7 @@ public class InventorySyncCron implements Runnable {
 				} 
 
 				LOGGER.info(
-						"Received [{}] new records from the vendor store. Looking for anything pending from last push to the server.",
+						"Received [{}] new records from vendor store. Also, checking for anything pending from last push...",
 						CollectionUtils.isEmpty(recentRecords) ? 0L : recentRecords.size());
 
 				if (CollectionUtils.isNotEmpty(recentRecords)) {

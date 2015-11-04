@@ -63,89 +63,266 @@ public class CacheCurator {
 		 * same in the cache.
 		 */
 
-		Query vendorDetailQuery = session.createSQLQuery(" select vvd.* from vendor_version_detail vvd ").addEntity(
-				"vendor_version_detail", VendorVersionDetail.class);
+		try {
+			Query vendorDetailQuery = session.createSQLQuery(" select vvd.* from vendor_version_detail vvd ")
+					.addEntity("vendor_version_detail", VendorVersionDetail.class);
 
-		@SuppressWarnings("unchecked")
-		List<VendorVersionDetail> vendorVersionDetails = vendorDetailQuery.list();
+			@SuppressWarnings("unchecked")
+			List<VendorVersionDetail> vendorVersionDetails = vendorDetailQuery.list();
 
-		for (VendorVersionDetail instance : vendorVersionDetails) {
-			Long vendorId = instance.getVendorId();
+			for (VendorVersionDetail instance : vendorVersionDetails) {
+				Long vendorId = instance.getVendorId();
 
-			Long actualLatestVersion = instance.getLatestSyncedVersionId();
-			Long cachedLatestVersion = this.vendorVersionCache.getIfPresent(vendorId);
+				Long actualLatestVersion = instance.getLatestSyncedVersionId();
+				Long cachedLatestVersion = this.vendorVersionCache.getIfPresent(vendorId);
 
-			LOGGER.debug("While checking latest version for vendor [{}], found [{}] in cache and [{}] in DB", vendorId,
-					cachedLatestVersion, actualLatestVersion);
+				LOGGER.trace("While checking latest version for vendor [{}], found [{}] in cache and [{}] in DB",
+						vendorId, cachedLatestVersion, actualLatestVersion);
 
-			// If nothing or different version in cache, load fresh
-			if (cachedLatestVersion == null || cachedLatestVersion.compareTo(actualLatestVersion) != 0) {
-				this.vendorVersionCache.put(vendorId, actualLatestVersion);
-				LOGGER.debug("Updated the cache with vendor-version [{}-{}]", vendorId, actualLatestVersion);
+				// If nothing or different version in cache, load fresh
+				if (cachedLatestVersion == null || cachedLatestVersion.compareTo(actualLatestVersion) != 0) {
+					this.vendorVersionCache.put(vendorId, actualLatestVersion);
+					LOGGER.debug("Updated the vendor-verison for vendor [{}] from version [{}] to [{}]", vendorId,
+							cachedLatestVersion, actualLatestVersion);
+				}
+
 			}
-
+		} catch (Exception e) {
+			LOGGER.warn(
+					"Exception [{}] with message [{}] occurred while generating data for differential data. Eating the exception for it will be retried soon.",
+					e.getClass().getName(), e.getMessage());
+			e.printStackTrace();
+		} finally {
+			session.close();
 		}
 
-		session.close();
 	}
 
 	public void processCurrentInventoryCache() {
 
 		Session session = sessionFactory.openSession();
-		LOGGER.trace("**********************************************************");
-		LOGGER.trace("Entering 'processCurrentInventoryCache' with no parameters");
 
-		Query vendorDetailQuery = session.createSQLQuery(" select vvd.* from vendor_version_detail vvd where latest_synced_version_id > 0 ").addEntity(
-				"vendor_version_detail", VendorVersionDetail.class);
+		try {
+			Query vendorDetailQuery = session.createSQLQuery(
+					" select vvd.* from vendor_version_detail vvd where latest_synced_version_id > 0 ").addEntity(
+					"vendor_version_detail", VendorVersionDetail.class);
 
-		@SuppressWarnings("unchecked")
-		List<VendorVersionDetail> vendorVersionDetails = vendorDetailQuery.list();
+			@SuppressWarnings("unchecked")
+			List<VendorVersionDetail> vendorVersionDetails = vendorDetailQuery.list();
 
-		for (VendorVersionDetail instance : vendorVersionDetails) {
+			for (VendorVersionDetail instance : vendorVersionDetails) {
 
-			Long vendorId = instance.getVendorId();
-			Long actualLatestVersion = instance.getLatestSyncedVersionId();
-			
-			LOGGER.debug("Evaluating current inventory cache updates for vendor [{}] to latest version [{}]", vendorId, actualLatestVersion);
+				Long vendorId = instance.getVendorId();
+				Long actualLatestVersion = instance.getLatestSyncedVersionId();
 
-			ObjectMapper mapper = new ObjectMapper();
+				LOGGER.trace("Evaluating current inventory cache updates for vendor [{}] to latest version [{}]",
+						vendorId, actualLatestVersion);
 
-			String currentInventoryData = this.currentInventoryCache.getIfPresent(vendorId);
-			if (currentInventoryData != null) {
-				
-				InventoryInfo cachedInventoryInfo = null;
-				
-				try {
-					cachedInventoryInfo = mapper.readValue(currentInventoryData, InventoryInfo.class);
-					LOGGER.debug(
-							"While checking latest inventory version for vendor [{}], found [{}] in cache and [{}] in DB",
-							vendorId, cachedInventoryInfo.getNewDataVersionId(), actualLatestVersion);
-					if (cachedInventoryInfo.getNewDataVersionId().compareTo(actualLatestVersion) == 0) {
-						continue;
+				ObjectMapper mapper = new ObjectMapper();
+
+				String currentInventoryData = this.currentInventoryCache.getIfPresent(vendorId);
+				if (currentInventoryData != null) {
+
+					InventoryInfo cachedInventoryInfo = null;
+
+					try {
+						cachedInventoryInfo = mapper.readValue(currentInventoryData, InventoryInfo.class);
+						LOGGER.debug(
+								"While checking latest inventory version for vendor [{}], found [{}] in cache and [{}] in DB",
+								vendorId, cachedInventoryInfo.getNewDataVersionId(), actualLatestVersion);
+						if (cachedInventoryInfo.getNewDataVersionId().compareTo(actualLatestVersion) == 0) {
+							continue;
+						}
+					} catch (Exception ex) {
+						LOGGER.warn(
+								"Exception [{}] with meesage [{}] occurred while deserializing the current inventory in cache for vendor [{}]. Will call for refresh.",
+								ex.getClass().getName(), ex.getMessage(), vendorId);
+						ex.printStackTrace();
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
-					LOGGER.error(
-							"Received error [{}] while deserializing the InventoryInfo from the DB while building current cache for vendor [{}], version [{}] ",
-							e.getMessage(), vendorId, actualLatestVersion);
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					LOGGER.error(
-							"Received error [{}] while deserializing the InventoryInfo from the DB while building current cache for vendor [{}], version [{}] ",
-							ex.getMessage(), vendorId, actualLatestVersion);
+
 				}
+
+				LOGGER.info("Asking for current inventory cache refresh for vendor [{}] to version [{}]", vendorId,
+						actualLatestVersion);
+				this.currentInventoryCache.refresh(vendorId);
 
 			}
 
-			this.currentInventoryCache.refresh(vendorId);
-			LOGGER.debug("Sent signal for cache refresh with vendor-version [{}-{}]", vendorId, actualLatestVersion);
-
+		} catch (Exception e) {
+			LOGGER.warn(
+					"Exception [{}] with message [{}] occurred while generating data for differential data. Eating the exception for it will be retried soon.",
+					e.getClass().getName(), e.getMessage());
+			e.printStackTrace();
+		} finally {
+			session.close();
 		}
 
-		session.close();
-		LOGGER.trace("**********************************************************");
-		LOGGER.trace("Exisitng 'processCurrentInventoryCache'");
+	}
 
+	@SuppressWarnings("unchecked")
+	public void processDifferentialInventoryCache() {
+
+		Session session = sessionFactory.openSession();
+		try {
+			Query diffQuery = session
+					.createSQLQuery(
+							"select vvd.* from vendor_version_differential vvd where last_synced_version_id != 0 and is_valid = 't' and is_this_latest_version != 't' order by last_modified_on ")
+					.addEntity("vendor_version_differential", VendorVersionDifferential.class);
+
+			List<VendorVersionDifferential> vendorVersionDifferentials = diffQuery.list();
+
+			/*
+			 * Basically iterate over all the latest differential data from DB,
+			 * and check in last synced data is same as latest version for that
+			 * vendor known in the cache. If same, do nothing, or else pull the
+			 * data for latest version from DB and update the cache.
+			 */
+			for (VendorVersionDifferential diffInstance : vendorVersionDifferentials) {
+
+				Long vendorId = diffInstance.getVendorId();
+				Long versionId = diffInstance.getVersionId();
+				Long lastSyncedVersionId = diffInstance.getLastSyncedVersionId();
+
+				/*
+				 * If the latest known version for vendor same as for which the
+				 * differential is built?
+				 */
+
+				ObjectMapper mapper = new ObjectMapper();
+				String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + versionId;
+				InventoryInfo cachedEntry = this.differentialInventoryCache.getIfPresent(key);
+
+				if (cachedEntry == null || cachedEntry.getNewDataVersionId() == null
+						|| cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) != 0) {
+
+					LOGGER.debug(
+							"Time to refresh differential cache for vendor-version [{}-{}] as cache has version [{}] as against latest [{}]",
+							vendorId, versionId, cachedEntry == null ? "Null" : cachedEntry.getNewDataVersionId(),
+							lastSyncedVersionId);
+					try {
+						this.differentialInventoryCache.put(key,
+								mapper.readValue(diffInstance.getDifferentialData(), InventoryInfo.class));
+					} catch (IOException e) {
+						LOGGER.error(
+								"Received error [{}] while deserializing the InventoryInfo from the DB while building differential cache for vendor [{}], version [{}] against last sync version [{}]",
+								e.getMessage(), vendorId, versionId, lastSyncedVersionId);
+					}
+					continue;
+				}
+
+				LOGGER.debug(
+						"Skipping the differential cache refresh of vendor-version [{}-{}] to latest version [{}].",
+						vendorId, versionId, lastSyncedVersionId);
+			}
+
+		} catch (Exception e) {
+			LOGGER.warn(
+					"Exception [{}] with message [{}] occurred while generating data for differential data. Eating the exception for it will be retried soon.",
+					e.getClass().getName(), e.getMessage());
+			e.printStackTrace();
+		} finally {
+			session.close();
+		}
+
+	}
+
+	@SuppressWarnings("unchecked")
+	public void processRecentItemRecordsCache() {
+
+		Session session = sessionFactory.openSession();
+		try {
+			Query diffQuery = session
+					.createSQLQuery(
+							"select vim.* from vendor_item_master vim where created_on > current_timestamp - interval '1 days' order by created_on ")
+					.addEntity("vendor_item_master", VendorItemMaster.class);
+
+			List<VendorItemMaster> recentVendorItemData = diffQuery.list();
+			LOGGER.debug("Found [{}] records created in last day that would be added to the recent-items cache",
+					recentVendorItemData.size());
+
+			/*
+			 * TODO For now not worrying about a fresh load of full inventory
+			 * that could have taken place in last 1 day. All that inventory
+			 * will get loaded.
+			 */
+			for (VendorItemMaster vendorItemData : recentVendorItemData) {
+
+				InventoryInfo inventoryResponse = new InventoryInfo();
+
+				Long vendorId = vendorItemData.getVendorId();
+				String barcode = vendorItemData.getBarcode();
+				Long lastSyncedVersionId = vendorItemData.getVersionId();
+
+				String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
+				InventoryInfo cachedEntry = this.recentItemsCache.getIfPresent(key);
+
+				if (cachedEntry != null && cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
+					LOGGER.debug(
+							"Skipping the recent item cache refresh of vendor-barcode [{}-{}] to latest version [{}].",
+							vendorId, barcode, lastSyncedVersionId);
+					continue;
+				} else {
+					LOGGER.debug(
+							"Refreshing item cache for vendor-barcode [{}-{}] as older version [{}] against latest [{}]",
+							vendorId, barcode, cachedEntry == null ? "Null" : cachedEntry.getNewDataVersionId(),
+							lastSyncedVersionId);
+				}
+
+				// Otherwise, update cache
+				inventoryResponse.setVendorId(vendorId);
+				inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
+				inventoryResponse.setCurrentDataVersionId(lastSyncedVersionId);
+				inventoryResponse.setUpdatedItems(new HashMap<String, ItemInfo>());
+
+				ItemInfo itemInfo = new ItemInfo();
+				ProductInfo productInfo = new ProductInfo();
+				ItemPrice itemPrice = new ItemPrice();
+
+				productInfo.setName(vendorItemData.getName());
+				productInfo.setTagLine(vendorItemData.getTagLine());
+				productInfo.setImageJSON(vendorItemData.getImageJSON());
+				productInfo.setDescription(vendorItemData.getDescription());
+
+				try {
+					ObjectMapper mapper = new ObjectMapper();
+
+					itemPrice.setTaxDetail(StringUtils.isNotEmpty(vendorItemData.getTaxJSON()) ? mapper.readValue(
+							vendorItemData.getTaxJSON(), TaxDetail.class) : null);
+					itemPrice.setDiscountDetail(StringUtils.isNotEmpty(vendorItemData.getDiscountJSON()) ? mapper
+							.readValue(vendorItemData.getDiscountJSON(), DiscountDetail.class) : null);
+
+				} catch (Exception e) {
+					LOGGER.warn(
+							"Exception [{}] with message [{}] occurred while generating data for differential data. Eating the exception for it will be retried soon.",
+							e.getClass().getName(), e.getMessage());
+					e.printStackTrace();
+				}
+
+				itemPrice.setMrp(vendorItemData.getMrp());
+				itemPrice.setPrice(vendorItemData.getPrice());
+
+				itemInfo.setItemPrice(itemPrice);
+				itemInfo.setProductInfo(productInfo);
+
+				itemInfo.setBarcode(vendorItemData.getBarcode());
+				itemInfo.setItemCode(vendorItemData.getItemCode());
+
+				inventoryResponse.getUpdatedItems().put(itemInfo.getItemCode(), itemInfo);
+
+				String newKey = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
+
+				LOGGER.info("Asking for recent-items cache refresh for key [{}]", newKey);
+				this.recentItemsCache.put(newKey, inventoryResponse);
+			}
+
+		} catch (Exception e) {
+			LOGGER.warn(
+					"Exception [{}] with message [{}] occurred while generating data for differential data. Eating the exception for it will be retried soon.",
+					e.getClass().getName(), e.getMessage());
+			e.printStackTrace();
+		} finally {
+			session.close();
+		}
 	}
 
 	public void removeVersionCacheForVendor(Long vendorId) {
@@ -173,154 +350,6 @@ public class CacheCurator {
 		}
 
 		LOGGER.debug("End up removing [{}] keys from the differential inventory cache.", invalidateCount);
-
-	}
-
-	@SuppressWarnings("unchecked")
-	public void processDifferentialInventoryCache() {
-
-		Session session = sessionFactory.openSession();
-		Query diffQuery = session
-				.createSQLQuery(
-						"select vvd.* from vendor_version_differential vvd where last_synced_version_id != 0 and is_valid = 't' and is_this_latest_version != 't' order by last_modified_on ")
-				.addEntity("vendor_version_differential", VendorVersionDifferential.class);
-
-		List<VendorVersionDifferential> vendorVersionDifferentials = diffQuery.list();
-
-		/*
-		 * Basically iterate over all the latest differential data from DB, and
-		 * check in last synced data is same as latest version for that vendor
-		 * known in the cache. If same, do nothing, or else pull the data for
-		 * latest version from DB and update the cache.
-		 */
-		for (VendorVersionDifferential diffInstance : vendorVersionDifferentials) {
-
-			Long vendorId = diffInstance.getVendorId();
-			Long versionId = diffInstance.getVersionId();
-			Long lastSyncedVersionId = diffInstance.getLastSyncedVersionId();
-
-			/*
-			 * If the latest known version for vendor same as for which the
-			 * differential is built?
-			 */
-
-			ObjectMapper mapper = new ObjectMapper();
-			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + versionId;
-			InventoryInfo cachedEntry = this.differentialInventoryCache.getIfPresent(key);
-
-			if (cachedEntry == null || cachedEntry.getNewDataVersionId() == null
-					|| cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) != 0) {
-
-				LOGGER.debug(
-						"Time to refresh differential cache for vendor-version [{}-{}] as cache has version [{}] as against latest [{}]",
-						vendorId, versionId, cachedEntry == null ? "Null" : cachedEntry.getNewDataVersionId(),
-						lastSyncedVersionId);
-				try {
-					this.differentialInventoryCache.put(key,
-							mapper.readValue(diffInstance.getDifferentialData(), InventoryInfo.class));
-				} catch (IOException e) {
-					LOGGER.error(
-							"Received error [{}] while deserializing the InventoryInfo from the DB while building differential cache for vendor [{}], version [{}] against last sync version [{}]",
-							e.getMessage(), vendorId, versionId, lastSyncedVersionId);
-				}
-				continue;
-			}
-
-			LOGGER.debug("Skipping the differential cache refresh of vendor-version [{}-{}] to latest version [{}].",
-					vendorId, versionId, lastSyncedVersionId);
-		}
-
-		session.close();
-
-	}
-
-	@SuppressWarnings("unchecked")
-	public void processRecentItemRecordsCache() {
-
-		Session session = sessionFactory.openSession();
-		Query diffQuery = session
-				.createSQLQuery(
-						"select vim.* from vendor_item_master vim where created_on > current_timestamp - interval '1 days' order by created_on ")
-				.addEntity("vendor_item_master", VendorItemMaster.class);
-
-		List<VendorItemMaster> recentVendorItemData = diffQuery.list();
-		LOGGER.debug("Found [{}] records created in last day that would be added to the recent-items cache",
-				recentVendorItemData.size());
-
-		/*
-		 * TODO For now not worrying about a fresh load of full inventory that
-		 * could have taken place in last 1 day. All that inventory will get
-		 * loaded.
-		 */
-		for (VendorItemMaster vendorItemData : recentVendorItemData) {
-
-			InventoryInfo inventoryResponse = new InventoryInfo();
-
-			Long vendorId = vendorItemData.getVendorId();
-			String barcode = vendorItemData.getBarcode();
-			Long lastSyncedVersionId = vendorItemData.getVersionId();
-
-			String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
-			InventoryInfo cachedEntry = this.recentItemsCache.getIfPresent(key);
-
-			if (cachedEntry != null && cachedEntry.getNewDataVersionId().compareTo(lastSyncedVersionId) == 0) {
-				LOGGER.debug(
-						"Skipping the recent item cache refresh of vendor-barcode [{}-{}] to latest version [{}].",
-						vendorId, barcode, lastSyncedVersionId);
-				continue;
-			} else {
-				LOGGER.debug(
-						"Refreshing item cache for vendor-barcode [{}-{}] as older version [{}] against latest [{}]",
-						vendorId, barcode, cachedEntry == null ? "Null" : cachedEntry.getNewDataVersionId(),
-						lastSyncedVersionId);
-			}
-
-			// Otherwise, update cache
-			inventoryResponse.setVendorId(vendorId);
-			inventoryResponse.setNewDataVersionId(lastSyncedVersionId);
-			inventoryResponse.setCurrentDataVersionId(lastSyncedVersionId);
-			inventoryResponse.setUpdatedItems(new HashMap<String, ItemInfo>());
-
-			ItemInfo itemInfo = new ItemInfo();
-			ProductInfo productInfo = new ProductInfo();
-			ItemPrice itemPrice = new ItemPrice();
-
-			productInfo.setName(vendorItemData.getName());
-			productInfo.setTagLine(vendorItemData.getTagLine());
-			productInfo.setImageJSON(vendorItemData.getImageJSON());
-			productInfo.setDescription(vendorItemData.getDescription());
-
-			try {
-				ObjectMapper mapper = new ObjectMapper();
-
-				itemPrice.setTaxDetail(StringUtils.isNotEmpty(vendorItemData.getTaxJSON()) ? mapper.readValue(
-						vendorItemData.getTaxJSON(), TaxDetail.class) : null);
-				itemPrice.setDiscountDetail(StringUtils.isNotEmpty(vendorItemData.getDiscountJSON()) ? mapper
-						.readValue(vendorItemData.getDiscountJSON(), DiscountDetail.class) : null);
-
-			} catch (IOException e) {
-				LOGGER.error("Received error [{}] while deserializin the tax or discount JSONs [{}], [{}]",
-						vendorItemData.getTaxJSON().trim(), vendorItemData.getDiscountJSON().trim(), e.getMessage());
-			}
-
-			itemPrice.setMrp(vendorItemData.getMrp());
-			itemPrice.setPrice(vendorItemData.getPrice());
-
-			itemInfo.setItemPrice(itemPrice);
-			itemInfo.setProductInfo(productInfo);
-
-			itemInfo.setBarcode(vendorItemData.getBarcode());
-			itemInfo.setItemCode(vendorItemData.getItemCode());
-
-			inventoryResponse.getUpdatedItems().put(itemInfo.getItemCode(), itemInfo);
-
-			String newKey = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
-			LOGGER.debug("Adding key [{}] to the recent items cache with data [{}]", newKey,
-					inventoryResponse.toString());
-			this.recentItemsCache.put(newKey, inventoryResponse);
-		}
-
-		session.close();
 
 	}
 }

@@ -384,15 +384,53 @@ insert into inventory_master (vendor_id,item_code,version_id,name,description,ta
 insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
 (281,'I0010', 1,'FORTUNE RICE BRAN OIL - HEALTH','Fortune Rice Bran Oil - Health, 2 ltr Can','', '9876543219', 230, 230, 'http://bigbasket.com/media/uploads/p/l/40006905_2-fortune-rice-bran-oil-health.jpg',  now());
 
-select im.id
+select im.name, im.barcode, im.item_code, im.vendor_id, im.version_id
 from inventory_master im
 inner join
-    (select barcode, vendor_id, max(version_id) version_id from inventory_master group by barcode, vendor_id) in_inner 
+    (select barcode, vendor_id, min(version_id) version_id from inventory_master group by barcode, vendor_id) in_inner 
 on im.barcode = in_inner.barcode 
 and im.version_id = in_inner.version_id
 and im.vendor_id = in_inner.vendor_id
 and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where barcode = im.barcode and vendor_id = im.vendor_id)
-order by im.vendor_id limit 5;
+order by im.id limit 5;
+
+select im.id, im.name, im.barcode, im.item_code, im.vendor_id, im.version_id
+from inventory_master im
+inner join
+    (	select barcode, vendor_id, version_id from inventory_master im_inner 
+    	where version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im_inner.vendor_id and barcode = im_inner.barcode) 
+    ) in_inner 
+on im.barcode = in_inner.barcode 
+and im.version_id = in_inner.version_id
+and im.vendor_id = in_inner.vendor_id order by im.id;
+
+
+select im.*
+from inventory_master im
+inner join
+    (	select barcode, vendor_id, min(version_id) version_id from inventory_master im_inner 
+    	where version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im_inner.vendor_id and barcode = im_inner.barcode) 
+    	group by barcode, vendor_id
+    ) in_inner 
+on im.barcode = in_inner.barcode 
+and im.version_id = in_inner.version_id
+and im.vendor_id = in_inner.vendor_id
+and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im.vendor_id and barcode = im.barcode)
+and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where barcode = im.barcode and vendor_id = im.vendor_id);
+
+select im.name, im.barcode, im.item_code, im.vendor_id, im.version_id
+from inventory_master im
+inner join
+    (	select barcode, vendor_id, min(version_id) version_id from inventory_master im_inner 
+    	where version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im_inner.vendor_id and barcode = im_inner.barcode) 
+    	group by barcode, vendor_id
+    ) in_inner 
+on im.barcode = in_inner.barcode 
+and im.version_id = in_inner.version_id
+and im.vendor_id = in_inner.vendor_id
+and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im.vendor_id and barcode = im.barcode)
+and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where barcode = im.barcode and vendor_id = im.vendor_id)
+order by im.vendor_id, im.version_id;
 
 
 select vvd.vendor_id, vvd.latest_synced_version_id, vvd.valid_version_ids, vim_inner.max_version_id, vvdf.version_id, vvdf.delta_item_codes

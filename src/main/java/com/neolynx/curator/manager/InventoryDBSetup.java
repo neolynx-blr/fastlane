@@ -63,9 +63,8 @@ public class InventoryDBSetup implements Runnable {
 				InventoryCurator curator = new InventoryCurator(sessionFactory, this.currentInventoryCache);
 
 				LOGGER.debug("Woken up and processing new inventory...");
-				curator.processNewInventory();
-				LOGGER.debug("Processing new metadata for vendor-version...");
 				// TODO Handle the JSON parsing exception
+				curator.processNewInventory();
 				curator.processDifferentialData(this.differentialInventoryCache);
 				curator.processVendorDetailData(this.vendorVersionCache);
 

@@ -98,6 +98,19 @@ values(289,'I0005',8,'B4','B4-Description','B4-Tagline', '1238', 43.3, 43.1,  'B
 insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) 
 values(289,'I0001',8,'X3New','X3New-Description','X3New-Tagline', '1234', 111.3, 111.1,  'X3New-JSON', now());
 
+
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) 
+values(289,'I0004',9,'A4','A4-Description','A4-Tagline', '1237', 33.33, 33.11,  'A-JSON', now());
+
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) 
+values(289,'I0006',9,'C4','C4-Description','C4-Tagline', '1239', 53.3, 53.1,  'C-JSON', now());
+
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) 
+values(289,'I0001',9,'X3New2','X3New2-Description','X3New2-Tagline', '1234', 111.32, 111.12,  'X3New2-JSON', now());
+
+insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) 
+values(289,'I0005',9,'B4New','B4New-Description','B4-Tagline', '1238', 43.34, 43.14,  'B-JSON', now());
+
 */
 		
 		//attemptCount++;
