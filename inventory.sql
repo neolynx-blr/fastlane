@@ -404,6 +404,18 @@ on im.barcode = in_inner.barcode
 and im.version_id = in_inner.version_id
 and im.vendor_id = in_inner.vendor_id order by im.id;
 
+select vih.*
+from vendor_item_history vih
+inner join
+    (	select barcode, vendor_id, version_id from vendor_item_history vih_inner 
+    	where version_id >= (select max(version_id) from vendor_item_history where vendor_id = vih_inner.vendor_id and barcode = vih_inner.barcode and version_id <= 9) 
+    ) in_inner 
+on vih.barcode = in_inner.barcode 
+and vih.version_id = in_inner.version_id
+and vih.vendor_id = in_inner.vendor_id 
+and vih.vendor_id = 289
+and vih.version_id <= 9
+order by vih.id;
 
 select vvd.vendor_id, vvd.latest_synced_version_id, vvd.valid_version_ids, vim_inner.max_version_id, vvdf.version_id, vvdf.delta_item_codes
 from vendor_version_detail vvd 
