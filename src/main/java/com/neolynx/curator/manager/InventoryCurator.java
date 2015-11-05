@@ -38,14 +38,12 @@ import com.neolynx.curator.util.Constants;
 public class InventoryCurator {
 
 	private final SessionFactory sessionFactory;
-	private final LoadingCache<Long, String> currentInventoryCache;
 
 	static Logger LOGGER = LoggerFactory.getLogger(InventoryCurator.class);
 
-	public InventoryCurator(SessionFactory sessionFactory, LoadingCache<Long, String> currentInventoryCache) {
+	public InventoryCurator(SessionFactory sessionFactory) {
 		super();
 		this.sessionFactory = sessionFactory;
-		this.currentInventoryCache = currentInventoryCache;
 	}
 
 	/*
@@ -401,7 +399,7 @@ public class InventoryCurator {
 	 * accordingly updates the caches.
 	 */
 	@SuppressWarnings("unchecked")
-	public void processVendorDetailData(LoadingCache<Long, Long> vendorVersionCache) {
+	public void processVendorDetailData(LoadingCache<Long, Long> vendorVersionCache, LoadingCache<Long, String> currentInventoryCache) {
 
 		Session session = this.sessionFactory.openSession();
 
@@ -411,47 +409,105 @@ public class InventoryCurator {
 			 * Get the vendor-version combinations where latest known version
 			 * hasn't been synced
 			 */
-			Query vendorVersionDetailQuery = session
-					.createSQLQuery(
-							"select vvd.* from vendor_version_detail vvd where vvd.latest_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvd.vendor_id)")
-					.addEntity("vendor_version_detail", VendorVersionDetail.class);
+			Query vendorVersionDetailQuery = session.createSQLQuery(
+			// "select vvd.* from vendor_version_detail vvd where vvd.latest_synced_version_id <= (select max(version_id) from vendor_item_master vim where vendor_id = vvd.vendor_id)")
+					" select vvd.* from vendor_version_detail vvd ").addEntity("vendor_version_detail",
+					VendorVersionDetail.class);
 
 			List<VendorVersionDetail> vvdDataRows = vendorVersionDetailQuery.list();
 			LOGGER.debug(
-					"[{}] vendors selected where more recent version of data is available in item-master for inventory cache.",
+					" Looking at all [{}] vendors, if more recent version of data is available in item-master for inventory cache.",
 					vvdDataRows.size());
 
 			// For every vendor where sync in required
+			ObjectMapper mapper = new ObjectMapper();
+
 			for (VendorVersionDetail vvdDataRow : vvdDataRows) {
 
 				Long versionId = 0L;
 				Long vendorId = vvdDataRow.getVendorId();
 				InventoryInfo cachedInventory = new InventoryInfo();
-				Long lasySyncVersion = vvdDataRow.getLatestSyncedVersionId();
-				
-				ObjectMapper mapper = new ObjectMapper();
+				Long lastSyncVersion = vvdDataRow.getLatestSyncedVersionId();
+
 				Query vendorItemMasterQuery = session
-						.createSQLQuery(" select vim.* from vendor_item_master vim where vendor_id = :vendorId ")
-						.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("vendorId", vendorId);
+						.createSQLQuery(
+								" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id >= :lastSyncVersionId order by version_id desc ")
+						// " select vim.* from vendor_item_master vim where vendor_id = :vendorId order by version_id desc ")
+						.addEntity("vendor_item_master", VendorItemMaster.class).setParameter("vendorId", vendorId)
+						.setParameter("lastSyncVersionId", lastSyncVersion);
 
 				List<VendorItemMaster> vendorItemMasterList = vendorItemMasterQuery.list();
 
-				if (CollectionUtils.isEmpty(vendorItemMasterList)) {
-					/**
-					 * Very unlikely because we just checked for the entries
-					 * where max version is higher in the item master table.
-					 */
+				if (vendorItemMasterList == null || vendorItemMasterList.size() < 1) {
+					continue;
 				}
 
 				LOGGER.trace(
-						"Found [{}] new updates in item-master for vendor [{}] that now needs update for caching/serving",
+						"Found [{}] available items for vendor [{}] in item-master that may need update in caching/serving",
 						vendorItemMasterList.size(), vendorId);
 
-				for (VendorItemMaster instance : vendorItemMasterList) {
-					if (instance.getVersionId() > versionId) {
-						versionId = instance.getVersionId();
+				/**
+				 * Assuming order-ids are preserved from result set into the
+				 * list, or else we'll need to traverse the whole list to find
+				 * the maximum value.
+				 * 
+				 * Also, this doesn't handle the inventory delete cases yet.
+				 */
+				versionId = vendorItemMasterList.get(0).getVersionId();
+				String currentCachedInventoryStr = vvdDataRow.getCurrentInventory();
+
+				/**
+				 * If previously no data existed in the current inventory
+				 * column, simply add up everything present in the item-master.
+				 * This will mostly be when the vendor is sending the data for
+				 * the first time or in case something got erased and getting
+				 * completely reset. If the data already exist, update only if
+				 * the latest entry has version more than the last-sync version
+				 * or else you know it's already contained and updated.
+				 */
+				if (StringUtils.isNotEmpty(currentCachedInventoryStr)) {
+
+					cachedInventory = mapper.readValue(currentCachedInventoryStr, InventoryInfo.class);
+					/*
+					 * int itemsAlreadyInCurrentInventory =
+					 * cachedInventory.getAddedItems().size();
+					 * 
+					 * if (itemsAlreadyInCurrentInventory ==
+					 * vendorItemMasterList.size()) { LOGGER.trace(
+					 * "Existing current inventory entry for vendor-version [{}-{}] up-to-date. Skipping"
+					 * , vendorId, versionId); continue; } else {
+					 */
+
+					// Set<String> existingItemsInCachedInventory =
+					// cachedInventory.getAddedItems().keySet();
+
+					for (VendorItemMaster instance : vendorItemMasterList) {
+
+						String itemCode = instance.getItemCode();
+						LOGGER.trace("Evaluating current inventory item [{}] for vendor-version [{}-{}]...", itemCode,
+								vendorId, versionId);
+
+						// if
+						// (!existingItemsInCachedInventory.contains(itemCode)
+						// ||
+						// instance.getVersionId().compareTo(lastSyncVersion)>0)
+						// {
+						if (instance.getVersionId().compareTo(lastSyncVersion) >= 0) {
+							LOGGER.debug(
+									"Adding item-code [{}] to the existing cache of version [{}] for vendor [{}] to new version [{}]",
+									itemCode, lastSyncVersion, vendorId, versionId);
+							cachedInventory.getAddedItems().put(instance.getItemCode(), new ItemInfo(instance));
+						} else {
+							LOGGER.trace("Skipping because of version being lower than last-sync");
+						}
 					}
-					cachedInventory.getAddedItems().put(instance.getItemCode(), new ItemInfo(instance));
+
+					// }
+				} else {
+					for (VendorItemMaster instance : vendorItemMasterList) {
+						cachedInventory.getAddedItems().put(instance.getItemCode(), new ItemInfo(instance));
+					}
+
 				}
 
 				cachedInventory.setVendorId(vendorId);
@@ -468,7 +524,8 @@ public class InventoryCurator {
 					vvdDataRow.setLatestSyncedVersionId(versionId);
 					vvdDataRow.setLastModifiedOn(new java.sql.Date(System.currentTimeMillis()));
 					vvdDataRow.setValidVersionIds((StringUtils.isEmpty(vvdDataRow.getValidVersionIds()) ? versionId
-							.toString() : vvdDataRow.getValidVersionIds() + "," + versionId));
+							.toString() : ((vvdDataRow.getValidVersionIds().contains(versionId.toString()) ? ""
+							: vvdDataRow.getValidVersionIds() + "," + versionId))));
 
 					// Update the vendor-version detail first
 					session.getTransaction().begin();
@@ -476,9 +533,12 @@ public class InventoryCurator {
 					session.merge(vvdDataRow);
 					session.getTransaction().commit();
 
-					LOGGER.info("Asking for vendor-version cache refresh for vendor [{}] from version [{}] to [{}]",
-							vendorId, lasySyncVersion, versionId);
+					LOGGER.info("Asking for vendor-version-inventory cache refresh for vendor [{}] from version [{}] to [{}]",
+							vendorId, lastSyncVersion, versionId);
+					
 					vendorVersionCache.refresh(vendorId);
+					currentInventoryCache.refresh(vendorId);
+					
 				} catch (Exception e) {
 					LOGGER.warn(
 							"Exception [{}] occured with error message [{}] occurred while serializing the latest inventory version [{}] for vendor [{}]. \n Skipping this entry for now.",
@@ -512,11 +572,15 @@ public class InventoryCurator {
 
 			/*
 			 * Get the vendor-version combinations where latest known version
-			 * hasn't been synced
+			 * hasn't been synced. Later on get data where it matches the max
+			 * version to handle cases where part of the update for same version
+			 * came in little later.
 			 */
 			Query vendorVersionDifferentialQuery = session
 					.createSQLQuery(
-							"select vvdf.* from vendor_version_differential vvdf where vvdf.is_valid = 't' and vvdf.last_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvdf.vendor_id) order by vendor_id, version_id ")
+							"select vvdf.* from vendor_version_differential vvdf "
+									+ "	where vvdf.is_valid = 't' "
+									+ "	and vvdf.last_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvdf.vendor_id) order by vendor_id, version_id ")
 					.addEntity("vvdf", VendorVersionDifferential.class);
 
 			List<VendorVersionDifferential> vendorVersionDifferentialList = vendorVersionDifferentialQuery.list();
@@ -590,16 +654,21 @@ public class InventoryCurator {
 					 */
 
 					ObjectMapper mapper = new ObjectMapper();
-					InventoryInfo lastSyncVersionInventory = null;
+					InventoryInfo lastSyncVersionInventory = new InventoryInfo();
 
-					String currentLastSyncVersionCache = this.currentInventoryCache.get(vendorId);
-					if (StringUtils.isNotEmpty(currentLastSyncVersionCache)) {
-						lastSyncVersionInventory = mapper.readValue(currentLastSyncVersionCache, InventoryInfo.class);
-					} else {
-						// TODO Pull from DB
+					Query inventoryForVersionQuery = session
+							.createSQLQuery(
+									" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id <= :lastSyncedVersionId")
+							.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
+							.setParameter("lastSyncedVersionId", vendorVersionDifferential.getLastSyncedVersionId());
+
+					List<VendorItemMaster> lastSyncVersionItemDataList = inventoryForVersionQuery.list();
+
+					for (VendorItemMaster instance : lastSyncVersionItemDataList) {
+						lastSyncVersionInventory.getAddedItems().put(instance.getItemCode(), new ItemInfo(instance));
 					}
 
-					if (lastSyncVersionInventory == null || lastSyncVersionInventory.getAddedItems().size() == 0) {
+					if (lastSyncVersionInventory.getAddedItems().size() == 0) {
 
 						LOGGER.warn(
 								"While updating vendor [{}] differential data to version [{}], data for the last sync version [{}] is no (longer) available. \nSimply remove this row so that users can pull the latest inventory always.",
@@ -616,9 +685,12 @@ public class InventoryCurator {
 
 						Query latestVendorDataQuery = session
 								.createSQLQuery(
-										" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId")
+								// " select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId")
+										" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id > :lastSyncedVersionId")
 								.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
-								.setParameter("latestVersionId", latestVersionId);
+								// .setParameter("latestVersionId",
+								// latestVersionId);
+								.setParameter("lastSyncedVersionId", vendorVersionDifferential.getLastSyncedVersionId());
 
 						List<VendorItemMaster> latestItemDataList = latestVendorDataQuery.list();
 						LOGGER.debug(
@@ -668,8 +740,6 @@ public class InventoryCurator {
 								continue;
 							}
 
-							lastSyncItemDataMap.remove(itemCode);
-
 							LOGGER.trace(
 									"Item [{}] found in the last sync version [{}] for vendor [{}], so updatng it from latest version [{}]",
 									itemCode, lastSyncVersionId, vendorId, latestVersionId);
@@ -711,14 +781,19 @@ public class InventoryCurator {
 				else {
 
 					ObjectMapper mapper = new ObjectMapper();
-					InventoryInfo lastSyncVersionInventory = null;
+					InventoryInfo lastSyncVersionInventory = new InventoryInfo();
+					;
 
-					String currentLastSyncVersionCache = this.currentInventoryCache.get(vendorId);
-					if (StringUtils.isNotEmpty(currentLastSyncVersionCache)) {
-						lastSyncVersionInventory = mapper.readValue(currentLastSyncVersionCache, InventoryInfo.class);
-					} else {
-						// TODO Pull from DB and make that the default option to
-						// avoid ordering issues.
+					Query inventoryForVersionQuery = session
+							.createSQLQuery(
+									" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id <= :lastSyncedVersionId ")
+							.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
+							.setParameter("lastSyncedVersionId", vendorVersionDifferential.getLastSyncedVersionId());
+
+					List<VendorItemMaster> lastSyncVersionItemDataList = inventoryForVersionQuery.list();
+
+					for (VendorItemMaster instance : lastSyncVersionItemDataList) {
+						lastSyncVersionInventory.getAddedItems().put(instance.getItemCode(), new ItemInfo(instance));
 					}
 
 					if (lastSyncVersionInventory == null || lastSyncVersionInventory.getAddedItems().size() == 0) {
@@ -736,9 +811,10 @@ public class InventoryCurator {
 
 						Query latestVendorDataQuery = session
 								.createSQLQuery(
-										" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId")
+								// " select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id = :latestVersionId ")
+										" select vim.* from vendor_item_master vim where vendor_id = :vendorId and version_id >= :lastSyncVersionId ")
 								.addEntity("vim", VendorItemMaster.class).setParameter("vendorId", vendorId)
-								.setParameter("latestVersionId", latestVersionId);
+								.setParameter("lastSyncVersionId", lastSyncVersionId);
 
 						List<VendorItemMaster> latestItemDataList = latestVendorDataQuery.list();
 
@@ -818,7 +894,6 @@ public class InventoryCurator {
 								continue;
 							}
 
-							lastSyncItemDataMap.remove(itemCode);
 							ItemInfo latestItemInfo = new ItemInfo(latestItemData);
 
 							if (previousDifferentialInventoryData.getAddedItems().keySet().contains(itemCode)) {

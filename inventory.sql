@@ -405,34 +405,6 @@ and im.version_id = in_inner.version_id
 and im.vendor_id = in_inner.vendor_id order by im.id;
 
 
-select im.*
-from inventory_master im
-inner join
-    (	select barcode, vendor_id, min(version_id) version_id from inventory_master im_inner 
-    	where version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im_inner.vendor_id and barcode = im_inner.barcode) 
-    	group by barcode, vendor_id
-    ) in_inner 
-on im.barcode = in_inner.barcode 
-and im.version_id = in_inner.version_id
-and im.vendor_id = in_inner.vendor_id
-and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im.vendor_id and barcode = im.barcode)
-and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where barcode = im.barcode and vendor_id = im.vendor_id);
-
-select im.name, im.barcode, im.item_code, im.vendor_id, im.version_id
-from inventory_master im
-inner join
-    (	select barcode, vendor_id, min(version_id) version_id from inventory_master im_inner 
-    	where version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im_inner.vendor_id and barcode = im_inner.barcode) 
-    	group by barcode, vendor_id
-    ) in_inner 
-on im.barcode = in_inner.barcode 
-and im.version_id = in_inner.version_id
-and im.vendor_id = in_inner.vendor_id
-and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im.vendor_id and barcode = im.barcode)
-and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where barcode = im.barcode and vendor_id = im.vendor_id)
-order by im.vendor_id, im.version_id;
-
-
 select vvd.vendor_id, vvd.latest_synced_version_id, vvd.valid_version_ids, vim_inner.max_version_id, vvdf.version_id, vvdf.delta_item_codes
 from vendor_version_detail vvd 
 right join

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.neolynx.curator.cache;
 
 import io.dropwizard.hibernate.UnitOfWork;
@@ -40,11 +37,8 @@ public class CurrentInventoryLoader extends CacheLoader<Long, String> {
 	@Override
 	public String load(Long vendorId) throws Exception {
 		
-		LOGGER.trace("**********************************************************");
-		LOGGER.trace("Entering 'load' with vendor-id parameter [{}]", vendorId);
-
-
 		String currentInventory = null;
+		LOGGER.info("Request received for refreshing current inventory cache for vendor [{}]", vendorId);
 
 		if (vendorId == null) {
 			LOGGER.debug("Tried loading latest version of NULL vendor-id, obviously failed.");
@@ -71,9 +65,6 @@ public class CurrentInventoryLoader extends CacheLoader<Long, String> {
 			}
 			session.close();
 		}
-
-		LOGGER.trace("**********************************************************");
-		LOGGER.trace("Exiting 'load'");
 
 		return currentInventory;
 	}

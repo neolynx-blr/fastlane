@@ -34,11 +34,13 @@ public class AccountService {
 				.addEntity("account", Account.class).setParameter("userName", userName);
 
 		List<Account> accountDetails = query.list();
+		
+		session.close();
+		
 		if (CollectionUtils.isNotEmpty(accountDetails)) {
 			return Optional.of(accountDetails.get(0));
 		}
-
-		session.close();
+		
 		return Optional.absent();
 
 	}

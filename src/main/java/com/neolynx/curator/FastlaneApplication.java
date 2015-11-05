@@ -193,7 +193,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * vendor inventory and since a specific version
 			 */
 			LOGGER.info("Setting up various business-logic classes which actually dictates the business logic...");
-			final InventoryCurator invCurator = new InventoryCurator(hibernateBundle.getSessionFactory(), currentInventoryCache);
+			final InventoryCurator invCurator = new InventoryCurator(hibernateBundle.getSessionFactory());
 			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, recentItemsCache, currentInventoryCache);
 			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(differentialInventoryCache, recentItemsCache, currentInventoryCache);
 
@@ -210,7 +210,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			try {
 				invCurator.processNewInventory();
 				invCurator.processDifferentialData(differentialInventoryCache);
-				invCurator.processVendorDetailData(vendorVersionCache);
+				invCurator.processVendorDetailData(vendorVersionCache, currentInventoryCache);
 			} catch (Exception e) {
 				LOGGER.warn("Exception [{}] with error message [{}] occurred while loading the new inventory and setting up right tables in DB during server start-up. \n"
 						+ "Moving on for now given that this will be re-executed every few second.", e.getClass().getName(), e.getMessage());
