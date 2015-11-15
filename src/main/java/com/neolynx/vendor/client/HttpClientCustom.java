@@ -62,7 +62,7 @@ public class HttpClientCustom {
 
 			if (entity != null) {
 
-				BufferedReader br = new BufferedReader(new InputStreamReader((callResponse.getEntity().getContent())));
+				BufferedReader br = new BufferedReader(new InputStreamReader((entity.getContent())));
 
 				StringBuilder response = new StringBuilder();
 				String output;
@@ -96,7 +96,9 @@ public class HttpClientCustom {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		} finally {
+		     // httpClient.getConnectionManager().shutdown();
+		    }
 
 		return responseAudit;
 

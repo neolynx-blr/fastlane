@@ -87,5 +87,14 @@ public class VendorItemHistory {
 	
 	@Column(name = "tax_json")
 	private String taxJSON;
+	
+	@Column(name = "category_id")
+	private String categoryId;
+	
+	@Column(name = "category_text")
+	private String categoryText;
+	
+	@Column(name = "info_json")
+	private String infoJSON;
 
 }

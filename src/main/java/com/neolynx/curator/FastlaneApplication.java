@@ -37,6 +37,7 @@ import com.neolynx.curator.auth.ExampleAuthenticator;
 import com.neolynx.curator.auth.ExampleAuthorizer;
 import com.neolynx.curator.cache.CurrentInventoryLoader;
 import com.neolynx.curator.cache.DifferentialDataLoader;
+import com.neolynx.curator.cache.RecentItemLoader;
 import com.neolynx.curator.cache.VendorVersionLoader;
 import com.neolynx.curator.cli.RenderCommand;
 import com.neolynx.curator.core.Account;
@@ -177,10 +178,17 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final VendorVersionDifferentialDAO vendorVersionDiffDAO = new VendorVersionDifferentialDAO(hibernateBundle.getSessionFactory());
 
 			LOGGER.info("Setting up definitions for various caches for vendor,version,inventory, differential data points...");
+			
+			// Key: Vendor-Id, Value: Latest known inventory version
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
+			
+			// Key: Vendor-Id, Value: JSON for InventoryInfo indicating the most up-to-date inventory details
 			final LoadingCache<Long, String> currentInventoryCache = CacheBuilder.newBuilder().build(new CurrentInventoryLoader(hibernateBundle.getSessionFactory()));
+			
+			// Key: Vendor-Id + - + Version-Id, Value: Inventory updates for version-id in the key w.r.t. the latest known inventory for this vendor  
 			final LoadingCache<String, InventoryInfo> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
-			final LoadingCache<String, InventoryInfo> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
+			
+			final LoadingCache<String, InventoryInfo> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new RecentItemLoader(hibernateBundle.getSessionFactory()));
 
 			LOGGER.info("Setting up various service classes, abstracting the DAO classes from the business logic objects...");
 			final VendorVersionService vvDetailService = new VendorVersionService(vendorVersionDetailDAO);

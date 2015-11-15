@@ -74,7 +74,13 @@ create table inventory_master (
 	brand_name varchar(256),
 	image_json varchar(512),
 	how_to_use varchar(4096),
-	description varchar(1024),
+	description varchar(4096),
+	
+	category_id varchar(16),
+	category_text varchar(512),
+	
+	-- Captures any additional information specific to vendor like weight, similar items etc, 
+	info_json varchar(2048),
 
 	vendor_id integer not null,
 	version_id bigint not null,
@@ -96,13 +102,16 @@ create table inventory_master (
 drop table if exists product_master;
 create table product_master (
 	id serial primary key,
-	-- List of vendors who have this product; TODO :: Supports ~400 vendors
-	vendor_id varchar(4096) not null,
+
 	barcode varchar(32) not null,
 	name varchar(256) not null,
-	description varchar(1024),
+	description varchar(4096),
 	tag_line varchar(256),
 	image_json varchar(512), 
+
+	-- List of vendors who have this product; TODO :: Supports ~400 vendors
+	vendor_id varchar(4096) not null,
+
 	constraint pm_uniq_constraint unique (barcode, vendor_id));
 	
 drop table if exists vendor_item_master;
@@ -118,7 +127,13 @@ create table vendor_item_master (
 	brand_name varchar(256),
 	image_json varchar(512),
 	how_to_use varchar(4096),
-	description varchar(1024),
+	description varchar(4096),
+	
+	category_id varchar(16),
+	category_text varchar(512),
+	
+	-- Captures any additional information specific to vendor like weight, similar items etc, 
+	info_json varchar(2048),
 
 	vendor_id integer not null,
 	version_id bigint not null,
@@ -144,12 +159,18 @@ create table vendor_item_history (
 	barcode varchar(32) not null,
 	item_code varchar(128) not null,
 
-	tag_line varchar(256),
+	tag_line varchar(256),          
 	benefits varchar(4096), 
 	brand_name varchar(256),
 	image_json varchar(512),
 	how_to_use varchar(4096),
-	description varchar(1024),
+	description varchar(4096),
+	
+	category_id varchar(16),
+	category_text varchar(512),
+	
+	-- Captures any additional information specific to vendor like weight, similar items etc, 
+	info_json varchar(2048),
 
 	vendor_id integer not null,
 	version_id bigint not null,

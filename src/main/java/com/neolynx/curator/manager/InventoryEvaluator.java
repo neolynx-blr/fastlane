@@ -1,12 +1,24 @@
 package com.neolynx.curator.manager;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
 import com.neolynx.common.model.client.InventoryInfo;
+import com.neolynx.common.model.client.ItemInfo;
+import com.neolynx.common.model.client.ProductInfo;
+import com.neolynx.common.model.client.price.ItemPrice;
 import com.neolynx.curator.util.Constants;
+import com.neolynx.curator.util.EanDataUtil;
 
 public class InventoryEvaluator {
 
@@ -104,6 +116,89 @@ public class InventoryEvaluator {
 					+ barcode);
 			LOGGER.debug("The latest for item with vendor [{}], barcode [{}]  is found and being returned.", vendorId,
 					barcode);
+			
+			if(inventoryResponse == null) {
+				
+				HttpClient httpClient = HttpClientBuilder.create().build();
+			    try {
+			      HttpGet httpGetRequest = new HttpGet("http://eandata.com/feed/?v=3&keycode=0A05AF1556489B10&mode=json&find="+barcode+"&get=any");
+			      HttpResponse httpResponse = httpClient.execute(httpGetRequest);
+			 
+			      System.out.println("----------------------------------------");
+			      System.out.println(httpResponse.getStatusLine());
+			      System.out.println("----------------------------------------");
+			 
+			      HttpEntity entity = httpResponse.getEntity();
+			 /*
+			      byte[] buffer = new byte[1024];
+			      if (entity != null) {
+			        InputStream inputStream = entity.getContent();
+			        try {
+			          int bytesRead = 0;
+			          BufferedInputStream bis = new BufferedInputStream(inputStream);
+			          while ((bytesRead = bis.read(buffer)) != -1) {
+			            String chunk = new String(buffer, 0, bytesRead);
+			            System.out.println(chunk);
+			          }
+			        } catch (Exception e) {
+			          e.printStackTrace();
+			        } finally {
+			          try { inputStream.close(); } catch (Exception ignore) {}
+			        }
+			      }
+			    */  
+			      
+			      String responseText = null;
+					if (entity != null) {
+
+						BufferedReader br = new BufferedReader(new InputStreamReader((entity.getContent())));
+
+						StringBuilder response = new StringBuilder();
+						String output;
+
+						while ((output = br.readLine()) != null) {
+							response.append(output);
+						}
+
+						responseText = response.toString();
+						System.out.println("Data response from server is [" + response.toString() + "]");
+					}
+
+					// Check for HTTP response code: 200 = success
+					if (httpResponse.getStatusLine().getStatusCode() != 200) {
+						System.out.println("Non 200 Error Code\n" + httpResponse.toString() + "\n"
+								+ httpResponse.getStatusLine().toString());
+						throw new RuntimeException("Failed : HTTP error code : " + httpResponse.getStatusLine());
+					} else {
+						
+						inventoryResponse = new InventoryInfo();
+						ItemInfo itemInfo = new ItemInfo();
+						ItemPrice itemPrice = new ItemPrice();
+						ProductInfo productInfo = new ProductInfo();
+						
+						productInfo.setName(EanDataUtil.getAttributeValue(responseText, "product"));
+						productInfo.setBenefits(EanDataUtil.getAttributeValue(responseText, "features"));
+						productInfo.setDescription(EanDataUtil.getAttributeValue(responseText, "long_desc"));
+						productInfo.setImageJSON(EanDataUtil.getAttributeValue(responseText, "image"));
+						itemInfo.setProductInfo(productInfo);
+						
+						itemPrice.setMrp(Double.valueOf(EanDataUtil.getAttributeValue(responseText, "price_new"))*65);
+						itemInfo.setItemPrice(itemPrice);
+						
+						itemInfo.setBarcode(barcode.toString());
+						
+						inventoryResponse.getAddedItems().put("Unknown", itemInfo);
+						
+					}
+			      
+			    } catch (Exception e) {
+			      e.printStackTrace();
+			    } finally {
+			      //httpClient.getConnectionManager().shutdown();
+			    }
+				
+				
+			}
 		}
 
 		return inventoryResponse;

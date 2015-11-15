@@ -112,7 +112,7 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			itemInfo.setBarcode(vendorItemData.getBarcode());
 			itemInfo.setItemCode(vendorItemData.getItemCode());
 
-			inventoryResponse.getUpdatedItems().put(itemInfo.getItemCode(), itemInfo);
+			inventoryResponse.getAddedItems().put(itemInfo.getItemCode(), itemInfo);
 			LOGGER.debug("Adding recent data with item-code [{}] for vendor-version-barcode [{}-{}-{}]",
 					itemInfo.getItemCode(), vendorId, inventoryResponse.getNewDataVersionId(), barcode);
 		}
