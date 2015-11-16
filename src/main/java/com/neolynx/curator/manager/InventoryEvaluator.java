@@ -2,6 +2,14 @@ package com.neolynx.curator.manager;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -10,7 +18,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
+import com.amazon.webservices.awsecommerceservice._2013_08_01.ItemLookupResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
 import com.neolynx.common.model.client.InventoryInfo;
@@ -19,6 +30,7 @@ import com.neolynx.common.model.client.ProductInfo;
 import com.neolynx.common.model.client.price.ItemPrice;
 import com.neolynx.curator.util.Constants;
 import com.neolynx.curator.util.EanDataUtil;
+import com.neolynx.curator.util.aws.SignedRequestsHelper;
 
 public class InventoryEvaluator {
 
@@ -101,7 +113,7 @@ public class InventoryEvaluator {
 		return inventoryResponse;
 	}
 
-	public InventoryInfo getLatestItemForVendorBarcode(Long vendorId, Long barcode) {
+	public InventoryInfo getLatestItemForVendorBarcode(Long vendorId, String barcode) {
 
 		InventoryInfo inventoryResponse = null;
 
@@ -116,39 +128,66 @@ public class InventoryEvaluator {
 					+ barcode);
 			LOGGER.debug("The latest for item with vendor [{}], barcode [{}]  is found and being returned.", vendorId,
 					barcode);
-			
-			if(inventoryResponse == null) {
+
+			if (inventoryResponse == null && vendorId.compareTo(Constants.AMAZON_VENDOR_ID) == 0) {
 				
+				
+				SignedRequestsHelper helper;
+				try {
+					helper = SignedRequestsHelper.getInstance(Constants.ENDPOINT, Constants.AWS_ACCESS_KEY_ID,
+							Constants.AWS_SECRET_KEY);
+				} catch (Exception e) {
+					LOGGER.error(
+							"Received exception [{}] with message [{}] while trying to get an instance of SignedRequestHelper",
+							e.getClass().getName(), e.getMessage());
+					e.printStackTrace();
+					return inventoryResponse;
+				}
+
+				Map<String, String> params = new HashMap<String, String>();
+
+				params.put("ItemId", barcode);
+				params.put("Version", Constants.AMAZON_API_VERSION);
+				params.put("IdType", Constants.getBarcodeType(barcode));
+				params.put("Service", Constants.AMAZON_API_SERVICE_NAME);
+				params.put("SearchIndex", Constants.AMAZON_API_SEARCH_INDEX);
+				params.put("AssociateTag", Constants.AMAZON_API_ASSOCIATE_TAG);
+				params.put("Operation", Constants.AMAZON_API_LOOKUP_OPERATION);
+				params.put("ResponseGroup", Constants.AMAZON_API_RESPONSE_GROUP);
+				params.put("ContentType", "application/json");
+
+				String requestUrl = helper.sign(params);
+				LOGGER.debug("Signed request for barcode [{}] is [{}]", barcode, requestUrl);
+				System.out.println("Signed Request is \"" + requestUrl + "\"");
+				
+				if(Boolean.TRUE)
+					return fetchItemDetail(requestUrl);
+
 				HttpClient httpClient = HttpClientBuilder.create().build();
-			    try {
-			      HttpGet httpGetRequest = new HttpGet("http://eandata.com/feed/?v=3&keycode=0A05AF1556489B10&mode=json&find="+barcode+"&get=any");
-			      HttpResponse httpResponse = httpClient.execute(httpGetRequest);
-			 
-			      System.out.println("----------------------------------------");
-			      System.out.println(httpResponse.getStatusLine());
-			      System.out.println("----------------------------------------");
-			 
-			      HttpEntity entity = httpResponse.getEntity();
-			 /*
-			      byte[] buffer = new byte[1024];
-			      if (entity != null) {
-			        InputStream inputStream = entity.getContent();
-			        try {
-			          int bytesRead = 0;
-			          BufferedInputStream bis = new BufferedInputStream(inputStream);
-			          while ((bytesRead = bis.read(buffer)) != -1) {
-			            String chunk = new String(buffer, 0, bytesRead);
-			            System.out.println(chunk);
-			          }
-			        } catch (Exception e) {
-			          e.printStackTrace();
-			        } finally {
-			          try { inputStream.close(); } catch (Exception ignore) {}
-			        }
-			      }
-			    */  
-			      
-			      String responseText = null;
+				try {
+					HttpGet httpGetRequest = new HttpGet(
+							"http://eandata.com/feed/?v=3&keycode=0A05AF1556489B10&mode=json&find=" + barcode
+									+ "&get=any");
+					HttpResponse httpResponse = httpClient.execute(httpGetRequest);
+
+					System.out.println("----------------------------------------");
+					System.out.println(httpResponse.getStatusLine());
+					System.out.println("----------------------------------------");
+
+					HttpEntity entity = httpResponse.getEntity();
+					/*
+					 * byte[] buffer = new byte[1024]; if (entity != null) {
+					 * InputStream inputStream = entity.getContent(); try { int
+					 * bytesRead = 0; BufferedInputStream bis = new
+					 * BufferedInputStream(inputStream); while ((bytesRead =
+					 * bis.read(buffer)) != -1) { String chunk = new
+					 * String(buffer, 0, bytesRead); System.out.println(chunk);
+					 * } } catch (Exception e) { e.printStackTrace(); } finally
+					 * { try { inputStream.close(); } catch (Exception ignore)
+					 * {} } }
+					 */
+
+					String responseText = null;
 					if (entity != null) {
 
 						BufferedReader br = new BufferedReader(new InputStreamReader((entity.getContent())));
@@ -170,38 +209,227 @@ public class InventoryEvaluator {
 								+ httpResponse.getStatusLine().toString());
 						throw new RuntimeException("Failed : HTTP error code : " + httpResponse.getStatusLine());
 					} else {
-						
+
 						inventoryResponse = new InventoryInfo();
 						ItemInfo itemInfo = new ItemInfo();
 						ItemPrice itemPrice = new ItemPrice();
 						ProductInfo productInfo = new ProductInfo();
-						
+
 						productInfo.setName(EanDataUtil.getAttributeValue(responseText, "product"));
 						productInfo.setBenefits(EanDataUtil.getAttributeValue(responseText, "features"));
 						productInfo.setDescription(EanDataUtil.getAttributeValue(responseText, "long_desc"));
 						productInfo.setImageJSON(EanDataUtil.getAttributeValue(responseText, "image"));
 						itemInfo.setProductInfo(productInfo);
-						
-						itemPrice.setMrp(Double.valueOf(EanDataUtil.getAttributeValue(responseText, "price_new"))*65);
+
+						itemPrice.setMrp(Double.valueOf(EanDataUtil.getAttributeValue(responseText, "price_new")) * 65);
 						itemInfo.setItemPrice(itemPrice);
-						
+
 						itemInfo.setBarcode(barcode.toString());
-						
+
 						inventoryResponse.getAddedItems().put("Unknown", itemInfo);
-						
+
 					}
-			      
-			    } catch (Exception e) {
-			      e.printStackTrace();
-			    } finally {
-			      //httpClient.getConnectionManager().shutdown();
-			    }
-				
-				
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				} finally {
+					// httpClient.getConnectionManager().shutdown();
+				}
+
 			}
 		}
 
 		return inventoryResponse;
+	}
+
+	public InventoryInfo checkForBarcodeOnAmazon(String barcode) {
+
+		InventoryInfo itemInfo = new InventoryInfo();
+
+		SignedRequestsHelper helper;
+		try {
+			helper = SignedRequestsHelper.getInstance(Constants.ENDPOINT, Constants.AWS_ACCESS_KEY_ID,
+					Constants.AWS_SECRET_KEY);
+		} catch (Exception e) {
+			LOGGER.error(
+					"Received exception [{}] with message [{}] while trying to get an instance of SignedRequestHelper",
+					e.getClass().getName(), e.getMessage());
+			e.printStackTrace();
+			return itemInfo;
+		}
+
+		Map<String, String> params = new HashMap<String, String>();
+
+		params.put("ItemId", barcode);
+		params.put("Version", Constants.AMAZON_API_VERSION);
+		params.put("IdType", Constants.getBarcodeType(barcode));
+		params.put("Service", Constants.AMAZON_API_SERVICE_NAME);
+		params.put("SearchIndex", Constants.AMAZON_API_SEARCH_INDEX);
+		params.put("AssociateTag", Constants.AMAZON_API_ASSOCIATE_TAG);
+		params.put("Operation", Constants.AMAZON_API_LOOKUP_OPERATION);
+		params.put("ResponseGroup", Constants.AMAZON_API_RESPONSE_GROUP);
+		params.put("ContentType", "application/json");
+
+		String requestUrl = helper.sign(params);
+		LOGGER.debug("Signed request for barcode [{}] is [{}]", barcode, requestUrl);
+		System.out.println("Signed Request is \"" + requestUrl + "\"");
+
+		try {
+			itemInfo = fetchItemDetail(requestUrl);
+		} catch (Exception e) {
+			LOGGER.error(
+					"Received exception [{}] with message [{}] while trying to retrieve data for barcode [{}] from Amazon",
+					e.getClass().getName(), e.getMessage());
+			e.printStackTrace();
+		}
+
+		return itemInfo;
+	}
+
+	/*
+	 * Utility function to fetch the response from the service and extract the
+	 * title from the XML.
+	 */
+	private static ItemInfo fetchTitle(String requestUrl) {
+
+		ItemInfo itemInfo = new ItemInfo();
+
+		String title = null;
+		try {
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document doc = db.parse(requestUrl);
+			if (doc == null) {
+				System.out.println("DOC itself is null.");
+			} else {
+				System.out.println("DOC itself is not null.");
+			}
+			System.out.println("!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()");
+			System.out.println("!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()");
+			System.out.println(doc.getTextContent());
+			System.out.println(doc.getFirstChild().getTextContent());
+			System.out.println("!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()");
+			System.out.println("!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()!@#$%^&*()");
+			Node titleNode = doc.getElementsByTagName("Title").item(0);
+			title = titleNode.getTextContent();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return itemInfo;
+	}
+
+	private static InventoryInfo fetchItemDetail(String requestURL) {
+
+		InventoryInfo inventoryResponse = null;
+
+		HttpClient httpClient = HttpClientBuilder.create().build();
+		try {
+
+			HttpGet httpGetRequest = new HttpGet(requestURL);
+			HttpResponse httpResponse = httpClient.execute(httpGetRequest);
+
+			System.out.println("----------------------------------------");
+			System.out.println(httpResponse.getStatusLine());
+			System.out.println("----------------------------------------");
+
+			HttpEntity entity = httpResponse.getEntity();
+
+			String responseText = null;
+			if (entity != null) {
+
+				/*
+				BufferedReader br = new BufferedReader(new InputStreamReader((entity.getContent())));
+
+				StringBuilder response = new StringBuilder();
+				String output;
+
+				while ((output = br.readLine()) != null) {
+					response.append(output);
+				}
+
+				responseText = response.toString();
+				System.out.println("Data response from server is [" + response.toString() + "]");
+				*/
+				
+				try {
+		            JAXBContext context = JAXBContext.newInstance(ItemLookupResponse.class);
+		            Unmarshaller un = context.createUnmarshaller();
+		            ItemLookupResponse emp = (ItemLookupResponse) un.unmarshal(new InputStreamReader(entity.getContent()));
+		            
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            
+		            System.out.println(emp.getItems().get(0).getItem().get(0).getItemAttributes().getEAN());
+		            
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            System.out.println("----------------------------------------");
+		            
+		            //return emp;
+		        } catch (JAXBException e) {
+		            e.printStackTrace();
+		        }
+		        return null;
+				/*
+				
+				  try {
+			            JSONObject xmlJSONObj = XML.toJSONObject(response.toString());
+			            String jsonPrettyPrintString = xmlJSONObj.toString(4);
+			            System.out.println("----------------------------------------");
+			            System.out.println("----------------------------------------");
+			            System.out.println("----------------------------------------");
+			            System.out.println("----------------------------------------");
+			            System.out.println("----------------------------------------");
+			            
+			            System.out.println(jsonPrettyPrintString);
+			        } catch (JSONException je) {
+			            System.out.println(je.toString());
+			        }
+				*/
+			}
+
+			// Check for HTTP response code: 200 = success
+			if (httpResponse.getStatusLine().getStatusCode() != 200) {
+				System.out.println("Non 200 Error Code\n" + httpResponse.toString() + "\n"
+						+ httpResponse.getStatusLine().toString());
+				throw new RuntimeException("Failed : HTTP error code : " + httpResponse.getStatusLine());
+			} else {
+
+				inventoryResponse = new InventoryInfo();
+				ItemInfo itemInfo = new ItemInfo();
+				ItemPrice itemPrice = new ItemPrice();
+				ProductInfo productInfo = new ProductInfo();
+
+				productInfo.setName(EanDataUtil.getAttributeValue(responseText, "product"));
+				productInfo.setBenefits(EanDataUtil.getAttributeValue(responseText, "features"));
+				productInfo.setDescription(EanDataUtil.getAttributeValue(responseText, "long_desc"));
+				productInfo.setImageJSON(EanDataUtil.getAttributeValue(responseText, "image"));
+				itemInfo.setProductInfo(productInfo);
+
+				itemPrice.setMrp(Double.valueOf(EanDataUtil.getAttributeValue(responseText, "price_new")) * 65);
+				itemInfo.setItemPrice(itemPrice);
+
+				//itemInfo.setBarcode(barcode.toString());
+
+				inventoryResponse.getAddedItems().put("Unknown", itemInfo);
+
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			// httpClient.getConnectionManager().shutdown();
+		}
+		
+		return inventoryResponse;
+
 	}
 
 }

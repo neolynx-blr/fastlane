@@ -38,7 +38,7 @@ public class UserResource {
 	@Path("/{vendorId}/current/{barcode}")
 	@GET
 	@UnitOfWork
-	public InventoryInfo getLatestItemRecord(@PathParam(value = "vendorId") Long vendorId, @PathParam(value = "barcode") Long barcode) {
+	public InventoryInfo getLatestItemRecord(@PathParam(value = "vendorId") Long vendorId, @PathParam(value = "barcode") String barcode) {
 		return this.inventoryEvaluator.getLatestItemForVendorBarcode(vendorId, barcode);
 	}
 

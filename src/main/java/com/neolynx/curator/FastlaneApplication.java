@@ -16,12 +16,18 @@ import io.dropwizard.views.ViewBundle;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,6 +92,7 @@ import com.neolynx.curator.resources.ViewResource;
 import com.neolynx.curator.task.DaemonJob;
 import com.neolynx.curator.task.DataLoaderJob;
 import com.neolynx.curator.util.PasswordHash;
+import com.neolynx.curator.util.aws.SignedRequestsHelper;
 import com.neolynx.vendor.ClientResource;
 import com.neolynx.vendor.job.InventorySync;
 import com.neolynx.vendor.manager.InventoryService;
@@ -143,7 +150,6 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
 		final OrderDetailDAO orderDetailDAO = new OrderDetailDAO(hibernateBundle.getSessionFactory());
 		final AccountService accountService = new AccountService(hibernateBundle.getSessionFactory());
-
 
 		/**
 		 * Currently same project is used for both server side as well as vendor
