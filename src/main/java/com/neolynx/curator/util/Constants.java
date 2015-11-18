@@ -14,13 +14,15 @@ public class Constants {
 	public static final String HYPHEN_SEPARATOR = "-";
 
 	public static final Long AMAZON_VENDOR_ID = 281L;
-	public static final String ITEM_ID = "8901030215483";
+	public static final String AMAZON_ITEM_CODE = "Amazon-Item-Code";
+	public static final String AMAZON_ITEM_UNAVAILABLE_COUNT = "0";
+	
 	public static final String ENDPOINT = "webservices.amazon.in";
 
 	public static final String AMAZON_API_SEARCH_INDEX = "All";
 	public static final String AMAZON_API_VERSION = "2013-08-01";
 	public static final String AMAZON_API_ASSOCIATE_TAG = "neol-21";
-	public static final String AMAZON_API_RESPONSE_GROUP = "Medium";
+	public static final String AMAZON_API_RESPONSE_GROUP = "Large";
 	public static final String AMAZON_API_LOOKUP_OPERATION = "ItemLookup";
 	public static final String AMAZON_API_SERVICE_NAME = "AWSECommerceService";
 	

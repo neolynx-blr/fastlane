@@ -142,6 +142,9 @@ public class ItemInfo implements Serializable {
 
 		ProductInfo productInfo = new ProductInfo();
 		productInfo.setName(vendorItemMaster.getName());
+		productInfo.setBenefits(vendorItemMaster.getBenefits());
+		productInfo.setHowToUse(vendorItemMaster.getHowToUse());
+		productInfo.setBrandName(vendorItemMaster.getBrandName());
 		productInfo.setTagLine(vendorItemMaster.getTagLine());
 		productInfo.setImageJSON(vendorItemMaster.getImageJSON());
 		productInfo.setDescription(vendorItemMaster.getDescription());

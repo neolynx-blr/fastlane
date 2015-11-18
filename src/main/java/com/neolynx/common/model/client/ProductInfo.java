@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import lombok.Data;
 
-import org.apache.commons.lang3.StringUtils;
+import com.neolynx.common.util.StringUtilsCustom;
 
 /**
  * Created by nitesh.garg on Oct 28, 2015
@@ -78,49 +78,49 @@ public class ProductInfo implements Serializable {
 	}
 
 	public void setName(String name) {
-		if (!StringUtils.equals(name, this.name)) {
+		if (StringUtilsCustom.isChanged(this.name, name)) {
 			this.name = name;
 			this.setIsName(Boolean.TRUE);
 		}
 	}
 
 	public void setTagLine(String tagLine) {
-		if (!StringUtils.equals(tagLine, this.tagLine)) {
+		if (StringUtilsCustom.isChanged(this.tagLine, tagLine)) {
 			this.tagLine = tagLine;
 			this.setIsTagLine(Boolean.TRUE);
 		}
 	}
 
 	public void setImageJSON(String imageJSON) {
-		if (!StringUtils.equals(imageJSON, this.imageJSON)) {
+		if (StringUtilsCustom.isChanged(this.imageJSON, imageJSON)) {
 			this.imageJSON = imageJSON;
 			this.setIsImageJSON(Boolean.TRUE);
 		}
 	}
 
 	public void setDescription(String description) {
-		if (!StringUtils.equals(description, this.description)) {
+		if (StringUtilsCustom.isChanged(this.description, description)) {
 			this.description = description;
 			this.setIsDescription(Boolean.TRUE);
 		}
 	}
 
 	public void setBenefits(String benefits) {
-		if (!StringUtils.equals(benefits, this.benefits)) {
+		if (StringUtilsCustom.isChanged(this.benefits, benefits)) {
 			this.benefits = benefits;
 			this.setIsBenefits(Boolean.TRUE);
 		}
 	}
 
 	public void setHowToUse(String howToUse) {
-		if (!StringUtils.equals(howToUse, this.howToUse)) {
+		if (StringUtilsCustom.isChanged(this.howToUse, howToUse)) {
 			this.howToUse = howToUse;
 			this.setIsHowToUse(Boolean.TRUE);
 		}
 	}
 
 	public void setBrandName(String brandName) {
-		if (!StringUtils.equals(brandName, this.brandName)) {
+		if (StringUtilsCustom.isChanged(this.brandName, brandName)) {
 			this.brandName = brandName;
 			this.setIsBrandName(Boolean.TRUE);
 		}

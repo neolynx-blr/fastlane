@@ -64,17 +64,17 @@ create table inventory_master (
 
 	id bigserial primary key,
 	
-	name varchar(256) not null,
+	name varchar(512) not null,
 	-- TODO :: Need to differentiate product versus vendor bar code potentially?
 	barcode varchar(32) not null,
 	item_code varchar(128) not null,
 
-	tag_line varchar(256),
-	benefits varchar(4096), 
-	brand_name varchar(256),
-	image_json varchar(512),
-	how_to_use varchar(4096),
-	description varchar(4096),
+	tag_line varchar(1024),
+	benefits varchar(8192), 
+	brand_name varchar(512),
+	image_json varchar(4096),
+	how_to_use varchar(8192),
+	description varchar(8192),
 	
 	category_id varchar(16),
 	category_text varchar(512),
@@ -104,10 +104,10 @@ create table product_master (
 	id serial primary key,
 
 	barcode varchar(32) not null,
-	name varchar(256) not null,
-	description varchar(4096),
-	tag_line varchar(256),
-	image_json varchar(512), 
+	name varchar(512) not null,
+	description varchar(8192),
+	tag_line varchar(1024),
+	image_json varchar(4096), 
 
 	-- List of vendors who have this product; TODO :: Supports ~400 vendors
 	vendor_id varchar(4096) not null,
@@ -118,16 +118,16 @@ drop table if exists vendor_item_master;
 create table vendor_item_master (
 	id serial primary key,
 	
-	name varchar(256) not null,
+	name varchar(512) not null,
 	barcode varchar(32) not null,
 	item_code varchar(128) not null,
 
-	tag_line varchar(256),
-	benefits varchar(4096), 
-	brand_name varchar(256),
-	image_json varchar(512),
-	how_to_use varchar(4096),
-	description varchar(4096),
+	tag_line varchar(1024),
+	benefits varchar(8192), 
+	brand_name varchar(512),
+	image_json varchar(4096),
+	how_to_use varchar(8192),
+	description varchar(8192),
 	
 	category_id varchar(16),
 	category_text varchar(512),
@@ -155,16 +155,16 @@ drop table if exists vendor_item_history;
 create table vendor_item_history (
 	id serial primary key,
 	
-	name varchar(256) not null,
+	name varchar(512) not null,
 	barcode varchar(32) not null,
 	item_code varchar(128) not null,
 
-	tag_line varchar(256),          
-	benefits varchar(4096), 
-	brand_name varchar(256),
-	image_json varchar(512),
-	how_to_use varchar(4096),
-	description varchar(4096),
+	tag_line varchar(1024),
+	benefits varchar(8192), 
+	brand_name varchar(512),
+	image_json varchar(4096),
+	how_to_use varchar(8192),
+	description varchar(8192),
 	
 	category_id varchar(16),
 	category_text varchar(512),

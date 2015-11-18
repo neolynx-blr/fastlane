@@ -26,75 +26,84 @@ public class VendorItemHistory {
 	}
 	
 	public VendorItemHistory(VendorItemMaster vendorItemMaster) {
-		this.setBarcode(vendorItemMaster.getBarcode());
-		this.setDescription(vendorItemMaster.getDescription());
-		this.setImageJSON(vendorItemMaster.getImageJSON());
-		this.setItemCode(vendorItemMaster.getItemCode());
-		this.setMrp(vendorItemMaster.getMrp());
 		this.setName(vendorItemMaster.getName());
-		this.setPrice(vendorItemMaster.getPrice());
-		this.setBasePrice(vendorItemMaster.getBasePrice());
-		this.setDiscountJSON(vendorItemMaster.getDiscountJSON());
-		this.setTaxJSON(vendorItemMaster.getTaxJSON());
-		this.setProductId(vendorItemMaster.getProductId());
+		this.setBarcode(vendorItemMaster.getBarcode());
+		this.setItemCode(vendorItemMaster.getItemCode());
+
 		this.setTagLine(vendorItemMaster.getTagLine());
+		this.setBenefits(vendorItemMaster.getBenefits());
+		this.setBrandName(vendorItemMaster.getBrandName());
+		this.setImageJSON(vendorItemMaster.getImageJSON());
+		this.setHowToUse(vendorItemMaster.getHowToUse());
+		this.setDescription(vendorItemMaster.getDescription());
+
+		this.setCategoryId(vendorItemMaster.getCategoryId());
+		this.setCategoryText(vendorItemMaster.getCategoryText());
+
+		this.setInfoJSON(vendorItemMaster.getInfoJSON());
+		
 		this.setVendorId(vendorItemMaster.getVendorId());
 		this.setVersionId(vendorItemMaster.getVersionId());
+		this.setProductId(vendorItemMaster.getProductId());
+
+		this.setMrp(vendorItemMaster.getMrp());
+		this.setPrice(vendorItemMaster.getPrice());
+		this.setBasePrice(vendorItemMaster.getBasePrice());
+		
+		this.setTaxJSON(vendorItemMaster.getTaxJSON());
+		this.setDiscountJSON(vendorItemMaster.getDiscountJSON());
+		
 	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 
-	@Column(name = "vendor_id", nullable = false)
-	private Long vendorId;
-
-	@Column(name = "version_id", nullable = false)
-	private Long versionId;
-
-	@Column(name = "item_code", nullable = false)
-	private String itemCode;
-
-	@Column(name = "barcode", nullable = false)
-	private String barcode;
-
-	@Column(name = "image_json")
-	private String imageJSON;
-
-	@Column(name = "mrp", nullable = false)
-	private Double mrp;
-
-	@Column(name = "price")
-	private Double price;
-
-	@Column(name = "base_price")
-	private Double basePrice;
-
-	@Column(name = "product_id", nullable = false)
-	private Long productId;
-
 	@Column(name = "name", nullable = false)
 	private String name;
-
+	@Column(name = "barcode", nullable = false)
+	private String barcode;
+	@Column(name = "item_code", nullable = false)
+	private String itemCode;
+	
+	@Column(name = "tag_line")
+	private String tagLine;
+	@Column(name = "benefits")
+	private String benefits;	
+	@Column(name = "brand_name")
+	private String brandName;
+	@Column(name = "image_json")
+	private String imageJSON;	
+	@Column(name = "how_to_use")
+	private String howToUse;
 	@Column(name = "description")
 	private String description;
 
-	@Column(name = "tag_line")
-	private String tagLine;
-	
-	@Column(name = "discount_json")
-	private String discountJSON;
-	
-	@Column(name = "tax_json")
-	private String taxJSON;
-	
 	@Column(name = "category_id")
 	private String categoryId;
-	
 	@Column(name = "category_text")
 	private String categoryText;
 	
 	@Column(name = "info_json")
 	private String infoJSON;
+
+	@Column(name = "vendor_id", nullable = false)
+	private Long vendorId;
+	@Column(name = "version_id", nullable = false)
+	private Long versionId;
+	@Column(name = "product_id", nullable = false)
+	private Long productId;
+
+	@Column(name = "mrp", nullable = false)
+	private Double mrp;
+	@Column(name = "price")
+	private Double price;
+	@Column(name = "base_price")
+	private Double basePrice;
+	
+	@Column(name = "tax_json")
+	private String taxJSON;
+	@Column(name = "discount_json")
+	private String discountJSON;
 
 }
