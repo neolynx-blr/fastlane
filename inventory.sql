@@ -281,62 +281,6 @@ insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcod
 insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,name,description,tag_line,created_on) values (1, 'I0001', 3, 21, '1234', 2.63, 2.47,  null,'X-Name', 'X-Description', 'X-Tagline', now());
 insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,name,description,tag_line,created_on) values (1, 'I0004', 6, 3, '1237', 3.63, 3.47,  null, 'A-Name', 'A-Description', 'A-Tagline',now());
 
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0001',1,'X','X-Description','X-Tagline', '1234', 1.2, 1.0,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0001',11,'X','X-Description','X-Tagline', '1234', 1.3, 1.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0001',21,'X','X-Description','X-TaglineChange', '1234', 1.3, 1.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0001',31,'X','X-DescriptionChange','X-TaglineChange', '1234', 1.3, 1.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0002',2,'Y','Y-Description','Y-Tagline', '1235', 2.3, 2.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0002',12,'Y','Y-Description','Y-TaglineChange', '1235', 2.3, 2.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0002',22,'Y','Y-Description','Y-TaglineChangeAgain', '1235', 2.3, 2.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0003',3,'Z','Z-Description','Z-Tagline', '1236', 3.3, 3.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0003',13,'Z','Z-DescriptionChange','Z-TaglineCHange', '1236', 3.4, 3.3,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0004',4,'A','A-Description','A-Tagline', '1237', 3.3, 3.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0005',31,'B','B-Description','B-Tagline', '1238', 4.3, 4.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0006',22,'C','C-Description','C-Tagline', '1239', 5.3, 5.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0007',13,'D','D-Description','D-Tagline', '1240', 6.3, 6.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(1,'I0008',4,'E','E-Description','E-Tagline', '1241', 7.3, 7.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0001',1,'X','X-Description','X-Tagline', '1234', 1.2, 1.0,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0001',11,'X','X-DescriptionChange','X-TaglineChange', '1234', 1.3, 1.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0002',2,'Y','Y-Description','Y-Tagline', '1235', 2.3, 2.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0002',12,'Y','Y-DescriptionChange','Y-TaglineChange', '1235', 2.3, 2.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0003',3,'Z','Z-Description','Z-Tagline', '1236', 3.3, 3.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0003',13,'Z','Z-DescriptionChange','Z-TaglineCHange', '1236', 3.4, 3.3,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0003',23,'Z','Z-DescriptionChangeAgain','Z-TaglineCHangeAgain', '1236', 3.5, 3.4,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0004',4,'A','A-Description','A-Tagline', '1237', 3.3, 3.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0005',11,'B','B-Description','B-Tagline', '1238', 4.3, 4.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0006',22,'C','C-Description','C-Tagline', '1239', 5.3, 5.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0007',23,'D','D-Description','D-Tagline', '1240', 6.3, 6.1,  null, now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values(2,'U0008',4,'E','E-Description','E-Tagline', '1241', 7.3, 7.1,  null, now());
-
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0001', 1,'SENSODYNE TOOTHPASTE - FRESH GEL (FOR SENSITIVE TEETH)','Sensodyne Toothpaste - Fresh Gel (for Sensitive Teeth), 80 gm','', '9876543210', 100, 95.0, 'http://bigbasket.com/media/uploads/p/l/286939_1-sensodyne-toothpaste-fresh-gel-for-sensitive-teeth.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0002', 1,'SENSODYNE TOOTHBRUSH - ULTRA SENSITIVE (SOFT)','Sensodyne Toothbrush - Ultra Sensitive (Soft), 1 nos Pouch','X-Tagline', '9876543211', 50, 47.50, 'http://bigbasket.com/media/uploads/p/l/100517749_1-sensodyne-toothbrush-ultra-sensitive-soft.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0003', 1,'AASHIRVAAD ATTA - WHOLE WHEAT','Aashirvaad Atta - Whole Wheat, 10 kg Pouch','X-Tagline', '9876543212', 400, 345.0, 'http://bigbasket.com/media/uploads/p/l/126906_2-aashirvaad-atta-whole-wheat.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0004', 1,'NANDINI PURE GHEE','Nandini Pure Ghee, 1 lt Pouch','A taste of purity, Nandini Ghee prepared from pure butter', '9876543213', 385, 358.0, 'http://bigbasket.com/media/uploads/p/l/213273_1-nandini-pure-ghee.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0005', 1,'FRESHO POMEGRANATE - KESAR','Fresho Pomegranate - Kesar, 4 pcs ( approx. 800 to 1000 gm )','Pomegranate is a reddish-pink colored fruit packed up with countless seeds which are encompassed by juice-filled sacs.', '9876543214', 139, 125.0, 'http://bigbasket.com/media/uploads/p/l/10000269_10-fresho-pomegranate-kesar.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0006', 1,'FRESHO CHILLI GREEN BIG - GRADE A','Fresho Chilli Green Big - Grade A , 100 gm','Green chillies have an attractive fresh flavor and a sharp bite.', '9876543215', 3.0, 3.0, 'http://bigbasket.com/media/uploads/p/l/10000081_14-fresho-chilli-green-big-grade-a.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0007', 1,'SUGAR','BB Royal Sugar, 1 kg Pouch','Sugar is completed from organic sugar cane, the grains are light cream highlighted.', '9876543216', 45, 49, 'http://bigbasket.com/media/uploads/p/l/10000447_6-bb-royal-sugar.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0008', 1,'BEST SPECIAL RICE','Best Special Rice, 1 kg Pouch','Recommended By India Culinary Forum', '9876543217', 160, 150, 'http://bigbasket.com/media/uploads/p/l/20004911_2-best-special-rice.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0009', 1,'FORTUNE MUSTARD OIL - (KACHI GHANI)','','', '9876543218', 152, 142, 'http://bigbasket.com/media/uploads/p/l/276756_3-fortune-mustard-oil-kachi-ghani.jpg',  now());
-insert into inventory_master (vendor_id,item_code,version_id,name,description,tag_line,barcode,mrp,price,image_json,created_on) values 
-(381,'I0010', 1,'FORTUNE RICE BRAN OIL - HEALTH','Fortune Rice Bran Oil - Health, 2 ltr Can','', '9876543219', 230, 230, 'http://bigbasket.com/media/uploads/p/l/40006905_2-fortune-rice-bran-oil-health.jpg',  now());
 
 select im.name, im.barcode, im.item_code, im.vendor_id, im.version_id
 from inventory_master im
