@@ -31,7 +31,17 @@ public enum ErrorCode {
 	UNKNOWN_INVENTORY_VERSION_ON_SERVER ("DVE004", "Unknown inventory data version on server side."),
 	MISSING_ITEMS_IN_CART ("DVE005", "No items are found in the cart while placing the order."),
 	MISSING_ITEMS_TO_BE_UPDATED_IN_CART ("DVE006", "No items are found in cart to be added/updated while updating the order"),
-	MISSING_USER_DETAIL_FOR_DELIVERY ("DVE007", "No user associated with order marked for delivery.");
+	MISSING_USER_DETAILS_FOR_DELIVERY ("DVE007", "User details (identifier/address) missing from the request set for delivery."),
+	EXPIRED_DATA_VERSION ("DVE008", "The data version found on device is now expired, please refresh the inventory ASAP."),
+	INVALID_OR_MISSING_ITEM_CODE ("DVE009", "Item code is missing"),
+	INVALID_OR_MISSING_BARCODE ("DVE010", "Barcode is missing"),
+	INVALID_COUNT_OF_ITEM_IN_ORDER ("DVE011", "Invalid number of items found in Cart object against count of items found"),
+	INVALID_TOTAL_COUNT_OF_ITEM_IN_ORDER ("DVE012", "Invalid total number of items found in Cart object against count of items found"),
+	INCONSISTENT_DELIVERY_MODE_AGAINT_ORDER_ITEMS ("DVE013", "Delivery mode is found inconsistent among the cart against at least one item"),
+	MISSING_UPDATE_CART_DETAILS ("DVE014", "Cart received for update order operation is missing the update structure within the cart"),
+	MISSING_UPDATE_OPERATION_REASON ("DVE015", "Update order call is missing whether item list or user details are being updated"),
+	MISSING_OR_INVALID_LAST_SEEN_SERVER_DATA_VERSION_ID ("DVE016", "Update order call is missing last seen server data version id"),
+	MISSING_ORDER_ID ("DVE017", "Update order call is missing the order-id received in the create call");
 
 	private final String code;
 	private final String description;

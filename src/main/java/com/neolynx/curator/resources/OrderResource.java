@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.neolynx.curator.resources;
 
 import io.dropwizard.hibernate.UnitOfWork;
@@ -21,18 +18,17 @@ import com.neolynx.curator.manager.OrderProcessor;
  *
  */
 
-
 @Path("/curator/order")
 @Produces(MediaType.APPLICATION_JSON)
 public class OrderResource {
-	
+
 	private final OrderProcessor processor;
 
 	public OrderResource(OrderProcessor processor) {
 		super();
 		this.processor = processor;
 	}
-	
+
 	@Path("/create")
 	@POST
 	@UnitOfWork
@@ -50,15 +46,23 @@ public class OrderResource {
 		System.out.println("Request received from vendor::" + request.getVendorId());
 		return processor.updateOrder(request);
 	}
-	
-	@Path("/close")
+
+	@Path("/close/instore")
 	@POST
 	@UnitOfWork
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response completeOrder(ClosureRequest request) {
+	public Response closeOrderInStore(ClosureRequest request) {
 		System.out.println("Request received from vendor::" + request.getOrderId());
-		return processor.completeOrder(request);
+		return processor.completeInStoreProcessing(request);
 	}
-	
+
+	@Path("/close/delivery")
+	@POST
+	@UnitOfWork
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response closeOrderDelivery(ClosureRequest request) {
+		System.out.println("Request received from vendor::" + request.getOrderId());
+		return processor.completeDeliveryProcessing(request);
+	}
 
 }

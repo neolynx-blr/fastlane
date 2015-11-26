@@ -103,10 +103,11 @@ drop table if exists product_master;
 create table product_master (
 	id serial primary key,
 
-	barcode varchar(32) not null,
 	name varchar(512) not null,
-	description varchar(8192),
+	barcode varchar(32) not null,
+
 	tag_line varchar(1024),
+	description varchar(8192),
 	image_json varchar(4096), 
 
 	-- List of vendors who have this product; TODO :: Supports ~400 vendors
@@ -262,9 +263,20 @@ create table order_status (
 	
 insert into order_status (id, name, description) values (1, 'Created', 'Order details have been submitted on server side and is ready for payment.');
 insert into order_status (id, name, description) values (2, 'Updated', 'Order details have been updated since initial submission and is ready for payment.');
-insert into order_status (id, name, description) values (3, 'Set For Delivery', 'Order has been paid for and ready for delivery.');
-insert into order_status (id, name, description) values (4, 'Completed', 'Order has been paid for and is either picked-up or delivered.');	
+insert into order_status (id, name, description) values (3, 'Pending Pickup', 'Order has been paid for and awaiting in-store pickup.');
+insert into order_status (id, name, description) values (4, 'Pending Delivery', 'Order has been paid for and awaiting delivery.');
+insert into order_status (id, name, description) values (5, 'Picked, Pending Delivery', 'Order has been paid for, partially picked up and awaiting delivery.');	
+insert into order_status (id, name, description) values (6, 'Completed', 'Order is complete.');
 
+drop table if exists delivery_mode;
+create table delivery_mode (
+	id smallint primary key,
+	name varchar(16) not null,
+	description varchar(128));
+	
+insert into delivery_mode (id, name, description) values (1, 'In-Store Pickup', 'Order will be picked up in store.');
+insert into delivery_mode (id, name, description) values (2, 'Partial Delivery', 'Order will be partially picked up and partially delivered.');
+insert into delivery_mode (id, name, description) values (3, 'Delivery', 'Order will be delivered.');
 	
 drop table if exists vendor_user_order_mapper;
 create table vendor_user_order_mapper (
@@ -284,6 +296,7 @@ create table order_detail (
 	item_list varchar(2048),
 	item_list_delivery varchar(2048),
 	delivery_address_id integer,
+	delivery_mode integer,
 	
 	vendor_id integer not null,
 	generated_barcode varchar(32),
@@ -292,6 +305,7 @@ create table order_detail (
 	
 	net_amount real not null,
 	tax_amount real,
+	taxable_amount real,
 	discount_amount real,
 	
 	created_on timestamp not null,  

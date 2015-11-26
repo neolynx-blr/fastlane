@@ -46,6 +46,9 @@ public class OrderDetail {
 
 	@Column(name = "delivery_address_id")
 	private Integer deliverAddressId;
+	
+	@Column(name = "delivery_mode")
+	private Integer deliveryMode;
 
 	@Column(name = "vendor_id")
 	private Long vendorId;
@@ -64,6 +67,9 @@ public class OrderDetail {
 
 	@Column(name = "tax_amount")
 	private Double taxAmount;
+	
+	@Column(name = "taxable_amount")
+	private Double taxableAmount;
 
 	@Column(name = "discount_amount")
 	private Double discountAmount;

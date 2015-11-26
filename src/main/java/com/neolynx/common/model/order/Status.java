@@ -8,7 +8,7 @@ package com.neolynx.common.model.order;
  *
  */
 public enum Status {
-	
-	CREATED, UPDATED, PAID_FOR, PICKED_UP, DELIVERED;
 
+	CREATED, UPDATED, PENDING_PICKUP, PENDING_DELIVERY, PICKED_PENDING_DELIVERY, COMPLETED
+	
 }

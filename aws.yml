@@ -28,14 +28,14 @@ database:
   driverClass: org.postgresql.Driver
 
   # the username
-  user: nitesh
+  user: root
 
   # the password
-  password: passwd
+  password: r3ad0nly
 
   # the JDBC URL
   # url: jdbc:postgresql://127.0.0.1:5432/fastlane
-  url: jdbc:postgresql://localhost:5432/fastlane
+  url: jdbc:postgresql://my-db-instance.cdjgulla6rsi.us-east-1.rds.amazonaws.com:5432/fastlane
   
   # any properties specific to your JDBC driver:
   properties:
@@ -77,7 +77,7 @@ server:
 #  hardNofileLimit: 1000
   applicationConnectors:
     - type: http
-      port: 8080
+      port: 80
     - type: https
       port: 8443
       keyStorePath: example.keystore

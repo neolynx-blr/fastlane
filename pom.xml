@@ -27,6 +27,10 @@
 			<name>Sonatype Nexus Snapshots</name>
 			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
 		</repository>
+		<repository>
+			<id>boxfuse-repo</id>
+			<url>https://files.boxfuse.com</url>
+		</repository>
 	</repositories>
 
 	<dependencies>
@@ -86,33 +90,33 @@
 			<artifactId>postgresql</artifactId>
 			<version>9.4-1202-jdbc42</version>
 		</dependency>
-	
+
 		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20141113</version>
 		</dependency>
-			
+
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.5</version>
 		</dependency>
-	
-	
+
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-csv</artifactId>
 			<version>1.1</version>
-		</dependency>		
-	
-	    <dependency>
-	        <groupId>com.amazonaws</groupId>
-	        <artifactId>aws-java-sdk</artifactId>
-	        <version>1.9.0</version>
-    	</dependency>
-	
-		
+		</dependency>
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk</artifactId>
+			<version>1.9.0</version>
+		</dependency>
+
+
 		<dependency>
 			<groupId>org.glassfish.jersey.test-framework.providers</groupId>
 			<artifactId>jersey-test-framework-provider-inmemory</artifactId>
@@ -151,44 +155,28 @@
 			<artifactId>guava</artifactId>
 			<version>18.0</version>
 		</dependency>
-	
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
 			<version>4.0</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<version>1.16.6</version>
 			<scope>provided</scope>
 		</dependency>
-	
+
 	</dependencies>
 
 	<build>
 		<plugins>
-			<!-- 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>1.3.1</version>
-				<executions>
-					<execution>
-						<id>enforce</id>
-						<configuration>
-							<rules>
-								<DependencyConvergence />
-							</rules>
-						</configuration>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			 -->
+			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-enforcer-plugin</artifactId> 
+				<version>1.3.1</version> <executions> <execution> <id>enforce</id> <configuration> 
+				<rules> <DependencyConvergence /> </rules> </configuration> <goals> <goal>enforce</goal> 
+				</goals> </execution> </executions> </plugin> -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -279,6 +267,15 @@
 				<configuration>
 					<skip>true</skip>
 					<skipDeploy>true</skipDeploy>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.boxfuse.client</groupId>
+				<artifactId>boxfuse-maven-plugin</artifactId>
+				<version>1.13.4.789</version>
+				<configuration>
+					<user>820b58497bbd4adba89c129f26a57c4f</user>
+					<secret>02gXaowMODTn0QVC5aF9nYyzdiKYcnpzVDZdY29RsdvAPTWaCNYvgVT3rRXblM8J</secret>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -90,6 +90,15 @@
           <skipDeploy>true</skipDeploy>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>com.boxfuse.client</groupId>
+        <artifactId>boxfuse-maven-plugin</artifactId>
+        <version>1.13.4.789</version>
+        <configuration>
+          <user>820b58497bbd4adba89c129f26a57c4f</user>
+          <secret>02gXaowMODTn0QVC5aF9nYyzdiKYcnpzVDZdY29RsdvAPTWaCNYvgVT3rRXblM8J</secret>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <repositories>
@@ -97,6 +106,10 @@
       <id>sonatype-nexus-snapshots</id>
       <name>Sonatype Nexus Snapshots</name>
       <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+    </repository>
+    <repository>
+      <id>boxfuse-repo</id>
+      <url>https://files.boxfuse.com</url>
     </repository>
   </repositories>
   <dependencies>

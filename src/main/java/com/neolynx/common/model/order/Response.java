@@ -3,14 +3,10 @@
  */
 package com.neolynx.common.model.order;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import com.neolynx.common.model.BaseResponse;
-import com.neolynx.common.model.client.InventoryInfo;
 
 /**
  * Created by nitesh.garg on Oct 22, 2015
@@ -34,26 +30,9 @@ public class Response extends BaseResponse {
 	private Long deviceDataVersionId;
 
 	/**
-	 * In case the data version has changed since the last update to user device, 
-	 * Option a) send the inventory update for vendor-version combination and let client handle everything
-	 * Option b) send the item-details back with updated data so that this transaction can be completed quickly 
+	 * Collects all information which is related to any changes in the inventory
+	 * w.r.t. what is available on the user device at the time of placing the
+	 * order.
 	 */
-	
-	// Option A
-	private InventoryInfo inventoryResponse;
-	
-	/**
-	 * Option B
-	 * 
-	 * Note that only items where pricing has changed will be added to the
-	 * following list or else the lists will be empty
-	 */
-	
-	private Double taxAmount;
-	private Double discountAmount;
-	private Double netAmount;
-
-	private List<ItemDetail> onlyUpdatedItemListForPickup = new ArrayList<ItemDetail>();
-	private List<ItemDetail> onlyUpdatedItemListForDelivery = new ArrayList<ItemDetail>();
-
+	UpdateResponseInfo updateResponseInfo;
 }
