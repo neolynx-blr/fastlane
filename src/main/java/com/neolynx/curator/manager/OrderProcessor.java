@@ -135,7 +135,7 @@ public class OrderProcessor {
 		orderDetail.setGeneratedBarcode("GeneratedBarcode");
 		
 		//TODO Generate a valid order-id
-		orderDetail.setOrderId("1234567890L");
+		orderDetail.setOrderId(System.currentTimeMillis()+"");
 		
 		orderDetail.setVendorId(vendorId);
 		orderDetail.setStatus(Status.CREATED.toString());

@@ -63,7 +63,7 @@ public class ItemDetail implements Serializable {
 	 * count of an item is split for delivery and in-store pick-up, from the
 	 * client side create different item-details in the request.
 	 */
-	private Boolean isMarkedForDelivery;
+	private Boolean isMarkedForDelivery = Boolean.FALSE;
 	
 	public List<ErrorCode> selfValidate() {
 		
@@ -78,6 +78,10 @@ public class ItemDetail implements Serializable {
 		}
 		
 		return response;
+	}
+	
+	public ItemDetail() {
+		
 	}
 	
 	public ItemDetail(ItemInfo itemInfo) {

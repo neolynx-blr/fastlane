@@ -14,15 +14,27 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
@@ -33,6 +45,10 @@ import com.neolynx.common.model.client.price.DiscountDetail;
 import com.neolynx.common.model.client.price.DiscountInfo;
 import com.neolynx.common.model.client.price.TaxDetail;
 import com.neolynx.common.model.client.price.TaxInfo;
+import com.neolynx.common.model.order.CartDetail;
+import com.neolynx.common.model.order.DeliveryMode;
+import com.neolynx.common.model.order.ItemDetail;
+import com.neolynx.common.model.order.Response;
 import com.neolynx.curator.auth.ExampleAuthenticator;
 import com.neolynx.curator.auth.ExampleAuthorizer;
 import com.neolynx.curator.cache.CurrentInventoryLoader;
@@ -284,7 +300,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 		environment.jersey().register(new PersonResource(dao));
 
 		environment.jersey().register(new FilteredResource());
-		
+
 		temporaryCode();
 		LOGGER.info("Initialisation complete.");
 		
@@ -342,6 +358,99 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			} catch (JsonProcessingException e) {
 				e.printStackTrace();
 			}
+			
+			CartDetail cart = new CartDetail();
+			cart.setDeliveryMode(DeliveryMode.IN_STORE_PICKUP);
+			cart.setDeviceDataVersionId(1448552860765L);
+			cart.setItemCount(3);
+			cart.setTotalCount(6);
+			cart.setVendorId(281L);
+			
+			ItemDetail firstItem = new ItemDetail();
+			firstItem.setBarcode("8906004864247");
+			firstItem.setItemCode("B00E3QW6P4");
+			firstItem.setCount(2);
+			firstItem.setIsMarkedForDelivery(Boolean.FALSE);
+			
+			ItemDetail secondItem = new ItemDetail();
+			secondItem.setBarcode("8901030320491");
+			secondItem.setItemCode("B00791DDUM");
+			secondItem.setCount(2);
+			secondItem.setIsMarkedForDelivery(Boolean.FALSE);
+			
+			cart.setItemList(new ArrayList<ItemDetail>());
+			cart.getItemList().add(firstItem);
+			cart.getItemList().add(secondItem);
+			
+			cart.setNetAmount(132.34D);
+			
+			HttpClient httpClient = HttpClientBuilder.create().build();
+
+			// Create new getRequest with below mentioned URL
+			HttpPost getRequest = new HttpPost("http://localhost:8080/curator/order/create");
+
+			// Add additional header to getRequest which accepts
+			// application/xml data
+			getRequest.addHeader("accept", "application/json");
+			getRequest.setHeader("Content-type", "application/json");
+
+			mapper = new ObjectMapper();
+			try {
+				System.out.println(mapper.writeValueAsString(cart));
+			} catch (JsonProcessingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			try {
+				getRequest.setEntity(new ByteArrayEntity(mapper.writeValueAsString(cart).getBytes("UTF8")));
+
+				// Execute your request and catch response
+				HttpResponse callResponse;
+				callResponse = httpClient.execute(getRequest);
+				HttpEntity entity = callResponse.getEntity();
+
+				if (entity != null) {
+
+					BufferedReader br = new BufferedReader(new InputStreamReader((entity.getContent())));
+
+					StringBuilder response = new StringBuilder();
+					String output;
+
+					// Simply iterate through XML response and show on console.
+					while ((output = br.readLine()) != null) {
+						response.append(output);
+					}
+
+					System.out.println("============Output:============");
+					System.out.println(response.toString());
+
+					Response responseAudit = mapper.readValue(response.toString(), Response.class);
+					System.out.println("Data response from server is [" + responseAudit.toString() + "]");
+
+				}
+
+				// Check for HTTP response code: 200 = success
+				if (callResponse.getStatusLine().getStatusCode() != 200) {
+					System.out.println("Non 200 Error Code\n" + callResponse.toString() + "\n"
+							+ callResponse.getStatusLine().toString());
+					throw new RuntimeException("Failed : HTTP error code : " + callResponse.getStatusLine());
+				}
+
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch(JsonParseException jpe) {
+				LOGGER.error("Unable to process response JSON, very likely indicating credentials issue");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+			     // httpClient.getConnectionManager().shutdown();
+			    }
+
+			
+			
 			
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();

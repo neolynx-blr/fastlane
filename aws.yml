@@ -117,7 +117,7 @@ logging:
     com.neolynx.curator.manager.CacheCurator: WARN
     com.neolynx.curator.manager.InventoryCurator: WARN
     com.neolynx.curator.cache.CurrentInventoryLoader: WARN
-    com.neolynx.curator.manager.InventoryEvaluator: TRACE
+    com.neolynx.curator.manager.InventoryEvaluator: WARN
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

@@ -59,46 +59,6 @@ insert into discount_type (id, name, description, is_item_level, is_item_aggrega
 insert into discount_type (id, name, description, is_item_level, is_item_aggregate_level, is_transaction_level) 
 	values (9, 'Item aggregate level additional free count(s)', 'Applicable discount is free items, of one kind, for the given count/amount of items in the bill or overall bill', 'f', 'f', 't');
 	
-drop table if exists inventory_master;
-create table inventory_master (
-
-	id bigserial primary key,
-	
-	name varchar(512) not null,
-	-- TODO :: Need to differentiate product versus vendor bar code potentially?
-	barcode varchar(32) not null,
-	item_code varchar(128) not null,
-
-	tag_line varchar(1024),
-	benefits varchar(8192), 
-	brand_name varchar(512),
-	image_json varchar(4096),
-	how_to_use varchar(8192),
-	description varchar(8192),
-	
-	category_id varchar(16),
-	category_text varchar(512),
-	
-	-- Captures any additional information specific to vendor like weight, similar items etc, 
-	info_json varchar(2048),
-
-	vendor_id integer not null,
-	version_id bigint not null,
-	product_id integer,
-	
-	-- price = base_price + taxes - discount
-	mrp decimal(8, 2),
-	price decimal(8, 2),
-	base_price decimal(8,2),
-	
-	tax_json varchar(4096),
-	discount_json varchar(4096),
-	
-	created_on timestamp not null default now(),
-	constraint im_item_unique_constraint unique (vendor_id, version_id, item_code),
-	constraint im_barcode_unique_constraint unique (vendor_id, version_id, barcode)
-);
-	
 drop table if exists product_master;
 create table product_master (
 	id serial primary key,
@@ -188,52 +148,6 @@ create table vendor_item_history (
 	constraint vih_unique_constraint unique (barcode, vendor_id, version_id)
 );
 	 
-drop table if exists vendor_version_detail;
-create table vendor_version_detail (
-	id serial primary key,
-	vendor_id integer not null unique,
-	latest_synced_version_id bigint,
-	valid_version_ids varchar(16184),
-	current_inventory varchar(10000000),
-	last_modified_on timestamp not null);
-	
-drop table if exists vendor_version_differential;
-create table vendor_version_differential (
-	id serial primary key,
-	
-	vendor_id integer not null,
-	version_id bigint not null,
-	is_valid boolean not null default 't',
-	last_synced_version_id bigint not null,
-	is_this_latest_version boolean not null,
-	
-	delta_item_codes varchar(64736),
-	differential_data varchar(10000000),
-	price_differential_data varchar(10000000),
-	
-	last_modified_on timestamp not null,
-	constraint vvd_unique_constraint unique (vendor_id, version_id));
-
--- Vendor registration should include this
-
--- Following ID is being hardcoded for Amazon, make sure this is always part of the DB setup
-insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (281, 0, now());
-insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (281, 0, 0, 't', now());
-
-insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (1, 0, now());
-insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (2, 0, now());
-insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (71, 0, now());
-insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (89, 0, now());
-insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (289, 0, now());
-insert into vendor_version_detail (vendor_id, latest_synced_version_id, last_modified_on) values (381, 0, now());
-
-insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (1, 0, 0, 't', now());
-insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (2, 0, 0, 't', now());
-insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (71, 0, 0, 't', now());
-insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (89, 0, 0, 't', now());
-insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (381, 0, 0, 't', now());
-insert into vendor_version_differential (vendor_id, version_id, last_synced_version_id, is_this_latest_version, last_modified_on) values (289, 0, 0, 't', now());
-	
 drop table if exists user_detail;
 create table user_detail (
 	id serial primary key,
@@ -258,8 +172,8 @@ create table user_location_detail (
 drop table if exists order_status;
 create table order_status (
 	id smallint primary key,
-	name varchar(16) not null,
-	description varchar(128));
+	name varchar(32) not null,
+	description varchar(256));
 	
 insert into order_status (id, name, description) values (1, 'Created', 'Order details have been submitted on server side and is ready for payment.');
 insert into order_status (id, name, description) values (2, 'Updated', 'Order details have been updated since initial submission and is ready for payment.');
