@@ -34,5 +34,5 @@ public class Response extends BaseResponse {
 	 * w.r.t. what is available on the user device at the time of placing the
 	 * order.
 	 */
-	UpdateResponseInfo updateResponseInfo;
+	ResponseUpdate updateResponseInfo;
 }

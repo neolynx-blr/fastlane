@@ -34,9 +34,9 @@ import com.neolynx.common.model.client.price.DiscountDetail;
 import com.neolynx.common.model.client.price.DiscountInfo;
 import com.neolynx.common.model.client.price.TaxDetail;
 import com.neolynx.common.model.client.price.TaxInfo;
-import com.neolynx.common.model.order.CartDetail;
+import com.neolynx.common.model.order.CartRequest;
 import com.neolynx.common.model.order.DeliveryMode;
-import com.neolynx.common.model.order.ItemDetail;
+import com.neolynx.common.model.order.ItemRequest;
 import com.neolynx.curator.auth.ExampleAuthenticator;
 import com.neolynx.curator.auth.ExampleAuthorizer;
 import com.neolynx.curator.cache.CurrentInventoryLoader;
@@ -347,26 +347,24 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 				e.printStackTrace();
 			}
 			
-			CartDetail cart = new CartDetail();
+			CartRequest cart = new CartRequest();
 			cart.setDeliveryMode(DeliveryMode.IN_STORE_PICKUP);
 			cart.setDeviceDataVersionId(1448552860765L);
 			cart.setItemCount(3);
 			cart.setTotalCount(6);
 			cart.setVendorId(281L);
 			
-			ItemDetail firstItem = new ItemDetail();
+			ItemRequest firstItem = new ItemRequest();
 			firstItem.setBarcode("8906004864247");
 			firstItem.setItemCode("B00E3QW6P4");
-			firstItem.setCount(2);
-			firstItem.setIsMarkedForDelivery(Boolean.FALSE);
+			firstItem.setCountForInStorePickup(2);
 			
-			ItemDetail secondItem = new ItemDetail();
+			ItemRequest secondItem = new ItemRequest();
 			secondItem.setBarcode("8901030320491");
 			secondItem.setItemCode("B00791DDUM");
-			secondItem.setCount(2);
-			secondItem.setIsMarkedForDelivery(Boolean.FALSE);
+			secondItem.setCountForInStorePickup(2);
 			
-			cart.setItemList(new ArrayList<ItemDetail>());
+			cart.setItemList(new ArrayList<ItemRequest>());
 			cart.getItemList().add(firstItem);
 			cart.getItemList().add(secondItem);
 			

@@ -7,8 +7,7 @@ import org.apache.commons.collections4.CollectionUtils;
 
 import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.ErrorCode;
-import com.neolynx.common.model.order.CartDetail;
-import com.neolynx.common.model.order.ItemDetail;
+import com.neolynx.common.model.order.CartRequest;
 
 /**
  * Created by nitesh.garg on Oct 25, 2015
@@ -16,7 +15,7 @@ import com.neolynx.common.model.order.ItemDetail;
  */
 public class DataValidator {
 
-	public static BaseResponse validateFreshCart(CartDetail cart) {
+	public static BaseResponse validateFreshCart(CartRequest cart) {
 
 		BaseResponse response = new BaseResponse();
 
@@ -51,26 +50,7 @@ public class DataValidator {
 			int itemCount = 0;
 			int totalCount = 0;
 
-			boolean isAnyItemForDelivery = false;
-			boolean isAnyItemForStorePickup = false;
-
-			for (ItemDetail instance : cart.getItemList()) {
-				response.getErrorDetail().addAll(instance.selfValidate());
-
-				itemCount++;
-				totalCount += instance.getCount();
-
-				if (instance.getIsMarkedForDelivery()) {
-					isAnyItemForDelivery = true;
-				} else {
-					isAnyItemForStorePickup = true;
-				}
-
-				if ((isAnyItemForDelivery && cart.getDeliveryMode().getValue() == Constant.DELIVERY_MODE_IN_STORE_PICKUP)
-						|| (isAnyItemForStorePickup && cart.getDeliveryMode().getValue() == Constant.DELIVERY_MODE_DELIVERY)) {
-					response.getErrorDetail().add(ErrorCode.INCONSISTENT_DELIVERY_MODE_AGAINT_ORDER_ITEMS);
-				}
-			}
+			// TODO Validate delivery mode being correct
 
 			if (cart.getItemCount() != itemCount) {
 				response.getErrorDetail().add(ErrorCode.INVALID_COUNT_OF_ITEM_IN_ORDER);
@@ -90,7 +70,7 @@ public class DataValidator {
 
 	}
 
-	public static BaseResponse validateUpdatedCart(CartDetail cart) {
+	public static BaseResponse validateUpdatedCart(CartRequest cart) {
 
 		BaseResponse response = new BaseResponse();
 
@@ -142,26 +122,7 @@ public class DataValidator {
 			int itemCount = 0;
 			int totalCount = 0;
 
-			boolean isAnyItemForDelivery = false;
-			boolean isAnyItemForStorePickup = false;
-
-			for (ItemDetail instance : cart.getItemList()) {
-				response.getErrorDetail().addAll(instance.selfValidate());
-
-				itemCount++;
-				totalCount += instance.getCount();
-
-				if (instance.getIsMarkedForDelivery()) {
-					isAnyItemForDelivery = true;
-				} else {
-					isAnyItemForStorePickup = true;
-				}
-
-				if ((isAnyItemForDelivery && cart.getDeliveryMode().getValue() == Constant.DELIVERY_MODE_IN_STORE_PICKUP)
-						|| (isAnyItemForStorePickup && cart.getDeliveryMode().getValue() == Constant.DELIVERY_MODE_DELIVERY)) {
-					response.getErrorDetail().add(ErrorCode.INCONSISTENT_DELIVERY_MODE_AGAINT_ORDER_ITEMS);
-				}
-			}
+			// TODO Validate delivery mode being correct
 
 			if (cart.getItemCount() != itemCount) {
 				response.getErrorDetail().add(ErrorCode.INVALID_COUNT_OF_ITEM_IN_ORDER);

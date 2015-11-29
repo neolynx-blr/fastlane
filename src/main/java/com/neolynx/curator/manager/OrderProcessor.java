@@ -16,14 +16,13 @@ import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.ErrorCode;
 import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.client.ItemInfo;
-import com.neolynx.common.model.order.CartCalculator;
-import com.neolynx.common.model.order.CartDetail;
+import com.neolynx.common.model.order.CartRequest;
 import com.neolynx.common.model.order.ClosureRequest;
 import com.neolynx.common.model.order.DeliveryMode;
-import com.neolynx.common.model.order.ItemDetail;
+import com.neolynx.common.model.order.ItemRequest;
 import com.neolynx.common.model.order.Response;
+import com.neolynx.common.model.order.ResponseUpdate;
 import com.neolynx.common.model.order.Status;
-import com.neolynx.common.model.order.UpdateResponseInfo;
 import com.neolynx.common.util.Constant;
 import com.neolynx.common.util.DataValidator;
 import com.neolynx.curator.core.OrderDetail;
@@ -66,15 +65,15 @@ public class OrderProcessor {
 	 * @param itemDetails
 	 * @return
 	 */
-	private String getCommaSeparatedItemCodeCount(List<ItemDetail> itemDetails) {
+	private String getCommaSeparatedItemCodeCount(List<ItemRequest> itemDetails) {
 	
 		StringBuffer response = new StringBuffer();
 
 		if (CollectionUtils.isNotEmpty(itemDetails)) {
-			for (ItemDetail instance : itemDetails) {
+			for (ItemRequest instance : itemDetails) {
 				response.append(instance.getItemCode()
-						+ Constant.COMMA_SEPARATOR + instance.getCount()
-						+ Constant.COMMA_SEPARATOR + (instance.getIsMarkedForDelivery() ? "D" : "P") + Constant.COMMA_SEPARATOR);
+						+ Constant.COMMA_SEPARATOR + instance.getCountForInStorePickup()
+						+ Constant.COMMA_SEPARATOR + instance.getCountForDelivery() + Constant.COMMA_SEPARATOR);
 			}
 			return response.substring(0, response.lastIndexOf(Constant.COMMA_SEPARATOR));
 		}
@@ -85,17 +84,17 @@ public class OrderProcessor {
 	/**
 	 * Processes the order create request.
 	 * 
-	 * @param cartDetail
+	 * @param cartRequest
 	 * @return
 	 */
-	public Response createOrder(CartDetail cartDetail) {
+	public Response createOrder(CartRequest cartRequest) {
 
 		Response response = new Response();
 		
 		/**
 		 * Perform the basic data validation checks against the null and empty values.
 		 */
-		BaseResponse dataValidationResponse = DataValidator.validateFreshCart(cartDetail);
+		BaseResponse dataValidationResponse = DataValidator.validateFreshCart(cartRequest);
 		if(dataValidationResponse.getIsError()) {
 			response.setIsError(Boolean.TRUE);
 			response.getErrorDetail().addAll(dataValidationResponse.getErrorDetail());
@@ -105,7 +104,7 @@ public class OrderProcessor {
 		/**
 		 * Perform server side checks against data consistency with DB and caches.
 		 */
-		BaseResponse serverValidationResponse = ServerValidator.validateCart(cartDetail);
+		BaseResponse serverValidationResponse = ServerValidator.validateCart(cartRequest);
 		if(serverValidationResponse.getIsError()) {
 			response.setIsError(Boolean.TRUE);
 			response.getErrorDetail().addAll(serverValidationResponse.getErrorDetail());
@@ -120,10 +119,10 @@ public class OrderProcessor {
 		 * device. There is no point storing something which will definitely be
 		 * updated later on.
 		 */
-		Long vendorId = cartDetail.getVendorId();
+		Long vendorId = cartRequest.getVendorId();
 		Long latestVersionId = this.vendorVersionCache.getIfPresent(vendorId);
 		LOGGER.debug("The latest version found for vendor [{}] is [{}], and on device side is [{}].",
-				vendorId, latestVersionId, cartDetail.getDeviceDataVersionId());
+				vendorId, latestVersionId, cartRequest.getDeviceDataVersionId());
 
 		OrderDetail orderDetail = new OrderDetail();
 		
@@ -139,16 +138,16 @@ public class OrderProcessor {
 		
 		orderDetail.setVendorId(vendorId);
 		orderDetail.setStatus(Status.CREATED.toString());
-		orderDetail.setDeliveryMode(cartDetail.getDeliveryMode().getValue());
+		orderDetail.setDeliveryMode(cartRequest.getDeliveryMode().getValue());
 		
-		if(cartDetail.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY || cartDetail.getDeliveryMode() == DeliveryMode.DELIVERY) {
+		if(cartRequest.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY || cartRequest.getDeliveryMode() == DeliveryMode.DELIVERY) {
 			// Check for null delivery address should already have been conducted
-			orderDetail.setDeliverAddressId(cartDetail.getUserDetail().getAddressId());
-			orderDetail.setDeliveryMode(cartDetail.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY ? Constant.DELIVERY_MODE_PARTIAL_DELIVERY : Constant.DELIVERY_MODE_DELIVERY);
+			orderDetail.setDeliverAddressId(cartRequest.getUserDetail().getAddressId());
+			orderDetail.setDeliveryMode(cartRequest.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY ? Constant.DELIVERY_MODE_PARTIAL_DELIVERY : Constant.DELIVERY_MODE_DELIVERY);
 		}
 		
 		orderDetail.setServerDataVersionId(latestVersionId);
-		orderDetail.setDeviceDataVersionId(cartDetail.getDeviceDataVersionId());
+		orderDetail.setDeviceDataVersionId(cartRequest.getDeviceDataVersionId());
 
 		orderDetail.setLastModifiedOn(new Date(System.currentTimeMillis()));
 		orderDetail.setCreatedOn(new Date(System.currentTimeMillis()));
@@ -158,16 +157,16 @@ public class OrderProcessor {
 		 * overall it might be better to store differentials on pricing as well
 		 * or only based on pricing/discounts.
 		 */
-		if (latestVersionId.compareTo(cartDetail.getDeviceDataVersionId()) != 0) {
-			response.setUpdateResponseInfo(updateCartForUpdateVersion(vendorId, cartDetail));
+		if (latestVersionId.compareTo(cartRequest.getDeviceDataVersionId()) != 0) {
+			response.setUpdateResponseInfo(updateCartForUpdateVersion(vendorId, cartRequest));
 		}
 
-		orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartDetail.getItemList()));
+		orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartRequest.getItemList()));
 
-		orderDetail.setNetAmount(cartDetail.getNetAmount());
-		orderDetail.setTaxAmount(cartDetail.getTaxAmount());
-		orderDetail.setTaxableAmount(cartDetail.getTaxableAmount());
-		orderDetail.setDiscountAmount(cartDetail.getDiscountAmount());
+		orderDetail.setNetAmount(cartRequest.getNetAmount());
+		orderDetail.setTaxAmount(cartRequest.getTaxAmount());
+		orderDetail.setTaxableAmount(cartRequest.getTaxableAmount());
+		orderDetail.setDiscountAmount(cartRequest.getDiscountAmount());
 		
 		orderDetail = orderDetailDAO.create(orderDetail);
 		
@@ -176,31 +175,31 @@ public class OrderProcessor {
 		response.setOrderBarcode(orderDetail.getGeneratedBarcode());
 
 		response.setServerDataVersionId(latestVersionId);
-		response.setDeviceDataVersionId(cartDetail.getDeviceDataVersionId());
+		response.setDeviceDataVersionId(cartRequest.getDeviceDataVersionId());
 
 		return response;
 	}
 	
-	private UpdateResponseInfo updateCartForUpdateVersion(Long vendorId, CartDetail cartDetail) {
+	private ResponseUpdate updateCartForUpdateVersion(Long vendorId, CartRequest cartRequest) {
 		
 		int updateCount = 0;
-		UpdateResponseInfo updateResponseInfo = null;
+		ResponseUpdate updateResponseInfo = null;
 		
 		InventoryInfo inventoryInfo = this.differentialInventoryCache.getIfPresent(vendorId
-				+ Constants.CACHE_KEY_SEPARATOR_STRING + cartDetail.getDeviceDataVersionId());
+				+ Constants.CACHE_KEY_SEPARATOR_STRING + cartRequest.getDeviceDataVersionId());
 		
 		if (inventoryInfo == null || inventoryInfo.getUpdatedItems() == null
 				|| inventoryInfo.getUpdatedItems().size() == 0) {
 			return updateResponseInfo;
 		}
 		
-		updateResponseInfo = new UpdateResponseInfo();
+		updateResponseInfo = new ResponseUpdate();
 		updateResponseInfo.setInventoryResponse(inventoryInfo);
 		
-		List<ItemDetail> finalItemList = new ArrayList<ItemDetail>();
-		List<ItemDetail> updateItemList = new ArrayList<ItemDetail>();
+		List<ItemRequest> finalItemList = new ArrayList<ItemRequest>();
+		List<ItemRequest> updateItemList = new ArrayList<ItemRequest>();
 		
-		for(ItemDetail instance : cartDetail.getItemList()) {
+		for(ItemRequest instance : cartRequest.getItemList()) {
 			String itemCode = instance.getItemCode();
 			ItemInfo itemInfo = inventoryInfo.getUpdatedItems().get(itemCode);
 			
@@ -208,7 +207,7 @@ public class OrderProcessor {
 				finalItemList.add(instance);
 			} else {
 				updateCount++;
-				ItemDetail itemDetail = new ItemDetail(itemInfo);
+				ItemRequest itemDetail = new ItemRequest(itemInfo);
 				finalItemList.add(itemDetail);
 				updateItemList.add(itemDetail);
 			}
@@ -216,29 +215,30 @@ public class OrderProcessor {
 
 		if(updateCount > 0) {
 			
-			cartDetail.setItemList(finalItemList);
-			CartCalculator.calculatePrice(cartDetail);
+			cartRequest.setItemList(finalItemList);
+			//TODO
+			//CartCalculator.calculatePrice(cartRequest);
 			
 			updateResponseInfo.setOnlyUpdatedItemList(updateItemList);
 			
-			updateResponseInfo.setNetAmount(cartDetail.getNetAmount());
-			updateResponseInfo.setTaxAmount(cartDetail.getTaxAmount());
-			updateResponseInfo.setTaxableAmount(cartDetail.getTaxableAmount());
-			updateResponseInfo.setDiscountAmount(cartDetail.getDiscountAmount());
+			updateResponseInfo.setNetAmount(cartRequest.getNetAmount());
+			updateResponseInfo.setTaxAmount(cartRequest.getTaxAmount());
+			updateResponseInfo.setTaxableAmount(cartRequest.getTaxableAmount());
+			updateResponseInfo.setDiscountAmount(cartRequest.getDiscountAmount());
 			
 		}
 		
 		return updateResponseInfo;
 	}
 	
-	public Response updateOrder(CartDetail cartDetail) {
+	public Response updateOrder(CartRequest cartRequest) {
 		
 		Response response = new Response();
 		
 		/**
 		 * Perform the basic data validation checks against the null and empty values.
 		 */
-		BaseResponse dataValidationResponse = DataValidator.validateUpdatedCart(cartDetail);
+		BaseResponse dataValidationResponse = DataValidator.validateUpdatedCart(cartRequest);
 		if(dataValidationResponse.getIsError()) {
 			response.setIsError(Boolean.TRUE);
 			response.getErrorDetail().addAll(dataValidationResponse.getErrorDetail());
@@ -248,19 +248,19 @@ public class OrderProcessor {
 		/**
 		 * Perform server side checks against data consistency with DB and caches.
 		 */
-		BaseResponse serverValidationResponse = ServerValidator.validateCartForOrderupdate(cartDetail);
+		BaseResponse serverValidationResponse = ServerValidator.validateCartForOrderupdate(cartRequest);
 		if(serverValidationResponse.getIsError()) {
 			response.setIsError(Boolean.TRUE);
 			response.getErrorDetail().addAll(serverValidationResponse.getErrorDetail());
 			return response;
 		}
 
-		Long vendorId = cartDetail.getVendorId();
+		Long vendorId = cartRequest.getVendorId();
 		Long latestVersionId = this.vendorVersionCache.getIfPresent(vendorId);
 		LOGGER.debug("The latest version found for vendor [{}] is [{}], and on device side is [{}].",
-				vendorId, latestVersionId, cartDetail.getDeviceDataVersionId());
+				vendorId, latestVersionId, cartRequest.getDeviceDataVersionId());
 
-		OrderDetail orderDetail = this.orderDetailDAO.findOrderById(cartDetail.getUpdateCart().getOrderId());
+		OrderDetail orderDetail = this.orderDetailDAO.findOrderById(cartRequest.getUpdateCart().getOrderId());
 		
 		if(orderDetail == null) {
 			response.setIsError(Boolean.TRUE);
@@ -271,16 +271,16 @@ public class OrderProcessor {
 		orderDetail.setStatus(Status.UPDATED.toString());
 		orderDetail.setLastModifiedOn(new Date(System.currentTimeMillis()));
 		
-		if (cartDetail.getDeliveryMode() == DeliveryMode.DELIVERY || cartDetail.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY) {
-			orderDetail.setDeliverAddressId(cartDetail.getUserDetail().getAddressId());
-			orderDetail.setDeliveryMode(cartDetail.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY ? Constant.DELIVERY_MODE_PARTIAL_DELIVERY
+		if (cartRequest.getDeliveryMode() == DeliveryMode.DELIVERY || cartRequest.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY) {
+			orderDetail.setDeliverAddressId(cartRequest.getUserDetail().getAddressId());
+			orderDetail.setDeliveryMode(cartRequest.getDeliveryMode() == DeliveryMode.PARTIAL_DELIVERY ? Constant.DELIVERY_MODE_PARTIAL_DELIVERY
 							: Constant.DELIVERY_MODE_DELIVERY);
 		} else {
 			orderDetail.setDeliverAddressId(null);
 			orderDetail.setDeliveryMode(Constant.DELIVERY_MODE_IN_STORE_PICKUP);
 		}
 		
-		if(cartDetail.getUpdateCart().getIsUserDetailUpdated()) {
+		if(cartRequest.getUpdateCart().getIsUserDetailUpdated()) {
 			/**
 			 * Assuming the current captured information of the user will never
 			 * change between create and update operations, and address is
@@ -295,23 +295,23 @@ public class OrderProcessor {
 		 * sent down, it's possible that device version is now the previous
 		 * latest server version.
 		 */
-		if(latestVersionId.compareTo(cartDetail.getUpdateCart().getLastKnownServerDataVersionId()) != 0 || cartDetail.getUpdateCart().getIsItemListUpdated()) {
+		if(latestVersionId.compareTo(cartRequest.getUpdateCart().getLastKnownServerDataVersionId()) != 0 || cartRequest.getUpdateCart().getIsItemListUpdated()) {
 			
 			orderDetail.setServerDataVersionId(latestVersionId);
-			orderDetail.setDeviceDataVersionId(cartDetail.getDeviceDataVersionId());
+			orderDetail.setDeviceDataVersionId(cartRequest.getDeviceDataVersionId());
 			
-			response.setUpdateResponseInfo(updateCartForUpdateVersion(vendorId, cartDetail));
+			response.setUpdateResponseInfo(updateCartForUpdateVersion(vendorId, cartRequest));
 
 		} else {
 			// Nothing else changed, good to go.
 		}
 
-		orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartDetail.getItemList()));
+		orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartRequest.getItemList()));
 
-		orderDetail.setNetAmount(cartDetail.getNetAmount());
-		orderDetail.setTaxAmount(cartDetail.getTaxAmount());
-		orderDetail.setTaxableAmount(cartDetail.getTaxableAmount());
-		orderDetail.setDiscountAmount(cartDetail.getDiscountAmount());
+		orderDetail.setNetAmount(cartRequest.getNetAmount());
+		orderDetail.setTaxAmount(cartRequest.getTaxAmount());
+		orderDetail.setTaxableAmount(cartRequest.getTaxableAmount());
+		orderDetail.setDiscountAmount(cartRequest.getDiscountAmount());
 		
 		orderDetail = orderDetailDAO.update(orderDetail);
 		
@@ -320,7 +320,7 @@ public class OrderProcessor {
 		response.setOrderBarcode(orderDetail.getGeneratedBarcode());
 
 		response.setServerDataVersionId(latestVersionId);
-		response.setDeviceDataVersionId(cartDetail.getDeviceDataVersionId());
+		response.setDeviceDataVersionId(cartRequest.getDeviceDataVersionId());
 
 		return response;
 	}

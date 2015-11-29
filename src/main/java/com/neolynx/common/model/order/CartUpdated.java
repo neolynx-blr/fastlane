@@ -11,7 +11,7 @@ import lombok.Data;
  */
 
 @Data
-public class UpdateCartDetail {
+public class CartUpdated {
 
 	//Update order request
 	private String orderId;

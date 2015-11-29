@@ -7,7 +7,7 @@ import java.util.List;
 
 import com.google.common.cache.LoadingCache;
 import com.neolynx.common.model.client.InventoryInfo;
-import com.neolynx.common.model.order.ItemDetail;
+import com.neolynx.common.model.order.ItemRequest;
 
 /**
  * Created by nitesh.garg on Oct 25, 2015
@@ -29,7 +29,7 @@ public class PriceEvaluator {
 		this.differentialInventoryCache = differentialInventoryCache;
 	}
 
-	public List<ItemDetail> updateItemPricingToLatestVersion(Long vendorId, Long olderDataVersionId, List<ItemDetail> itemDetails) {
+	public List<ItemRequest> updateItemPricingToLatestVersion(Long vendorId, Long olderDataVersionId, List<ItemRequest> itemDetails) {
 		Long latestVersionId = this.vendorVersionCache.getIfPresent(vendorId);
 		return updateItemPricingToLaterVersion(vendorId, olderDataVersionId, latestVersionId, itemDetails);
 	}
@@ -48,7 +48,7 @@ public class PriceEvaluator {
 	 * @param itemDetails
 	 * @return
 	 */
-	public List<ItemDetail> updateItemPricingToLaterVersion(Long vendorId, Long olderDataVersionId, Long newDataVersionId, List<ItemDetail> itemDetails) {
+	public List<ItemRequest> updateItemPricingToLaterVersion(Long vendorId, Long olderDataVersionId, Long newDataVersionId, List<ItemRequest> itemDetails) {
 		
 		/**
 		 * TODO For now assuming the new data version is same as the most recent one.
@@ -70,14 +70,14 @@ public class PriceEvaluator {
 			itemLatestDataMap.put(itemResponse.getItemCode(), itemResponse);
 		}*/
 		
-		for(ItemDetail instance : itemDetails) {
+		for(ItemRequest instance : itemDetails) {
 			
 			/**
 			 * TODO Check if something has changed, if so update the pricing and
 			 * mark the boolean flag accordingly. Need special attention for
 			 * evaluating the discounts here.
 			 */
-			instance.getCount();
+			instance.getCountForInStorePickup();
 			
 		}
 		

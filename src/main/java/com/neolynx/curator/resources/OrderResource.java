@@ -8,7 +8,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.neolynx.common.model.order.CartDetail;
+import com.neolynx.common.model.order.CartRequest;
 import com.neolynx.common.model.order.ClosureRequest;
 import com.neolynx.common.model.order.Response;
 import com.neolynx.curator.manager.OrderProcessor;
@@ -33,7 +33,7 @@ public class OrderResource {
 	@POST
 	@UnitOfWork
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response createOrder(CartDetail request) {
+	public Response createOrder(CartRequest request) {
 		System.out.println("Request received from vendor::" + request.getVendorId());
 		return processor.createOrder(request);
 	}
@@ -42,7 +42,7 @@ public class OrderResource {
 	@POST
 	@UnitOfWork
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response updateOrder(CartDetail request) {
+	public Response updateOrder(CartRequest request) {
 		System.out.println("Request received from vendor::" + request.getVendorId());
 		return processor.updateOrder(request);
 	}
