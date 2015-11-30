@@ -55,6 +55,9 @@ public class CartProcessor {
 	private String orderStatus;
 	private String orderBarcode;
 
+	public CartProcessor() {
+	}
+
 	public ItemProcessor searchCartForBarcode(String barcode) {
 		return this.getBarcodeItemRequestMap().get(barcode);
 	}
@@ -116,6 +119,30 @@ public class CartProcessor {
 		this.setIsUserDetailUpdated(Boolean.TRUE);
 	}
 
+	public CartProcessor(CartRequest request) {
+		this.setVendorId(request.getVendorId());
+		this.setItemCount(request.getItemCount());
+		this.setTotalCount(request.getTotalCount());
+		this.setUserDetail(request.getUserDetail());
+		this.setDeviceDataVersionId(request.getDeviceDataVersionId());
+		
+		for(ItemRequest instance : request.getItemList()) {
+			ItemProcessor itemProcessor = new ItemProcessor(instance);
+			itemProcessor.setIsPricingChanged(Boolean.FALSE);
+			this.getBarcodeItemRequestMap().put(instance.getBarcode(), itemProcessor);
+		}
+		
+		this.setNetAmount(request.getNetAmount());
+		this.setTaxAmount(request.getTaxAmount());
+		this.setTaxableAmount(request.getTaxableAmount());
+		this.setDiscountAmount(request.getDiscountAmount());
+		
+		if(request.getUpdateCart() != null) {
+			this.setOrderId(request.getUpdateCart().getOrderId());
+			this.setLastKnownServerDataVersionId(request.getUpdateCart().getLastKnownServerDataVersionId());
+		}
+	}
+	
 	public CartRequest generateRequest() {
 		CartRequest request = new CartRequest();
 

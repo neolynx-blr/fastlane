@@ -63,6 +63,7 @@ public class ItemRequest implements Serializable {
 	public ItemRequest(ItemInfo itemInfo) {
 		this.setBarcode(itemInfo.getBarcode());
 		this.setItemCode(itemInfo.getItemCode());
+		this.setItemPrice(itemInfo.getItemPrice());
 	}
 
 }

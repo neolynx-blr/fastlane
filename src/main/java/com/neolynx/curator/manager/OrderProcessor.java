@@ -5,7 +5,9 @@ package com.neolynx.curator.manager;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -16,9 +18,12 @@ import com.neolynx.common.model.BaseResponse;
 import com.neolynx.common.model.ErrorCode;
 import com.neolynx.common.model.client.InventoryInfo;
 import com.neolynx.common.model.client.ItemInfo;
+import com.neolynx.common.model.client.price.ItemPrice;
+import com.neolynx.common.model.order.CartProcessor;
 import com.neolynx.common.model.order.CartRequest;
 import com.neolynx.common.model.order.ClosureRequest;
 import com.neolynx.common.model.order.DeliveryMode;
+import com.neolynx.common.model.order.ItemProcessor;
 import com.neolynx.common.model.order.ItemRequest;
 import com.neolynx.common.model.order.Response;
 import com.neolynx.common.model.order.ResponseUpdate;
@@ -126,7 +131,6 @@ public class OrderProcessor {
 
 		OrderDetail orderDetail = new OrderDetail();
 		
-		
 		/**
 		 * //TODO Generate a barcode
 		 * We may need to update the definition of the generated barcode
@@ -160,13 +164,37 @@ public class OrderProcessor {
 		if (latestVersionId.compareTo(cartRequest.getDeviceDataVersionId()) != 0) {
 			response.setUpdateResponseInfo(updateCartForUpdateVersion(vendorId, cartRequest));
 		}
+		
+		if(response.getUpdateResponseInfo() != null) {
 
-		orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartRequest.getItemList()));
+			orderDetail.setNetAmount(response.getUpdateResponseInfo().getNetAmount());
+			orderDetail.setTaxAmount(response.getUpdateResponseInfo().getTaxAmount());
+			orderDetail.setTaxableAmount(response.getUpdateResponseInfo().getTaxableAmount());
+			orderDetail.setDiscountAmount(response.getUpdateResponseInfo().getDiscountAmount());
+			
+			List<ItemRequest> finalItemsList = new ArrayList<ItemRequest>();
+			Map<String, ItemRequest> barcodeToItemRequestMap = new HashMap<String, ItemRequest>();
+			for(ItemRequest itemRequest : cartRequest.getItemList()) {
+				barcodeToItemRequestMap.put(itemRequest.getBarcode(), itemRequest);
+			}
+			
+			for(ItemRequest itemRequest : response.getUpdateResponseInfo().getOnlyUpdatedItemList()) {
+				barcodeToItemRequestMap.put(itemRequest.getBarcode(), itemRequest);
+			}
+			
+			finalItemsList.addAll(barcodeToItemRequestMap.values());
+			orderDetail.setItemList(getCommaSeparatedItemCodeCount(finalItemsList));
+			
+		} else {
+		
+			orderDetail.setNetAmount(cartRequest.getNetAmount());
+			orderDetail.setTaxAmount(cartRequest.getTaxAmount());
+			orderDetail.setTaxableAmount(cartRequest.getTaxableAmount());
+			orderDetail.setDiscountAmount(cartRequest.getDiscountAmount());
 
-		orderDetail.setNetAmount(cartRequest.getNetAmount());
-		orderDetail.setTaxAmount(cartRequest.getTaxAmount());
-		orderDetail.setTaxableAmount(cartRequest.getTaxableAmount());
-		orderDetail.setDiscountAmount(cartRequest.getDiscountAmount());
+			orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartRequest.getItemList()));
+
+		}
 		
 		orderDetail = orderDetailDAO.create(orderDetail);
 		
@@ -181,53 +209,62 @@ public class OrderProcessor {
 	}
 	
 	private ResponseUpdate updateCartForUpdateVersion(Long vendorId, CartRequest cartRequest) {
-		
-		int updateCount = 0;
+
 		ResponseUpdate updateResponseInfo = null;
-		
+		Boolean isOrderedItemUpdate = Boolean.FALSE;
+
 		InventoryInfo inventoryInfo = this.differentialInventoryCache.getIfPresent(vendorId
 				+ Constants.CACHE_KEY_SEPARATOR_STRING + cartRequest.getDeviceDataVersionId());
-		
+
 		if (inventoryInfo == null || inventoryInfo.getUpdatedItems() == null
 				|| inventoryInfo.getUpdatedItems().size() == 0) {
 			return updateResponseInfo;
 		}
-		
-		updateResponseInfo = new ResponseUpdate();
-		updateResponseInfo.setInventoryResponse(inventoryInfo);
-		
-		List<ItemRequest> finalItemList = new ArrayList<ItemRequest>();
-		List<ItemRequest> updateItemList = new ArrayList<ItemRequest>();
-		
-		for(ItemRequest instance : cartRequest.getItemList()) {
+
+		CartProcessor cartProcessor = new CartProcessor(cartRequest);
+		List<ItemProcessor> updateItemList = new ArrayList<ItemProcessor>();
+
+		for (ItemRequest instance : cartRequest.getItemList()) {
+
+			String barcode = instance.getBarcode();
 			String itemCode = instance.getItemCode();
+
 			ItemInfo itemInfo = inventoryInfo.getUpdatedItems().get(itemCode);
-			
-			if(itemInfo == null) {
-				finalItemList.add(instance);
-			} else {
-				updateCount++;
-				ItemRequest itemDetail = new ItemRequest(itemInfo);
-				finalItemList.add(itemDetail);
-				updateItemList.add(itemDetail);
+
+			if (itemInfo != null) {
+
+				isOrderedItemUpdate = Boolean.TRUE;
+
+				ItemProcessor itemProcessor = cartProcessor.getBarcodeItemRequestMap().get(barcode);
+				ItemPrice newPrice = itemInfo.getItemPrice();
+				ItemPrice oldPrice = itemProcessor.getItemPrice();
+
+				if (oldPrice.compareTo(newPrice) != 0) {
+					itemProcessor.setItemPrice(newPrice);
+				}
+
+				updateItemList.add(itemProcessor);
+				cartProcessor.addItemToCart(itemProcessor);
+
 			}
 		}
 
-		if(updateCount > 0) {
+		if (isOrderedItemUpdate) {
 			
-			cartRequest.setItemList(finalItemList);
-			//TODO
-			//CartCalculator.calculatePrice(cartRequest);
-			
-			updateResponseInfo.setOnlyUpdatedItemList(updateItemList);
-			
-			updateResponseInfo.setNetAmount(cartRequest.getNetAmount());
-			updateResponseInfo.setTaxAmount(cartRequest.getTaxAmount());
-			updateResponseInfo.setTaxableAmount(cartRequest.getTaxableAmount());
-			updateResponseInfo.setDiscountAmount(cartRequest.getDiscountAmount());
-			
+			updateResponseInfo = new ResponseUpdate();
+			updateResponseInfo.setInventoryResponse(inventoryInfo);
+
+			for (ItemProcessor instance : updateItemList) {
+				updateResponseInfo.getOnlyUpdatedItemList().add(instance.generateItemRequest());
+			}
+
+			updateResponseInfo.setNetAmount(cartProcessor.getNetAmount());
+			updateResponseInfo.setTaxAmount(cartProcessor.getTaxAmount());
+			updateResponseInfo.setTaxableAmount(cartProcessor.getTaxableAmount());
+			updateResponseInfo.setDiscountAmount(cartProcessor.getDiscountAmount());
+
 		}
-		
+
 		return updateResponseInfo;
 	}
 	
@@ -268,6 +305,9 @@ public class OrderProcessor {
 			return response;
 		}
 		
+		orderDetail.setServerDataVersionId(latestVersionId);
+		orderDetail.setDeviceDataVersionId(cartRequest.getDeviceDataVersionId());
+
 		orderDetail.setStatus(Status.UPDATED.toString());
 		orderDetail.setLastModifiedOn(new Date(System.currentTimeMillis()));
 		
@@ -295,23 +335,40 @@ public class OrderProcessor {
 		 * sent down, it's possible that device version is now the previous
 		 * latest server version.
 		 */
-		if(latestVersionId.compareTo(cartRequest.getUpdateCart().getLastKnownServerDataVersionId()) != 0 || cartRequest.getUpdateCart().getIsItemListUpdated()) {
-			
-			orderDetail.setServerDataVersionId(latestVersionId);
-			orderDetail.setDeviceDataVersionId(cartRequest.getDeviceDataVersionId());
-			
+		if (latestVersionId.compareTo(cartRequest.getDeviceDataVersionId()) != 0) {
 			response.setUpdateResponseInfo(updateCartForUpdateVersion(vendorId, cartRequest));
-
-		} else {
-			// Nothing else changed, good to go.
 		}
+		
+		if(response.getUpdateResponseInfo() != null) {
 
-		orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartRequest.getItemList()));
+			orderDetail.setNetAmount(response.getUpdateResponseInfo().getNetAmount());
+			orderDetail.setTaxAmount(response.getUpdateResponseInfo().getTaxAmount());
+			orderDetail.setTaxableAmount(response.getUpdateResponseInfo().getTaxableAmount());
+			orderDetail.setDiscountAmount(response.getUpdateResponseInfo().getDiscountAmount());
+			
+			List<ItemRequest> finalItemsList = new ArrayList<ItemRequest>();
+			Map<String, ItemRequest> barcodeToItemRequestMap = new HashMap<String, ItemRequest>();
+			for(ItemRequest itemRequest : cartRequest.getItemList()) {
+				barcodeToItemRequestMap.put(itemRequest.getBarcode(), itemRequest);
+			}
+			
+			for(ItemRequest itemRequest : response.getUpdateResponseInfo().getOnlyUpdatedItemList()) {
+				barcodeToItemRequestMap.put(itemRequest.getBarcode(), itemRequest);
+			}
+			
+			finalItemsList.addAll(barcodeToItemRequestMap.values());
+			orderDetail.setItemList(getCommaSeparatedItemCodeCount(finalItemsList));
+			
+		} else {
+		
+			orderDetail.setNetAmount(cartRequest.getNetAmount());
+			orderDetail.setTaxAmount(cartRequest.getTaxAmount());
+			orderDetail.setTaxableAmount(cartRequest.getTaxableAmount());
+			orderDetail.setDiscountAmount(cartRequest.getDiscountAmount());
 
-		orderDetail.setNetAmount(cartRequest.getNetAmount());
-		orderDetail.setTaxAmount(cartRequest.getTaxAmount());
-		orderDetail.setTaxableAmount(cartRequest.getTaxableAmount());
-		orderDetail.setDiscountAmount(cartRequest.getDiscountAmount());
+			orderDetail.setItemList(getCommaSeparatedItemCodeCount(cartRequest.getItemList()));
+
+		}
 		
 		orderDetail = orderDetailDAO.update(orderDetail);
 		
