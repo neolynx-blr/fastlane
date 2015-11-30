@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neolynx.common.model.client.price.DiscountDetail;
 import com.neolynx.common.model.client.price.ItemPrice;
 import com.neolynx.common.model.client.price.TaxDetail;
+import com.neolynx.common.model.order.ItemProcessor;
 import com.neolynx.curator.core.VendorItemHistory;
 import com.neolynx.curator.core.VendorItemMaster;
 
@@ -192,6 +193,16 @@ public class ItemInfo implements Serializable {
 
 	public ItemInfo() {
 		super();
+	}
+	
+	public ItemProcessor generateItemProcessor() {
+		ItemProcessor itemProcessor = new ItemProcessor();
+		
+		itemProcessor.setBarcode(this.getBarcode());
+		itemProcessor.setItemCode(this.getItemCode());
+		itemProcessor.setItemPrice(this.getItemPrice());
+		
+		return itemProcessor;
 	}
 
 }

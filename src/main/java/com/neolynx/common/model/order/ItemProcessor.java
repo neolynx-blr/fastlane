@@ -14,6 +14,7 @@ public class ItemProcessor {
 
 	private String barcode;
 	private String itemCode;
+	
 	private ItemPrice itemPrice;
 	private Boolean isPricingChanged = false;
 	
@@ -34,6 +35,18 @@ public class ItemProcessor {
 	private Double netTaxAmount;
 	private Double netTaxableAmount;
 	private Double netDiscountAmount;
+	
+	/**
+	 * @param itemPrice the itemPrice to set
+	 */
+	public void setItemPrice(ItemPrice itemPrice) {
+		if(this.getItemPrice().compareTo(itemPrice) != 0) {
+			this.itemPrice = itemPrice;
+			
+			calculatePricing();
+			this.setIsPricingChanged(Boolean.TRUE);
+		}
+	}
 
 	public void setItemCount(int inStorePickUpCount, int deliveryCount) {
 
