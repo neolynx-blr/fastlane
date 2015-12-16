@@ -111,13 +111,13 @@ logging:
     com.example.app: ERROR
     
     com.example.helloworld: WARN
-    com.neolynx: WARN
-    com.neolynx.curator.manager.Processor: WARN
-    com.neolynx.curator.manager.InventoryLoader: WARN
-    com.neolynx.curator.manager.CacheCurator: WARN
-    com.neolynx.curator.manager.InventoryCurator: WARN
-    com.neolynx.curator.cache.CurrentInventoryLoader: WARN
-    com.neolynx.curator.manager.InventoryEvaluator: WARN
+    com.neolynks: WARN
+    com.neolynks.curator.manager.Processor: WARN
+    com.neolynks.curator.manager.InventoryLoader: WARN
+    com.neolynks.curator.manager.CacheCurator: WARN
+    com.neolynks.curator.manager.InventoryCurator: WARN
+    com.neolynks.curator.cache.CurrentInventoryLoader: WARN
+    com.neolynks.curator.manager.InventoryEvaluator: WARN
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

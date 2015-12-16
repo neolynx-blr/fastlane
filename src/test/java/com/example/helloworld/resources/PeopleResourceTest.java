@@ -2,9 +2,9 @@ package com.example.helloworld.resources;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
-import com.neolynx.curator.core.Person;
-import com.neolynx.curator.db.PersonDAO;
-import com.neolynx.curator.resources.PeopleResource;
+import com.neolynks.curator.core.Person;
+import com.neolynks.curator.db.PersonDAO;
+import com.neolynks.curator.resources.PeopleResource;
 
 import io.dropwizard.testing.junit.ResourceTestRule;
 

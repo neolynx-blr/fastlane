@@ -1,10 +1,10 @@
 package com.example.helloworld;
 
 import com.google.common.base.Optional;
-import com.neolynx.curator.FastlaneApplication;
-import com.neolynx.curator.FastlaneConfiguration;
-import com.neolynx.curator.api.Saying;
-import com.neolynx.curator.core.Person;
+import com.neolynks.curator.FastlaneApplication;
+import com.neolynks.curator.FastlaneConfiguration;
+import com.neolynks.curator.api.Saying;
+import com.neolynks.curator.core.Person;
 
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.ResourceHelpers;

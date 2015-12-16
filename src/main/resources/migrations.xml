@@ -17,7 +17,7 @@
 		</createTable>
 	</changeSet>
 
-	<changeSet id="1" author="NeoLynx">
+	<changeSet id="1" author="NeoLynks">
 <!-- 
 		<createTable tableName="discount_type">
 			<column name="id" type="smallint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>

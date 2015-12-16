@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.neolynx</groupId>
+  <groupId>com.neolynks</groupId>
   <artifactId>fastlane</artifactId>
   <name>Fastlane Application</name>
   <version>0.9.0-rc4</version>
@@ -55,7 +55,7 @@
               <transformers>
                 <transformer />
                 <transformer>
-                  <mainClass>com.neolynx.curator.FastlaneApplication</mainClass>
+                  <mainClass>com.neolynks.curator.FastlaneApplication</mainClass>
                 </transformer>
               </transformers>
             </configuration>

@@ -1,9 +1,9 @@
 package com.example.helloworld.resources;
 
-import com.neolynx.curator.auth.ExampleAuthenticator;
-import com.neolynx.curator.auth.ExampleAuthorizer;
-import com.neolynx.curator.core.User;
-import com.neolynx.curator.resources.ProtectedResource;
+import com.neolynks.curator.auth.ExampleAuthenticator;
+import com.neolynks.curator.auth.ExampleAuthorizer;
+import com.neolynks.curator.core.User;
+import com.neolynks.curator.resources.ProtectedResource;
 
 import io.dropwizard.auth.*;
 import io.dropwizard.auth.basic.BasicCredentialAuthFilter;

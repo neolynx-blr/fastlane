@@ -1,9 +1,9 @@
 package com.example.helloworld.resources;
 
 import com.google.common.base.Optional;
-import com.neolynx.curator.core.Person;
-import com.neolynx.curator.db.PersonDAO;
-import com.neolynx.curator.resources.PersonResource;
+import com.neolynks.curator.core.Person;
+import com.neolynks.curator.db.PersonDAO;
+import com.neolynks.curator.resources.PersonResource;
 
 import io.dropwizard.testing.junit.ResourceTestRule;
 
