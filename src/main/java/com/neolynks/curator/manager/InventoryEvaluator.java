@@ -23,6 +23,7 @@ import com.amazon.webservices.awsecommerceservice._2013_08_01.ItemLookupResponse
 import com.amazon.webservices.awsecommerceservice._2013_08_01.Items;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
+import com.neolynks.common.model.ErrorCode;
 import com.neolynks.common.model.client.InventoryInfo;
 import com.neolynks.common.model.client.ItemInfo;
 import com.neolynks.curator.core.InventoryMaster;
@@ -139,6 +140,16 @@ public class InventoryEvaluator {
 				LOGGER.debug("********************************************************************************************");
 
 				InventoryMaster inventoryMaster = fetchItemDetailFromAmazon(barcode);
+				if(inventoryMaster == null) {
+					inventoryResponse = new InventoryInfo();
+					inventoryResponse.setVendorId(Constants.AMAZON_VENDOR_ID);
+					
+					inventoryResponse.setIsError(Boolean.TRUE);
+					inventoryResponse.getErrorDetail().add(ErrorCode.INVALID_OR_MISSING_BARCODE);
+					
+					return inventoryResponse;
+				}
+				
 				this.invMasterDAO.create(inventoryMaster);
 
 				VendorItemMaster vendorItemMaster = new VendorItemMaster();
@@ -329,6 +340,7 @@ public class InventoryEvaluator {
 			LOGGER.error("Received exception [{}] with message [{}] while trying to read barcode [{}] from Amazon", e
 					.getClass().getName(), e.getMessage(), barcode);
 			e.printStackTrace();
+			inventoryMasterInstance = null;
 		}
 
 		return inventoryMasterInstance;

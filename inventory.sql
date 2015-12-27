@@ -205,7 +205,7 @@ drop table if exists order_detail;
 create table order_detail (
 	id bigserial primary key,
 	order_id varchar(16) not null unique,
-	status varchar(32) not null,
+	status integer,
 	
 	item_list varchar(2048),
 	item_list_delivery varchar(2048),
@@ -213,7 +213,6 @@ create table order_detail (
 	delivery_mode integer,
 	
 	vendor_id integer not null,
-	generated_barcode varchar(32),
 	server_data_version_id bigint not null,
 	device_data_version_id bigint not null,
 	

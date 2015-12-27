@@ -40,7 +40,7 @@ public class VendorItemMasterWrapper {
 
 		ItemInfo returnItemInfo = new ItemInfo();
 
-		returnItemInfo.setBarcode(this.getVimRecord().getBarcode());
+		returnItemInfo.setBarcode(Long.parseLong(this.getVimRecord().getBarcode()));
 		returnItemInfo.setItemCode(this.getVimRecord().getItemCode());
 
 		ItemPrice itemPrice = new ItemPrice();
@@ -83,7 +83,7 @@ public class VendorItemMasterWrapper {
 
 		ItemInfo returnItemInfo = new ItemInfo();
 		
-		returnItemInfo.setBarcode(this.getVihRecord().getBarcode());
+		returnItemInfo.setBarcode(Long.parseLong(this.getVihRecord().getBarcode()));
 		returnItemInfo.setItemCode(this.getVihRecord().getItemCode());
 
         ItemPrice itemPrice = new ItemPrice();

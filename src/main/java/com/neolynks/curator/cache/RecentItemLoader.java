@@ -109,7 +109,7 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			itemInfo.setItemPrice(itemPrice);
 			itemInfo.setProductInfo(productInfo);
 
-			itemInfo.setBarcode(vendorItemData.getBarcode());
+			itemInfo.setBarcode(Long.parseLong(vendorItemData.getBarcode()));
 			itemInfo.setItemCode(vendorItemData.getItemCode());
 
 			inventoryResponse.getAddedItems().put(itemInfo.getItemCode(), itemInfo);

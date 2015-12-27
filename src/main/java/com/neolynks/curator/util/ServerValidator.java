@@ -36,5 +36,12 @@ public class ServerValidator {
 
 		return response;
 	}
+	
+	public static BaseResponse validateVendorId(Long vendorId) {
+		
+		//TODO
+		return null;
+		
+	}
 
 }

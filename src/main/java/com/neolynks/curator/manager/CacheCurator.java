@@ -303,7 +303,8 @@ public class CacheCurator {
 				itemInfo.setItemPrice(itemPrice);
 				itemInfo.setProductInfo(productInfo);
 
-				itemInfo.setBarcode(vendorItemData.getBarcode());
+				// TODO Fixit
+				itemInfo.setBarcode(Long.parseLong(vendorItemData.getBarcode()));
 				itemInfo.setItemCode(vendorItemData.getItemCode());
 
 				inventoryResponse.getAddedItems().put(itemInfo.getItemCode(), itemInfo);

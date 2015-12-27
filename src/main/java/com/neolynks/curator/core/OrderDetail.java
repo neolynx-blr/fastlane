@@ -36,7 +36,7 @@ public class OrderDetail {
 	private String orderId;
 
 	@Column(name = "status", nullable = false)
-	private String status;
+	private Integer status;
 
 	@Column(name = "item_list")
 	private String itemList;
@@ -52,9 +52,6 @@ public class OrderDetail {
 
 	@Column(name = "vendor_id")
 	private Long vendorId;
-
-	@Column(name = "generated_barcode")
-	private String generatedBarcode;
 
 	@Column(name = "server_data_version_id", nullable = false)
 	private Long serverDataVersionId;

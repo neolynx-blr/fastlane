@@ -16,7 +16,6 @@ import io.dropwizard.views.ViewBundle;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -28,13 +27,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+import com.neolynks.common.model.ItemResponse;
 import com.neolynks.common.model.client.InventoryInfo;
 import com.neolynks.common.model.client.price.DiscountDetail;
 import com.neolynks.common.model.client.price.DiscountInfo;
 import com.neolynks.common.model.client.price.TaxDetail;
 import com.neolynks.common.model.client.price.TaxInfo;
+import com.neolynks.common.model.order.CartRequest;
+import com.neolynks.common.model.order.DeliveryMode;
+import com.neolynks.common.model.order.ItemRequest;
 import com.neolynks.curator.auth.ExampleAuthenticator;
 import com.neolynks.curator.auth.ExampleAuthorizer;
+import com.neolynks.curator.cache.CartCacheLoader;
 import com.neolynks.curator.cache.CurrentInventoryLoader;
 import com.neolynks.curator.cache.DifferentialDataLoader;
 import com.neolynks.curator.cache.RecentItemLoader;
@@ -64,6 +68,7 @@ import com.neolynks.curator.health.TemplateHealthCheck;
 import com.neolynks.curator.manager.AccountService;
 import com.neolynks.curator.manager.CacheCurator;
 import com.neolynks.curator.manager.CacheEvaluator;
+import com.neolynks.curator.manager.CartHandler;
 import com.neolynks.curator.manager.InventoryCurator;
 import com.neolynks.curator.manager.InventoryEvaluator;
 import com.neolynks.curator.manager.InventoryLoader;
@@ -73,7 +78,9 @@ import com.neolynks.curator.manager.ProductMasterService;
 import com.neolynks.curator.manager.VendorItemService;
 import com.neolynks.curator.manager.VendorVersionDifferentialService;
 import com.neolynks.curator.manager.VendorVersionService;
+import com.neolynks.curator.model.Cart;
 import com.neolynks.curator.resources.CacheResource;
+import com.neolynks.curator.resources.CartResource;
 import com.neolynks.curator.resources.FilteredResource;
 import com.neolynks.curator.resources.HelloWorldResource;
 import com.neolynks.curator.resources.OrderResource;
@@ -89,10 +96,6 @@ import com.neolynks.curator.util.PasswordHash;
 import com.neolynks.vendor.ClientResource;
 import com.neolynks.vendor.job.InventorySync;
 import com.neolynks.vendor.manager.InventoryService;
-import com.neolynks.common.model.ItemResponse;
-import com.neolynks.common.model.order.CartRequest;
-import com.neolynks.common.model.order.DeliveryMode;
-import com.neolynks.common.model.order.ItemRequest;
 
 public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
@@ -182,6 +185,9 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 			LOGGER.info("Setting up definitions for various caches for vendor,version,inventory, differential data points...");
 			
+			// Key: Cart-Id, Value: Cart Details
+			final LoadingCache<String, Cart> cartCache = CacheBuilder.newBuilder().build(new CartCacheLoader());
+			
 			// Key: Vendor-Id, Value: Latest known inventory version
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
 			
@@ -190,7 +196,10 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			
 			// Key: Vendor-Id + - + Version-Id, Value: Inventory updates for version-id in the key w.r.t. the latest known inventory for this vendor  
 			final LoadingCache<String, InventoryInfo> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
-			
+
+			// Key: Vendor-Id + - + Version-Id, Value: Inventory updates for version-id in the key w.r.t. the latest known inventory for this vendor  
+			//TODO final LoadingCache<String, > vendorInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
+
 			final LoadingCache<String, InventoryInfo> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new RecentItemLoader(hibernateBundle.getSessionFactory()));
 
 			LOGGER.info("Setting up various service classes, abstracting the DAO classes from the business logic objects...");
@@ -228,8 +237,10 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 				e.printStackTrace();
 			}
 			
+			final CartHandler cartEvaluator = new CartHandler(cartCache, vendorVersionCache);
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
 			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator);
+			
 
 			/*
 			 * Check the tables based on inventory updates and setup the caches
@@ -264,6 +275,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			environment.jersey().register(new UserResource(inventoryEvaluator));
 			environment.jersey().register(new VendorResource(inventoryEvaluator, inventoryLoader));
 			environment.jersey().register(new OrderResource(orderProcessor));
+			environment.jersey().register(new CartResource(cartEvaluator, orderProcessor));
 			
 		}
 
@@ -350,23 +362,21 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			CartRequest cart = new CartRequest();
 			cart.setDeliveryMode(DeliveryMode.IN_STORE_PICKUP);
 			cart.setDeviceDataVersionId(1448552860765L);
-			cart.setItemCount(3);
-			cart.setTotalCount(6);
 			cart.setVendorId(281L);
 			
 			ItemRequest firstItem = new ItemRequest();
-			firstItem.setBarcode("8906004864247");
+			firstItem.setBarcode(8906004864247L);
 			firstItem.setItemCode("B00E3QW6P4");
 			firstItem.setCountForInStorePickup(2);
 			
 			ItemRequest secondItem = new ItemRequest();
-			secondItem.setBarcode("8901030320491");
+			secondItem.setBarcode(8901030320491L);
 			secondItem.setItemCode("B00791DDUM");
 			secondItem.setCountForInStorePickup(2);
-			
+			/*
 			cart.setItemList(new ArrayList<ItemRequest>());
 			cart.getItemList().add(firstItem);
-			cart.getItemList().add(secondItem);
+			cart.getItemList().add(secondItem);*/
 			
 			cart.setNetAmount(132.34D);
 			
