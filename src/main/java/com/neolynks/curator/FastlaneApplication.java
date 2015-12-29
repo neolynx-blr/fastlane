@@ -92,6 +92,7 @@ import com.neolynks.curator.resources.ProtectedResource;
 import com.neolynks.curator.resources.UserResource;
 import com.neolynks.curator.resources.VendorResource;
 import com.neolynks.curator.resources.ViewResource;
+import com.neolynks.curator.task.CartOperatorJob;
 import com.neolynks.curator.task.DaemonJob;
 import com.neolynks.curator.task.DataLoaderJob;
 import com.neolynks.curator.util.PasswordHash;
@@ -274,6 +275,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			LOGGER.info("Setting up lifecycle for periodic inventory DB updates, corresponding updates for data and caches...");
 			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache, currentInventoryCache));
 			environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, recentItemsCache, cacheCurator));
+			environment.lifecycle().manage(new CartOperatorJob(cartCache));
 
 			LOGGER.info("Registering the various resources with the runtime environment for serving...");
 			environment.jersey().register(new CacheResource(cacheEvaluator));
