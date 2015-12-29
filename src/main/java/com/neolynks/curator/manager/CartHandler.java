@@ -1,6 +1,7 @@
 package com.neolynks.curator.manager;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import lombok.Data;
@@ -29,6 +30,11 @@ public class CartHandler {
 
 	private final LoadingCache<String, Cart> cartCache;
 	private final LoadingCache<Long, Long> vendorVersionCache;
+	
+	private final Set<String> closedCartIds = new HashSet<String>();
+
+	private final Set<String> syncedCartIds = new HashSet<String>();
+	private final Set<String> updatedCartIds = new HashSet<String>();
 
 	static Logger LOGGER = LoggerFactory.getLogger(CartHandler.class);
 
@@ -54,6 +60,7 @@ public class CartHandler {
 		cart.getBase().setId(cartId);
 
 		this.cartCache.put(cartId, cart);
+		this.getUpdatedCartIds().add(cartId);
 
 		LOGGER.debug("Cart [{}], for user [{}] and vendor [{}], initialized and loaded in cache", cartId,
 				userInfo.getUserId(), vendorInfo.getVendorId());
@@ -73,11 +80,14 @@ public class CartHandler {
 		
 		CartResponse response = new CartResponse();
 		Cart cart = this.cartCache.getIfPresent(cartId);
-
+		
 		if(cart == null) {
 			response.setIsError(Boolean.TRUE);
 			return response;
 		}
+		
+		this.getUpdatedCartIds().add(cartId);
+		this.getSyncedCartIds().remove(cartId);
 		
 		cart.setAdminSyncedBarcodeCount(new HashMap<Long, Integer>());
 		cart.setCartSyncedWithAdmin(Boolean.FALSE);
@@ -193,6 +203,10 @@ public class CartHandler {
 		}
 
 		this.cartCache.put(cartId, cart);
+		
+		this.getUpdatedCartIds().add(cartId);
+		this.getSyncedCartIds().remove(cartId);
+		
 		response.setCartBase(cart.getBase());
 
 		return response;
@@ -258,36 +272,25 @@ public class CartHandler {
 		}
 
 		this.cartCache.put(cartId, cart);
+		
+		this.getUpdatedCartIds().add(cartId);
+		this.getSyncedCartIds().remove(cartId);
+
 		response.setCartBase(cart.getBase());
 
 		return response;
 	}
 
-	/**
-	 * @param cart
-	 * @return
-	 */
-	public Cart rereshCart(Cart cart) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	/**
-	 * @param cartId
-	 * @param statusId
-	 * @return
-	 */
-	public Cart setCartStatus(Long cartId, Integer statusId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	/**
 	 * @param cartCache
+	 * @param updatedOpenCartCache2 
+	 * @param syncedOpenCartCache2 
 	 * @param vendorVersionCache
 	 */
 	public CartHandler(LoadingCache<String, Cart> cartCache, LoadingCache<Long, Long> vendorVersionCache) {
 		super();
+		
 		this.cartCache = cartCache;
 		this.vendorVersionCache = vendorVersionCache;
 	}

@@ -204,7 +204,7 @@ public class InventoryLoader {
 				inventoryMaster.setTaxJSON(instance.getTaxJSON());
 				inventoryMaster.setImageJSON(instance.getImageJSON());
 				inventoryMaster.setMrp(instance.getMrp());
-				inventoryMaster.setPrice(instance.getPrice());
+				inventoryMaster.setSellingPrice(instance.getSellingPrice());
 				inventoryMaster.setTagLine(instance.getTagline());
 				inventoryMaster.setName(instance.getName());
 

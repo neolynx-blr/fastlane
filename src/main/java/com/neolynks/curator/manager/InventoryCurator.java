@@ -96,6 +96,10 @@ public class InventoryCurator {
 		int updatedInventorySize = 0;
 		long processedId = 0L;
 		int newInventorySize = inventoryMasterList.size();
+		
+		LOGGER.debug(
+				"Looked at the inventory-master table using query [{}] and found [{}] new entries since the last update of data.",
+				query.getQueryString(), inventoryMasterList.size());
 
 		if (newInventorySize < 1) {
 			session.clear();
@@ -105,9 +109,6 @@ public class InventoryCurator {
 
 		LOGGER.info("Looked at the inventory-master table and found [{}] new entries since the last update of data.",
 				inventoryMasterList.size());
-		LOGGER.debug(
-				"Looked at the inventory-master table using query [{}] and found [{}] new entries since the last update of data.",
-				query.getQueryString(), inventoryMasterList.size());
 
 		// Did we find anything new?
 		for (InventoryMaster instance : inventoryMasterList) {
@@ -129,7 +130,7 @@ public class InventoryCurator {
 
 			Long productId = 0L;
 			Long vendorId = imData.getVendorId();
-			String barcode = imData.getBarcode();
+			Long barcode = imData.getBarcode();
 
 			LOGGER.trace("Working with data Vendor:Barcode:Version [{}]:[{}]:[{}]", vendorId, barcode,
 					imData.getVersionId());
@@ -200,7 +201,7 @@ public class InventoryCurator {
 				vendorItemMasterExisting.setImageJSON(imData.getImageJSON());
 				vendorItemMasterExisting.setItemCode(imData.getItemCode());
 				vendorItemMasterExisting.setMrp(imData.getMrp());
-				vendorItemMasterExisting.setPrice(imData.getPrice());
+				vendorItemMasterExisting.setSellingPrice(imData.getSellingPrice());
 				vendorItemMasterExisting.setVersionId(imData.getVersionId());
 				vendorItemMasterExisting.setName(imData.getName());
 				vendorItemMasterExisting.setTagLine(imData.getTagLine());
@@ -214,7 +215,7 @@ public class InventoryCurator {
 				vendorItemMasterNew.setVersionId(imData.getVersionId());
 				vendorItemMasterNew.setBarcode(imData.getBarcode());
 				vendorItemMasterNew.setMrp(imData.getMrp());
-				vendorItemMasterNew.setPrice(imData.getPrice());
+				vendorItemMasterNew.setSellingPrice(imData.getSellingPrice());
 				vendorItemMasterNew.setImageJSON(imData.getImageJSON());
 				vendorItemMasterNew.setDiscountJSON(imData.getDiscountJSON());
 				vendorItemMasterNew.setTaxJSON(imData.getTaxJSON());
@@ -390,7 +391,7 @@ public class InventoryCurator {
 		}
 
 		session.clear();
-		session.close();
+		//session.close();
 
 		LOGGER.info(
 				"Completed processing new inventory where [{}] were identfied to be changed, and [{}] got updated successfully.",
@@ -512,7 +513,7 @@ public class InventoryCurator {
 							LOGGER.debug(
 									"Adding item-code [{}] to the existing cache of version [{}] for vendor [{}] to new version [{}]",
 									itemCode, lastSyncVersion, vendorId, versionId);
-							cachedInventory.getAddedItems().put(instance.getItemCode(), instanceWrapper.generateVIMItemInfo());
+							cachedInventory.getAddedItems().put(instance.getBarcode(), instanceWrapper.generateVIMItemInfo());
 						} else {
 							LOGGER.trace("Skipping because of version being lower than last-sync");
 						}
@@ -522,7 +523,7 @@ public class InventoryCurator {
 				} else {
 					for (VendorItemMaster instance : vendorItemMasterList) {
 						VendorItemMasterWrapper instanceWrapper = new VendorItemMasterWrapper(instance);
-						cachedInventory.getAddedItems().put(instance.getItemCode(), instanceWrapper.generateVIMItemInfo());
+						cachedInventory.getAddedItems().put(instance.getBarcode(), instanceWrapper.generateVIMItemInfo());
 					}
 
 				}
@@ -723,7 +724,7 @@ public class InventoryCurator {
 					LOGGER.debug("Found [{}] rows of inventory data for vendor-version-lastsync [{}-{}-{}] in history", oldItemDataFromHistoryList.size(), vendorId, currentVersionId, lastSyncVersionId);
 
 					for (VendorItemHistory instance : oldItemDataFromHistoryList) {
-						lastSyncVersionInventory.getAddedItems().put(instance.getItemCode(), new VendorItemMasterWrapper(instance).generateVIHItemInfo());
+						lastSyncVersionInventory.getAddedItems().put(instance.getBarcode(), new VendorItemMasterWrapper(instance).generateVIHItemInfo());
 						LOGGER.trace("Item-code [{}] found from history for version [{}] to be used for comparison", instance.getItemCode(), currentVersionId);
 					}
 
@@ -738,7 +739,7 @@ public class InventoryCurator {
 					LOGGER.debug("Found [{}] rows of inventory data for vendor-version-lastsync [{}-{}-{}] in master", lastSyncVersionItemDataList.size(), vendorId, currentVersionId, lastSyncVersionId);
 
 					for (VendorItemMaster instance : lastSyncVersionItemDataList) {
-						lastSyncVersionInventory.getAddedItems().put(instance.getItemCode(), new VendorItemMasterWrapper(instance).generateVIMItemInfo());
+						lastSyncVersionInventory.getAddedItems().put(instance.getBarcode(), new VendorItemMasterWrapper(instance).generateVIMItemInfo());
 						LOGGER.trace("Item-code [{}] found from master for version [{}] to be used for comparison", instance.getItemCode(), currentVersionId);
 					}
 
@@ -777,7 +778,7 @@ public class InventoryCurator {
 
 						Map<String, ItemInfo> lastSyncItemDataMap = new HashMap<String, ItemInfo>();
 
-						for (String key : lastSyncVersionInventory.getAddedItems().keySet()) {
+						for (Long key : lastSyncVersionInventory.getAddedItems().keySet()) {
 							ItemInfo itemInfo = lastSyncVersionInventory.getAddedItems().get(key);
 							lastSyncItemDataMap.put(itemInfo.getItemCode(), itemInfo);
 							LOGGER.trace("Adding item-code [{}] in the original inventory for version [{}] to be used for comparison", itemInfo.getItemCode(), currentVersionId);
@@ -793,11 +794,11 @@ public class InventoryCurator {
 
 						for (VendorItemMaster latestItemData : latestItemDataList) {
 
-							String itemCode = latestItemData.getItemCode();
+							Long itemBarcode = latestItemData.getBarcode();
 							ItemInfo latestItemInfo = new VendorItemMasterWrapper(latestItemData).generateVIMItemInfo();
-							ItemInfo lastSyncItemInfo = lastSyncItemDataMap.get(itemCode);
+							ItemInfo lastSyncItemInfo = lastSyncItemDataMap.get(itemBarcode);
 
-							deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
+							deltaItemCodes.append(itemBarcode + Constants.COMMA_SEPARATOR);
 
 							/**
 							 * Comparing an item code among two version, if
@@ -809,15 +810,15 @@ public class InventoryCurator {
 							if (lastSyncItemInfo == null) {
 								LOGGER.trace(
 										"Item [{}] was not found in the version [{}] for vendor [{}], so adding it from latest version [{}]",
-										itemCode, currentVersionId, vendorId, latestVersionId);
-								newInventoryInfo.getAddedItems().put(itemCode, latestItemInfo);
+										itemBarcode, currentVersionId, vendorId, latestVersionId);
+								newInventoryInfo.getAddedItems().put(itemBarcode, latestItemInfo);
 								continue;
 							}
 
 							LOGGER.trace(
 									"Item [{}] found in the last sync version [{}] for vendor [{}], so updatng it from latest version [{}]",
-									itemCode, currentVersionId, vendorId, latestVersionId);
-							newInventoryInfo.getUpdatedItems().put(itemCode,
+									itemBarcode, currentVersionId, vendorId, latestVersionId);
+							newInventoryInfo.getUpdatedItems().put(itemBarcode,
 									lastSyncItemInfo.generateDifferentialFrom(latestItemInfo));
 
 						}
@@ -870,7 +871,7 @@ public class InventoryCurator {
 					List<VendorItemMaster> lastSyncVersionItemDataList = inventoryForVersionQuery.list();
 
 					for (VendorItemMaster instance : lastSyncVersionItemDataList) {
-						lastSyncVersionInventory.getAddedItems().put(instance.getItemCode(), new VendorItemMasterWrapper(instance).generateVIMItemInfo());
+						lastSyncVersionInventory.getAddedItems().put(instance.getBarcode(), new VendorItemMasterWrapper(instance).generateVIMItemInfo());
 					}
 
 					if (lastSyncVersionInventory == null || lastSyncVersionInventory.getAddedItems().size() == 0) {
@@ -916,7 +917,7 @@ public class InventoryCurator {
 
 						Map<String, ItemInfo> lastSyncItemDataMap = new HashMap<String, ItemInfo>();
 
-						for (String key : lastSyncVersionInventory.getAddedItems().keySet()) {
+						for (Long key : lastSyncVersionInventory.getAddedItems().keySet()) {
 							ItemInfo itemInfo = lastSyncVersionInventory.getAddedItems().get(key);
 							lastSyncItemDataMap.put(itemInfo.getItemCode(), itemInfo);
 						}
@@ -927,12 +928,12 @@ public class InventoryCurator {
 
 						for (VendorItemMaster latestItemData : latestItemDataList) {
 
-							String itemCode = latestItemData.getItemCode();
+							Long itemBarcode = latestItemData.getBarcode();
 							VendorItemMasterWrapper instanceWrapper = new VendorItemMasterWrapper(latestItemData);
 							LOGGER.trace("Working with item-code [{}] from the latest vendor-version [{}]-[{}]",
-									itemCode, vendorId, latestVersionId);
+									itemBarcode, vendorId, latestVersionId);
 
-							ItemInfo lastSyncItemData = lastSyncItemDataMap.get(itemCode);
+							ItemInfo lastSyncItemData = lastSyncItemDataMap.get(itemBarcode);
 
 							if (lastSyncItemData == null) {
 								/**
@@ -948,14 +949,14 @@ public class InventoryCurator {
 
 								LOGGER.debug(
 										"No data found for item-code [{}] in the last synced vendor version [{}]. Unless previously deleted, will simply be added. ",
-										itemCode, lastSyncVersionId);
+										itemBarcode, lastSyncVersionId);
 
 								
-								if (previousDifferentialInventoryData.getDeletedItems().contains(itemCode)) {
-									previousDifferentialInventoryData.getDeletedItems().remove(itemCode);
+								if (previousDifferentialInventoryData.getDeletedItems().contains(itemBarcode)) {
+									previousDifferentialInventoryData.getDeletedItems().remove(itemBarcode);
 									// TODO Or pull form history and compare
 									// properly
-									previousDifferentialInventoryData.getUpdatedItems().put(itemCode,
+									previousDifferentialInventoryData.getUpdatedItems().put(itemBarcode,
 											instanceWrapper.generateVIMItemInfo());
 								}
 								/**
@@ -965,9 +966,9 @@ public class InventoryCurator {
 								 * last version to be in added/updated list.
 								 */
 								else {
-									previousDifferentialInventoryData.getAddedItems().put(itemCode,
+									previousDifferentialInventoryData.getAddedItems().put(itemBarcode,
 											instanceWrapper.generateVIMItemInfo());
-									deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
+									deltaItemCodes.append(itemBarcode + Constants.COMMA_SEPARATOR);
 								}
 
 								continue;
@@ -975,7 +976,7 @@ public class InventoryCurator {
 
 							ItemInfo latestItemInfo = instanceWrapper.generateVIMItemInfo();
 
-							if (previousDifferentialInventoryData.getAddedItems().keySet().contains(itemCode)) {
+							if (previousDifferentialInventoryData.getAddedItems().keySet().contains(itemBarcode)) {
 
 								/**
 								 * Previously the item was added, and now
@@ -987,10 +988,10 @@ public class InventoryCurator {
 
 								LOGGER.debug(
 										"This item was previously added in differential, so simply adding the latest version [{}] of this item [{}]",
-										latestVersionId, itemCode);
-								previousDifferentialInventoryData.getAddedItems().replace(itemCode, latestItemInfo);
+										latestVersionId, itemBarcode);
+								previousDifferentialInventoryData.getAddedItems().replace(itemBarcode, latestItemInfo);
 
-							} else if (previousDifferentialInventoryData.getDeletedItems().contains(itemCode)) {
+							} else if (previousDifferentialInventoryData.getDeletedItems().contains(itemBarcode)) {
 								// Not possible
 							} else {
 
@@ -1007,7 +1008,7 @@ public class InventoryCurator {
 										.addEntity("vih", VendorItemHistory.class)
 										.setParameter("versionId",
 												previousDifferentialInventoryData.getCurrentDataVersionId())
-										.setParameter("vendorId", vendorId).setParameter("itemCode", itemCode);
+										.setParameter("vendorId", vendorId).setParameter("itemCode", itemBarcode);
 
 								List<VendorItemHistory> oldItemDataList = oldVendorDataQuery.list();
 								LOGGER.debug("Pulled old data from history with version [{}] and found [{}] rows",
@@ -1031,17 +1032,17 @@ public class InventoryCurator {
 
 									LOGGER.debug(
 											"Looked up original data from history for item-code [{}] using version [{}], but found nothing. Adding it as fresh item from latest version [{}]",
-											itemCode, previousDifferentialInventoryData.getCurrentDataVersionId(),
+											itemBarcode, previousDifferentialInventoryData.getCurrentDataVersionId(),
 											latestVersionId);
-									previousDifferentialInventoryData.getAddedItems().put(itemCode, latestItemInfo);
+									previousDifferentialInventoryData.getAddedItems().put(itemBarcode, latestItemInfo);
 
 								} else {
 
 									LOGGER.debug(
 											"Looked up original data from history for item-code [{}] using version [{}], and found the data",
-											itemCode, previousDifferentialInventoryData.getCurrentDataVersionId());
+											itemBarcode, previousDifferentialInventoryData.getCurrentDataVersionId());
 
-									previousDifferentialInventoryData.getUpdatedItems().put(itemCode,
+									previousDifferentialInventoryData.getUpdatedItems().put(itemBarcode,
 											oldItemInfo.generateDifferentialFrom(latestItemInfo));
 								}
 
@@ -1049,8 +1050,9 @@ public class InventoryCurator {
 								 * If this wasn't previously contained in the
 								 * delta of item codes, add it
 								 */
-								if (!previousDeltaItemCodes.contains(itemCode)) {
-									deltaItemCodes.append(itemCode + Constants.COMMA_SEPARATOR);
+								if (previousDeltaItemCodes.indexOf(itemBarcode.toString())<0) {
+								//if (!previousDeltaItemCodes.contains(itemBarcode)) {
+									deltaItemCodes.append(itemBarcode + Constants.COMMA_SEPARATOR);
 								}
 
 							}

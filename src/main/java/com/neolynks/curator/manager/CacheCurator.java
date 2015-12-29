@@ -249,7 +249,7 @@ public class CacheCurator {
 				InventoryInfo inventoryResponse = new InventoryInfo();
 
 				Long vendorId = vendorItemData.getVendorId();
-				String barcode = vendorItemData.getBarcode();
+				Long barcode = vendorItemData.getBarcode();
 				Long lastSyncedVersionId = vendorItemData.getVersionId();
 
 				String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
@@ -298,16 +298,15 @@ public class CacheCurator {
 				}
 
 				itemPrice.setMrp(vendorItemData.getMrp());
-				itemPrice.setPrice(vendorItemData.getPrice());
+				itemPrice.setSellingPrice(vendorItemData.getSellingPrice());
 
 				itemInfo.setItemPrice(itemPrice);
 				itemInfo.setProductInfo(productInfo);
 
-				// TODO Fixit
-				itemInfo.setBarcode(Long.parseLong(vendorItemData.getBarcode()));
+				itemInfo.setBarcode(vendorItemData.getBarcode());
 				itemInfo.setItemCode(vendorItemData.getItemCode());
 
-				inventoryResponse.getAddedItems().put(itemInfo.getItemCode(), itemInfo);
+				inventoryResponse.getAddedItems().put(itemInfo.getBarcode(), itemInfo);
 
 				String newKey = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
 

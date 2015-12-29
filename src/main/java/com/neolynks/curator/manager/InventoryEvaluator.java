@@ -117,7 +117,7 @@ public class InventoryEvaluator {
 		return inventoryResponse;
 	}
 
-	public InventoryInfo getLatestItemForVendorBarcode(Long vendorId, String barcode) {
+	public InventoryInfo getLatestItemForVendorBarcode(Long vendorId, Long barcode) {
 
 		InventoryInfo inventoryResponse = null;
 
@@ -168,7 +168,7 @@ public class InventoryEvaluator {
 				vendorItemMaster.setVendorId(Constants.AMAZON_VENDOR_ID);
 				vendorItemMaster.setVersionId(inventoryMaster.getVersionId());
 
-				vendorItemMaster.setPrice(inventoryMaster.getPrice());
+				vendorItemMaster.setSellingPrice(inventoryMaster.getSellingPrice());
 
 				vendorItemMaster.setCreatedOn(inventoryMaster.getCreatedOn());
 				
@@ -177,7 +177,7 @@ public class InventoryEvaluator {
 				inventoryResponse = new InventoryInfo();
 				inventoryResponse.setVendorId(Constants.AMAZON_VENDOR_ID);
 				inventoryResponse.setNewDataVersionId(vendorItemMaster.getVersionId());
-				inventoryResponse.getAddedItems().put(vendorItemMaster.getItemCode(), itemInfo);
+				inventoryResponse.getAddedItems().put(vendorItemMaster.getBarcode(), itemInfo);
 
 			} else {
 
@@ -193,7 +193,7 @@ public class InventoryEvaluator {
 		return inventoryResponse;
 	}
 
-	private static InventoryMaster fetchItemDetailFromAmazon(String barcode) {
+	private static InventoryMaster fetchItemDetailFromAmazon(Long barcode) {
 
 		SignedRequestsHelper helper;
 		InventoryMaster inventoryMasterInstance = null;
@@ -205,7 +205,7 @@ public class InventoryEvaluator {
 
 			Map<String, String> params = new HashMap<String, String>();
 
-			params.put("ItemId", barcode);
+			params.put("ItemId", barcode.toString());
 			params.put("Version", Constants.AMAZON_API_VERSION);
 			params.put("IdType", Constants.getBarcodeType(barcode));
 			params.put("Service", Constants.AMAZON_API_SERVICE_NAME);
@@ -331,7 +331,7 @@ public class InventoryEvaluator {
 							
 						}
 						
-						inventoryMasterInstance.setPrice(amountStr == null ? null : (Double.parseDouble(amountStr) / 100));
+						inventoryMasterInstance.setSellingPrice(amountStr == null ? null : (Double.parseDouble(amountStr) / 100));
 
 					}
 				}

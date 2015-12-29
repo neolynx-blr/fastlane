@@ -72,7 +72,7 @@ public class CartResource {
 	}
 
 	@Path("{id}/set")
-	@GET
+	@POST
 	@UnitOfWork
 	public CartResponse setCartContent(@PathParam(value = "id") String cartId, CartPreview cartPreview) {
 		return this.cartEvaluator.setCartContent(cartId, cartPreview);

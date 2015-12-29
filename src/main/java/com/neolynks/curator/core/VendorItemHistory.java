@@ -47,8 +47,8 @@ public class VendorItemHistory {
 		this.setProductId(vendorItemMaster.getProductId());
 
 		this.setMrp(vendorItemMaster.getMrp());
-		this.setPrice(vendorItemMaster.getPrice());
 		this.setBasePrice(vendorItemMaster.getBasePrice());
+		this.setSellingPrice(vendorItemMaster.getSellingPrice());
 		
 		this.setTaxJSON(vendorItemMaster.getTaxJSON());
 		this.setDiscountJSON(vendorItemMaster.getDiscountJSON());
@@ -62,7 +62,7 @@ public class VendorItemHistory {
 	@Column(name = "name", nullable = false)
 	private String name;
 	@Column(name = "barcode", nullable = false)
-	private String barcode;
+	private Long barcode;
 	@Column(name = "item_code", nullable = false)
 	private String itemCode;
 	
@@ -96,8 +96,8 @@ public class VendorItemHistory {
 
 	@Column(name = "mrp", nullable = false)
 	private Double mrp;
-	@Column(name = "price")
-	private Double price;
+	@Column(name = "selling_price")
+	private Double sellingPrice;
 	@Column(name = "base_price")
 	private Double basePrice;
 	

@@ -59,7 +59,7 @@ public class ItemResponseDAO extends AbstractDAO<ItemResponse>{
 			irInstance.setVersionId(vimInstance.getVersionId());
 			
 			irInstance.setMrp(vimInstance.getMrp());
-			irInstance.setPrice(vimInstance.getPrice());
+			irInstance.setSellingPrice(vimInstance.getSellingPrice());
 			
 			inventoryList.add(irInstance);
 		}
@@ -103,7 +103,7 @@ public class ItemResponseDAO extends AbstractDAO<ItemResponse>{
 			instance.setVersionId(vimData.getVersionId());
 			
 			instance.setMrp(vimData.getMrp());
-			instance.setPrice(vimData.getPrice());
+			instance.setSellingPrice(vimData.getSellingPrice());
 			
 			inventoryList.add(instance);
 		}

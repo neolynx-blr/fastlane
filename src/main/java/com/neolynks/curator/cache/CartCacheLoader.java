@@ -22,8 +22,9 @@ public class CartCacheLoader extends CacheLoader<String, Cart> {
 
 		Cart cart = null;
 		if (cartId == null) {
-			LOGGER.debug("Tried loading latest version of NULL vendor-id, obviously failed.");
+			LOGGER.debug("Recieved call to load cart with Null Id");
 		} else {
+			LOGGER.debug("Explicit call made to load cart [{}], expectedly returning null", cartId);
 		}
 		return cart;
 	}

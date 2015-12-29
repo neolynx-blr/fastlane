@@ -102,7 +102,7 @@ server:
 logging:
 
   # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
-  level: WARN
+  level: ERROR
 
   # Logger-specific levels.
   loggers:
@@ -117,7 +117,7 @@ logging:
     com.neolynks.curator.manager.CacheCurator: WARN
     com.neolynks.curator.manager.InventoryCurator: WARN
     com.neolynks.curator.cache.CurrentInventoryLoader: WARN
-    com.neolynks.curator.manager.InventoryEvaluator: TRACE
+    com.neolynks.curator.manager.InventoryEvaluator: WARN
 
     # Redirects SQL logs to a separate file
     org.hibernate.SQL:

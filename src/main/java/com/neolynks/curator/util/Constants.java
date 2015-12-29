@@ -37,8 +37,8 @@ public class Constants {
 	 */
 	public static final String AWS_SECRET_KEY = "7WJBK+curHjbEQs9pjUeOP/+aTBY2Hvl4q5DZjw8";
 
-	public static String getBarcodeType(String barcodeValue) {
-		return StringUtils.length(barcodeValue) != 13 ? "UPC" : "EAN";
+	public static String getBarcodeType(Long barcodeValue) {
+		return StringUtils.length(barcodeValue.toString()) != 13 ? "UPC" : "EAN";
 	}
 
 }

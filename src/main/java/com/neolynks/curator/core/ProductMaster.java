@@ -44,7 +44,7 @@ public class ProductMaster implements Comparable<ProductMaster> {
 	private String tagLine;
 
 	@Column(name = "barcode", nullable = false)
-	private String barcode;
+	private Long barcode;
 
 	/*
 	 * (non-Javadoc)
@@ -60,10 +60,13 @@ public class ProductMaster implements Comparable<ProductMaster> {
 		/*
 		 * TODO Not looking at Image-JSON yet
 		 */
-		if ((o.getName() != null && this.getName() != null && this.getName().trim().equalsIgnoreCase(o.getName().trim()))
-				&& (o.getDescription() != null && this.getDescription() != null && this.getDescription().trim().equalsIgnoreCase(o.getDescription().trim()))
-				&& (o.getTagLine() != null && this.getTagLine() != null && this.getTagLine().trim().equalsIgnoreCase(o.getTagLine().trim()))
-				&& (o.getBarcode() != null && this.getBarcode() != null && this.getBarcode().trim().equalsIgnoreCase(o.getBarcode()))) {
+		if ((o.getName() != null && this.getName() != null && this.getName().trim()
+				.equalsIgnoreCase(o.getName().trim()))
+				&& (o.getDescription() != null && this.getDescription() != null && this.getDescription().trim()
+						.equalsIgnoreCase(o.getDescription().trim()))
+				&& (o.getTagLine() != null && this.getTagLine() != null && this.getTagLine().trim()
+						.equalsIgnoreCase(o.getTagLine().trim()))
+				&& (o.getBarcode() != null && this.getBarcode() != null && this.getBarcode().compareTo(o.getBarcode()) == 0)) {
 			return 0;
 		} else {
 			

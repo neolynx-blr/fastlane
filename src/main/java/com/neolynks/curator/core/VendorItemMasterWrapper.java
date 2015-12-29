@@ -40,14 +40,14 @@ public class VendorItemMasterWrapper {
 
 		ItemInfo returnItemInfo = new ItemInfo();
 
-		returnItemInfo.setBarcode(Long.parseLong(this.getVimRecord().getBarcode()));
+		returnItemInfo.setBarcode(this.getVimRecord().getBarcode());
 		returnItemInfo.setItemCode(this.getVimRecord().getItemCode());
 
 		ItemPrice itemPrice = new ItemPrice();
 
 		itemPrice.setMrp(this.getVimRecord().getMrp());
-		itemPrice.setPrice(this.getVimRecord().getPrice());
 		itemPrice.setBasePrice(this.getVimRecord().getBasePrice());
+		itemPrice.setSellingPrice(this.getVimRecord().getSellingPrice());
 
 		try {
 			ObjectMapper mapper = new ObjectMapper();
@@ -83,13 +83,13 @@ public class VendorItemMasterWrapper {
 
 		ItemInfo returnItemInfo = new ItemInfo();
 		
-		returnItemInfo.setBarcode(Long.parseLong(this.getVihRecord().getBarcode()));
+		returnItemInfo.setBarcode(this.getVihRecord().getBarcode());
 		returnItemInfo.setItemCode(this.getVihRecord().getItemCode());
 
         ItemPrice itemPrice = new ItemPrice();
 
         itemPrice.setMrp(this.getVihRecord().getMrp());
-        itemPrice.setPrice(this.getVihRecord().getPrice());
+        itemPrice.setSellingPrice(this.getVihRecord().getSellingPrice());
         itemPrice.setBasePrice(this.getVihRecord().getBasePrice());
 
         try {

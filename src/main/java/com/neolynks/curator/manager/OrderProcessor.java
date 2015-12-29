@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,20 +42,23 @@ public class OrderProcessor {
 	final OrderDetailDAO orderDetailDAO;
 	final PriceEvaluator priceEvaluator;
 	final LoadingCache<Long, Long> vendorVersionCache;
+	final LoadingCache<String, ItemInfo> vendorBarcodeInventoryCache;
 	final LoadingCache<String, InventoryInfo> differentialInventoryCache;
 	
 	/**
 	 * @param orderDetailDAO
+	 * @param vendorBarcodeInventoryCache 
 	 */
 	public OrderProcessor(OrderDetailDAO orderDetailDAO,
 			LoadingCache<Long, Long> vendorVersionCache,
 			LoadingCache<String, InventoryInfo> differentialInventoryCache,
-			PriceEvaluator priceEvaluator) {
+			PriceEvaluator priceEvaluator, LoadingCache<String, ItemInfo> vendorBarcodeInventoryCache) {
 		super();
 		this.orderDetailDAO = orderDetailDAO;
 		this.priceEvaluator = priceEvaluator;
 		this.vendorVersionCache = vendorVersionCache;
 		this.differentialInventoryCache = differentialInventoryCache;
+		this.vendorBarcodeInventoryCache = vendorBarcodeInventoryCache;
 	}
 
 	/**
@@ -209,8 +213,13 @@ public class OrderProcessor {
 		
 		for (Long barcode : itemBarcodeList) {
 
-			// Big TODO ItemInfo itemInfo = inventoryInfo.getUpdatedItems().get(itemCode);
-			ItemInfo itemInfo = inventoryInfo.getUpdatedItems().get(barcode);
+			ItemInfo itemInfo = null;
+			try {
+				itemInfo = this.vendorBarcodeInventoryCache.get(vendorId + Constants.HYPHEN_SEPARATOR + barcode);
+			} catch (ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
 			if (itemInfo != null) {
 

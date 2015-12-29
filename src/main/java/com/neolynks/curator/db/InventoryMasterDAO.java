@@ -26,7 +26,7 @@ public class InventoryMasterDAO extends AbstractDAO<InventoryMaster> {
 	}
 
 	public List<InventoryMaster> getInventoryByUniqueConstraint(Long vendorId, Long versionId, String itemCode,
-			String barcode) {
+			Long barcode) {
 		return list(namedQuery("com.example.helloworld.core.InventoryMaster.findInventoryByUniqueConstraint")
 				.setParameter("vendorId", vendorId).setParameter("versionId", versionId)
 				.setParameter("itemCode", itemCode).setParameter("barcode", barcode));

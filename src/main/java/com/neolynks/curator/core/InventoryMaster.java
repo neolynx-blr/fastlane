@@ -37,7 +37,7 @@ public class InventoryMaster {
 	@Column(name = "name", nullable = false)
 	private String name;
 	@Column(name = "barcode", nullable = false)
-	private String barcode;
+	private Long barcode;
 	@Column(name = "item_code", nullable = false)
 	private String itemCode;
 	
@@ -71,8 +71,8 @@ public class InventoryMaster {
 
 	@Column(name = "mrp", nullable = false)
 	private Double mrp;
-	@Column(name = "price")
-	private Double price;
+	@Column(name = "selling_price")
+	private Double sellingPrice;
 	@Column(name = "base_price")
 	private Double basePrice;
 	

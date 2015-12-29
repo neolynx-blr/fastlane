@@ -29,6 +29,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.neolynks.common.model.ItemResponse;
 import com.neolynks.common.model.client.InventoryInfo;
+import com.neolynks.common.model.client.ItemInfo;
 import com.neolynks.common.model.client.price.DiscountDetail;
 import com.neolynks.common.model.client.price.DiscountInfo;
 import com.neolynks.common.model.client.price.TaxDetail;
@@ -42,6 +43,7 @@ import com.neolynks.curator.cache.CartCacheLoader;
 import com.neolynks.curator.cache.CurrentInventoryLoader;
 import com.neolynks.curator.cache.DifferentialDataLoader;
 import com.neolynks.curator.cache.RecentItemLoader;
+import com.neolynks.curator.cache.VendorInventoryLoader;
 import com.neolynks.curator.cache.VendorVersionLoader;
 import com.neolynks.curator.cli.RenderCommand;
 import com.neolynks.curator.core.Account;
@@ -190,9 +192,12 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			
 			// Key: Vendor-Id, Value: Latest known inventory version
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
-			
+
 			// Key: Vendor-Id, Value: JSON for InventoryInfo indicating the most up-to-date inventory details
 			final LoadingCache<Long, String> currentInventoryCache = CacheBuilder.newBuilder().build(new CurrentInventoryLoader(hibernateBundle.getSessionFactory()));
+
+			// Key: Vendor-Id + - + Barcode, Value: Inventory updates for version-id in the key w.r.t. the latest known inventory for this vendor  
+			final LoadingCache<String, ItemInfo> vendorBarcodeInventoryCache = CacheBuilder.newBuilder().build(new VendorInventoryLoader(hibernateBundle.getSessionFactory()));
 			
 			// Key: Vendor-Id + - + Version-Id, Value: Inventory updates for version-id in the key w.r.t. the latest known inventory for this vendor  
 			final LoadingCache<String, InventoryInfo> differentialInventoryCache = CacheBuilder.newBuilder().build(new DifferentialDataLoader(hibernateBundle.getSessionFactory()));
@@ -239,7 +244,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			
 			final CartHandler cartEvaluator = new CartHandler(cartCache, vendorVersionCache);
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
-			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator);
+			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator, vendorBarcodeInventoryCache);
 			
 
 			/*

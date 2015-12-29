@@ -79,7 +79,7 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			inventoryResponse.setVendorId(vendorId);
 			inventoryResponse.setCurrentDataVersionId(vendorItemData.getVersionId());
 			inventoryResponse.setNewDataVersionId(vendorItemData.getVersionId());
-			inventoryResponse.setUpdatedItems(new HashMap<String, ItemInfo>());
+			inventoryResponse.setUpdatedItems(new HashMap<Long, ItemInfo>());
 
 			ItemInfo itemInfo = new ItemInfo();
 			ProductInfo productInfo = new ProductInfo();
@@ -104,15 +104,15 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			}
 
 			itemPrice.setMrp(vendorItemData.getMrp());
-			itemPrice.setPrice(vendorItemData.getPrice());
+			itemPrice.setSellingPrice(vendorItemData.getSellingPrice());
 
 			itemInfo.setItemPrice(itemPrice);
 			itemInfo.setProductInfo(productInfo);
 
-			itemInfo.setBarcode(Long.parseLong(vendorItemData.getBarcode()));
+			itemInfo.setBarcode(vendorItemData.getBarcode());
 			itemInfo.setItemCode(vendorItemData.getItemCode());
 
-			inventoryResponse.getAddedItems().put(itemInfo.getItemCode(), itemInfo);
+			inventoryResponse.getAddedItems().put(itemInfo.getBarcode(), itemInfo);
 			LOGGER.debug("Adding recent data with item-code [{}] for vendor-version-barcode [{}-{}-{}]",
 					itemInfo.getItemCode(), vendorId, inventoryResponse.getNewDataVersionId(), barcode);
 		}

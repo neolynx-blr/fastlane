@@ -64,7 +64,7 @@ create table product_master (
 	id serial primary key,
 
 	name varchar(512) not null,
-	barcode varchar(32) not null,
+	barcode bigint not null,
 
 	tag_line varchar(1024),
 	description varchar(8192),
@@ -80,7 +80,7 @@ create table vendor_item_master (
 	id serial primary key,
 	
 	name varchar(512) not null,
-	barcode varchar(32) not null,
+	barcode bigint not null,
 	item_code varchar(128) not null,
 
 	tag_line varchar(1024),
@@ -102,8 +102,8 @@ create table vendor_item_master (
 	
 	-- price = base_price + taxes - discount
 	mrp decimal(8, 2),
-	price decimal(8, 2),
 	base_price decimal(8,2),
+	selling_price decimal(8, 2),
 	
 	tax_json varchar(4096),
 	discount_json varchar(4096),
@@ -117,7 +117,7 @@ create table vendor_item_history (
 	id serial primary key,
 	
 	name varchar(512) not null,
-	barcode varchar(32) not null,
+	barcode bigint not null,
 	item_code varchar(128) not null,
 
 	tag_line varchar(1024),
@@ -139,8 +139,8 @@ create table vendor_item_history (
 	
 	-- price = base_price + taxes - discount
 	mrp decimal(8, 2),
-	price decimal(8, 2),
 	base_price decimal(8,2),
+	selling_price decimal(8, 2),
 	
 	tax_json varchar(4096),
 	discount_json varchar(4096),
@@ -263,82 +263,20 @@ create table vendor_information_cache (
 );
 
 
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1234567890', 'Zespri Kiwi - Green', 'Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals.', 'Zespri Kiwi - Green, 1 pc', 1, 'http://bigbasket.com/media/uploads/p/l/40024625_1-zespri-kiwi-green.jpg');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1234567891', 'Fresho Apple - Washington', 'Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent ''heart disease'', ''smoker''s risk'' and aid lung functions.', 'Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)', 1, 'http://bigbasket.com/media/uploads/p/l/10000008_15-fresho-apple-washington.jpg');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1234', 'X-Name', 'X-Description', 'X-Tagline', '1,2', 'X-ImageJSON');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1235', 'Y-Name', 'Y-Description', 'Y-Tagline', '1,2', 'Y-ImageJSON');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1236', 'Z-Name', 'Z-Description', 'Z-Tagline', '1,2', 'Z-ImageJSON');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1237', 'A-Name', 'A-Description', 'A-Tagline', '1,2', 'A-ImageJSON');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1238', 'B-Name', 'B-Description', 'B-Tagline', '1,2', 'B-ImageJSON');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1239', 'C-Name', 'C-Description', 'C-Tagline', '1,2', 'C-ImageJSON');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1240', 'D-Name', 'D-Description', 'D-Tagline', '1,2', 'D-ImageJSON');
-insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values ('1241', 'E-Name', 'E-Description', 'E-Tagline', '1,2', 'E-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234567890, 'Zespri Kiwi - Green', 'Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals.', 'Zespri Kiwi - Green, 1 pc', 1, 'http://bigbasket.com/media/uploads/p/l/40024625_1-zespri-kiwi-green.jpg');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234567891, 'Fresho Apple - Washington', 'Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent ''heart disease'', ''smoker''s risk'' and aid lung functions.', 'Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)', 1, 'http://bigbasket.com/media/uploads/p/l/10000008_15-fresho-apple-washington.jpg');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1234, 'X-Name', 'X-Description', 'X-Tagline', '1,2', 'X-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1235, 'Y-Name', 'Y-Description', 'Y-Tagline', '1,2', 'Y-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1236, 'Z-Name', 'Z-Description', 'Z-Tagline', '1,2', 'Z-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1237, 'A-Name', 'A-Description', 'A-Tagline', '1,2', 'A-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1238, 'B-Name', 'B-Description', 'B-Tagline', '1,2', 'B-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1239, 'C-Name', 'C-Description', 'C-Tagline', '1,2', 'C-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1240, 'D-Name', 'D-Description', 'D-Tagline', '1,2', 'D-ImageJSON');
+insert into product_master (barcode,name,description,tag_line,vendor_id,image_json) values (1241, 'E-Name', 'E-Description', 'E-Tagline', '1,2', 'E-ImageJSON');
 
-insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,name,description,tag_line,created_on) values (1, 'I0011', 1, 1440654001000, '1234567890', 2.63, 2.47,  null, 'Zespri Kiwi - Green', 'Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals.', 'Zespri Kiwi - Green, 1 pc', now());
-insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,name,description,tag_line,created_on) values (1, 'I0012', 2, 1440654001001, '1234567891', 3.63, 3.47,  null, 'Fresho Apple - Washington', 'Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent ''heart disease'', ''smoker''s risk'' and aid lung functions.', 'Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)', now());
+insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,selling_price,image_json,name,description,tag_line,created_on) values (1, 'I0011', 1, 1440654001000, 1234567890, 2.63, 2.47,  null, 'Zespri Kiwi - Green', 'Green Kiwifruit has a tangier, tarter flavor. It flesh is bright green, with an edible white to pale green center and tiny black seeds. It contains the potassium of a banana, the vitamin C of two oranges and a large amount fiber as lots of whole grain cereals.', 'Zespri Kiwi - Green, 1 pc', now());
+insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,selling_price,image_json,name,description,tag_line,created_on) values (1, 'I0012', 2, 1440654001001, 1234567891, 3.63, 3.47,  null, 'Fresho Apple - Washington', 'Washington Apples are a normal resource of fiber and are fat free. They have cherry to dark red color with red streaks and sometimes have a speckled pattern on its smooth skin. They have anti-oxidants and polynutrients. The apples hold 95 calories. These Washington Apples are crusty, crimson, smooth-skinned, luscious fruits. Washington apples are a natural source of fibre and are fat free. They contain anti-oxidants and polynutrients. Calories = 95 These apples help reduce cholesterol levels and prevent ''heart disease'', ''smoker''s risk'' and aid lung functions.', 'Fresho Apple - Washington, 500 gms (approx. 3-4 pcs)', now());
 
-insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,name,description,tag_line,created_on) values (1, 'I0001', 3, 21, '1234', 2.63, 2.47,  null,'X-Name', 'X-Description', 'X-Tagline', now());
-insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,price,image_json,name,description,tag_line,created_on) values (1, 'I0004', 6, 3, '1237', 3.63, 3.47,  null, 'A-Name', 'A-Description', 'A-Tagline',now());
-
-
-select im.name, im.barcode, im.item_code, im.vendor_id, im.version_id
-from inventory_master im
-inner join
-    (select barcode, vendor_id, min(version_id) version_id from inventory_master group by barcode, vendor_id) in_inner 
-on im.barcode = in_inner.barcode 
-and im.version_id = in_inner.version_id
-and im.vendor_id = in_inner.vendor_id
-and im.version_id > (select coalesce (max(version_id), 0) from vendor_item_master where barcode = im.barcode and vendor_id = im.vendor_id)
-order by im.id limit 5;
-
-select im.id, im.name, im.barcode, im.item_code, im.vendor_id, im.version_id
-from inventory_master im
-inner join
-    (	select barcode, vendor_id, version_id from inventory_master im_inner 
-    	where version_id > (select coalesce (max(version_id), 0) from vendor_item_master where vendor_id = im_inner.vendor_id and barcode = im_inner.barcode) 
-    ) in_inner 
-on im.barcode = in_inner.barcode 
-and im.version_id = in_inner.version_id
-and im.vendor_id = in_inner.vendor_id order by im.id;
-
-select vih.*
-from vendor_item_history vih
-inner join
-    (	select barcode, vendor_id, version_id from vendor_item_history vih_inner 
-    	where version_id >= (select max(version_id) from vendor_item_history where vendor_id = vih_inner.vendor_id and barcode = vih_inner.barcode and version_id <= 9) 
-    ) in_inner 
-on vih.barcode = in_inner.barcode 
-and vih.version_id = in_inner.version_id
-and vih.vendor_id = in_inner.vendor_id 
-and vih.vendor_id = 289
-and vih.version_id <= 9
-order by vih.id;
-
-select vvd.vendor_id, vvd.latest_synced_version_id, vvd.valid_version_ids, vim_inner.max_version_id, vvdf.version_id, vvdf.delta_item_codes
-from vendor_version_detail vvd 
-right join
-	(select vendor_id, max(version_id) max_version_id from vendor_item_master group by vendor_id) vim_inner on vvd.vendor_id = vim_inner.vendor_id, 
-	vendor_version_differential vvdf
-where vvdf.vendor_id = vvd.vendor_id
-and vvd.latest_synced_version_id < vim_inner.max_version_id;
-
-select vvd.*, vvdf.*
-from vendor_version_differential vvdf, vendor_version_detail vvd 
-where vvd.vendor_id = vvdf.vendor_id;
-
-select vim.* from vendor_item_master vim
-where vendor_id = 1
-and version_id between 1 and 5;
-
-select * from vendor_item_master vim
-where vendor_id = 1
-and version_id = 2;
-
-select vvd_inner.*, vvdf.* from 
-(select vvd.* from vendor_version_detail vvd where vvd.latest_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvd.vendor_id)) vvd_inner 
-left outer join vendor_version_differential vvdf on vvdf.vendor_id = vvd_inner.vendor_id;
-
-select vvdf.*, vim_inner.latestVersionId from vendor_version_differential vvdf, (select vendor_id, max(version_id) latestVersionId from vendor_item_master group by vendor_id) vim_inner 
-where vvdf.last_synced_version_id < (select max(version_id) from vendor_item_master vim where vendor_id = vvdf.vendor_id)
-and vim_inner.vendor_id = vvdf.vendor_id;
+insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,selling_price,image_json,name,description,tag_line,created_on) values (1, 'I0001', 3, 21, 1234, 2.63, 2.47,  null,'X-Name', 'X-Description', 'X-Tagline', now());
+insert into vendor_item_master (vendor_id,item_code,product_id,version_id,barcode,mrp,selling_price,image_json,name,description,tag_line,created_on) values (1, 'I0004', 6, 3, 1237, 3.63, 3.47,  null, 'A-Name', 'A-Description', 'A-Tagline',now());
 
