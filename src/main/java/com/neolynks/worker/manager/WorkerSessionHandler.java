@@ -4,30 +4,85 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.neolynks.util.RandomIdGenerator;
 import com.neolynks.worker.model.WorkerCart;
 import com.neolynks.worker.model.WorkerSession;
 import com.neolynks.worker.model.WorkerTask;
+/**
+ * 
+ * @author abhishekshukla
+ * Right now Workercart and WorkerSession operation both are 
+ * handler by this class. If it makes sense in future we should 
+ * create two manager classes to handle operations separately
+ */
+public class WorkerSessionHandler {
 
-public class WorkerHandler {
-
-	// right now operations may not be thread safe
-	Map<Long, Set<WorkerSession>> storeIdToWorkerSessionsMap;
-	Map<Long, WorkerCart> idToWorkerCartMap;
-	Map<Long, WorkerSession> idToWorkerSessionMap;
+	ConcurrentHashMap<Long, ConcurrentHashMap<Long, WorkerSession>> storeIdToWorkerSessionsMap;
 	Map<Long, WorkerTask> sessionIdToActiveWorkerTaskMap;
-	Map<Long, Set<WorkerCart>> storeIdToUnAssignedWorkerCartsMap;
+	private ConcurrentLinkedQueue<WorkerCart> unassignedWorkerCartQueue ;
+	private ExecutorService executorService = Executors.newSingleThreadExecutor();
+	private volatile boolean isShutDown = false;
 
-	public WorkerHandler() {
-		storeIdToWorkerSessionsMap = new HashMap<Long, Set<WorkerSession>>();
-		idToWorkerCartMap = new HashMap<Long, WorkerCart>();
-		idToWorkerSessionMap = new HashMap<Long, WorkerSession>();
-		sessionIdToActiveWorkerTaskMap = new HashMap<Long, WorkerTask>();
-		storeIdToUnAssignedWorkerCartsMap = new HashMap<Long, Set<WorkerCart>>();
+	public void shutDown() {
+		isShutDown = true;
+		executorService.shutdown();
 	}
 
-	public void addWorkerSession(WorkerSession workerSession) {
+	private class WorkerCartProcessor implements Runnable
+    {  	 
+        public void run()
+        {
+     	   while(!isShutDown)
+     	   {
+        	try 
+        	{
+        		WorkerCart workerCart = null;
+        		if (null != (workerCart = unassignedWorkerCartQueue.poll())) {
+        			WorkerSession workerSession = getMostIdleWorkerSession(workerCart.getStoreId());
+        			workerSession.addWorkerCart(workerCart);
+        		}
+        	} 
+        	catch(Exception e)
+        	{
+        		// log exception and ignore.
+        	}
+    	   }
+        }
+    }
+
+	public WorkerSessionHandler() {
+		storeIdToWorkerSessionsMap = new ConcurrentHashMap<Long, ConcurrentHashMap<Long, WorkerSession>>();
+		sessionIdToActiveWorkerTaskMap = new HashMap<Long, WorkerTask>();
+		executorService.execute(new WorkerCartProcessor());
+	}
+
+	public void addWorkerCartForWorkerSessionAssignment(WorkerCart workerCart) {
+		unassignedWorkerCartQueue.add(workerCart);
+	}
+
+	private WorkerSession getMostIdleWorkerSession(long storeId) {
+		Map<Long, WorkerSession> workerSessions = storeIdToWorkerSessionsMap.get(storeId);
+		if (null == workerSessions || 0 == workerSessions.size()) {
+			return null;
+		}
+	
+		WorkerSession selectedWorkerSession = null;
+		for (WorkerSession workerSession: workerSessions.values()) {
+			if (workerSession.isOpen() && !workerSession.isOverLoaded() 
+					&& (null == selectedWorkerSession || selectedWorkerSession.getLoad(false) > workerSession.getLoad(false))) {
+				selectedWorkerSession = workerSession;
+			}
+		}
+		return selectedWorkerSession;
+	}
+
+	/*public void addWorkerSession(WorkerSession workerSession) {
+		// following code is not at all thread safe (many thread) issues.
 		if (null == storeIdToWorkerSessionsMap.get(workerSession.getWorker().getStoreId())) {
 			storeIdToWorkerSessionsMap.put(workerSession.getWorker().getStoreId(), new HashSet<WorkerSession>());
 		}
@@ -37,6 +92,10 @@ public class WorkerHandler {
 		Set<WorkerCart> unAssignedWorkerCarts = storeIdToUnAssignedWorkerCartsMap.get(workerSession.getWorker().getStoreId());
 		if (null != unAssignedWorkerCarts) {
 			workerSession.getWorkerCarts().addAll(unAssignedWorkerCarts);
+			for(WorkerCart workerCart: unAssignedWorkerCarts)
+			{
+				workerCart.setWorkerSession(workerSession);
+			}
 		}
 		storeIdToUnAssignedWorkerCartsMap.remove(workerSession.getWorker().getStoreId());
 	}
@@ -81,25 +140,9 @@ public class WorkerHandler {
 		sessionIdToActiveWorkerTaskMap.remove(workerSessionId);
 		if (workerTask.getTaskType() == WorkerTask.TaskType.PICK_UP_PRODUCTS) {
 			for (WorkerCart workerCart: workerSession.getWorkerCarts()) {
-				workerCart.queuedItemsProcessed();
+				workerCart.pendingItemsProcessed();
 			}
 		}
-	}
-
-	public void addNewCart(long storeId, long cartId) {
-		// pick up a worker based on load on workers for a given store and assign this cart
-		// to that worker.
-		WorkerCart workerCart = new WorkerCart(cartId);
-		assignCartToMostIdleWorkSessionInStore(storeId, workerCart);
-	}
-
-	public void addCartDelta(long cartId, Map<String, Integer> newItemCountMap) {
-		WorkerCart workerCart = idToWorkerCartMap.get(cartId);
-		workerCart.addItems(newItemCountMap);
-	}
-
-	public long closeCart(long cartId) {
-		return 0;
 	}
 
 	public void pauseWorkerSession(long workerSesssionId) {
@@ -127,26 +170,5 @@ public class WorkerHandler {
 		else {
 			// throw exception and client should recreate worker session.
 		}
-	}
-
-	private void assignCartToMostIdleWorkSessionInStore(long storeId, WorkerCart workerCart) {
-		Set<WorkerSession> workerSessions = storeIdToWorkerSessionsMap.get(storeId);
-		WorkerSession selectedWorkerSession = null;
-		for (WorkerSession workerSession: workerSessions) {
-			if (workerSession == null || workerSession.getStatus().equals(WorkerSession.SessionStatus.OPEN) &&
-					workerSession.getLoad() > workerSession.getLoad()) {
-				selectedWorkerSession = workerSession;
-			}
-		}
-		if (null == selectedWorkerSession) {
-			if (null == storeIdToUnAssignedWorkerCartsMap.get(storeId)) {
-				storeIdToUnAssignedWorkerCartsMap.put(storeId, new HashSet<WorkerCart>());
-			}
-			storeIdToUnAssignedWorkerCartsMap.get(storeId).add(workerCart);
-		} else {
-			selectedWorkerSession.getWorkerCarts().add(workerCart);
-			workerCart.setWorkerSession(selectedWorkerSession);
-		}
-		return;
-	}
+	}*/
 }
