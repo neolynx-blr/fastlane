@@ -1,5 +1,6 @@
 package com.neolynks.worker.model;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,13 +16,11 @@ public class WorkerTask {
 
 	private long id;
 	private TaskType taskType;
-	private Map<String, Integer> items;
+	private Map<Long, Integer> items;
 	private Set<WorkerCart> workerCarts;
 
 	public WorkerTask(long id) {
 		this.id = id;
 		taskType = TaskType.NO_OPERATION;
-		items = new HashMap<String, Integer>();
-		workerCarts = new HashSet<WorkerCart>();
 	}
 }

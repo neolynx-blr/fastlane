@@ -98,7 +98,7 @@ public class WorkerCart {
 		return load;
 	}
 
-	public WorkerSession getWorkerSession() {
+	public synchronized WorkerSession getWorkerSession() {
 		return workerSession;
 	}
 
@@ -152,6 +152,10 @@ public class WorkerCart {
 		} else {
 			// throw exception
 		}
+	}
+
+	public synchronized boolean hasAnyItemQueued() {
+		return queuedItemCountMap.size() != 0;
 	}
 
 	public synchronized void pendingItemsProcessed() {

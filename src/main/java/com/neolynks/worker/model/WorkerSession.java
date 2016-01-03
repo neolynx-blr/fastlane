@@ -2,7 +2,11 @@ package com.neolynks.worker.model;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import com.neolynks.util.RandomIdGenerator;
 
 /**
  *
@@ -31,6 +35,8 @@ public class WorkerSession {
 	private long createdOn;
 	private Long closedOn;
 	private SessionStatus status;
+	private WorkerTask currentWorkerTask;
+	private Long lastWorkerTaskId;
 
 	// Getting load is going to be costly operation
 	// if not now then for sure in future.
@@ -121,6 +127,14 @@ public class WorkerSession {
 		}
 	}
 
+	public synchronized void restart() {
+		if (isPaused()) {
+			status = SessionStatus.PAUSED;
+		} else {
+			// throw exception
+		}
+	}
+	
 	public synchronized boolean isPaused() {
 		if (status == SessionStatus.PAUSED) {
 			return true;
@@ -138,6 +152,7 @@ public class WorkerSession {
 		if (isOpen() && !isOverLoaded()) {
 			idToworkerCartMap.put(workerCart.getId(), workerCart);
 			workerCart.setWorkerSession(this);
+			load += workerCart.getLoad(false);
 		} else if (isOverLoaded()) {
 			// throw exception
 		} else {
@@ -152,14 +167,11 @@ public class WorkerSession {
 	}
 
 	public synchronized void removeWorkerCart(long workerCartId) {
-		if (!isClosed()) {
-			WorkerCart workerCart = idToworkerCartMap.get(workerCartId);
-			if (null != workerCart) {
-				idToworkerCartMap.remove(workerCartId);
-				workerCart.setWorkerSession(null);
-			}
-		} else {
-			// throw exception
+		WorkerCart workerCart = idToworkerCartMap.get(workerCartId);
+		if (null != workerCart) {
+			idToworkerCartMap.remove(workerCartId);
+			workerCart.setWorkerSession(null);
+			load -= workerCart.getLoad(false);
 		}
 	}
 
@@ -169,8 +181,6 @@ public class WorkerSession {
 			if (null != workerCart) {
 				return (getLoad(false)*2 + workerCart.getLoad(false)*5 + 5);
 			}
-		} else if(isClosed()) {
-			// throw exception
 		}
 		// in case state is paused or workerCart is reassigned to other workerSession.
 		return -1;
@@ -183,10 +193,72 @@ public class WorkerSession {
 			removeWorkerCarts(allWorkerCarts);
 			idToworkerCartMap.clear();
 			return allWorkerCarts;
+		} 
+		// no need to throw exception for calling close multiple times
+		return null;
+	}
+
+	/**
+	 * Ideally there should be a factory call for creation of object
+	 * We can improve it in future
+	 * @return
+	 */
+	public synchronized WorkerTask getWorkerTask() {
+		if (null != currentWorkerTask) {
+			return currentWorkerTask;
+		}
+		lastWorkerTaskId = RandomIdGenerator.getInstance().generateId();
+		WorkerTask workerTask = new WorkerTask(RandomIdGenerator.getInstance().generateId());
+		boolean isAnyCartClosed = false;
+		boolean itemCountZero = true;
+		for (WorkerCart workerCart: idToworkerCartMap.values()) {
+			if(workerCart.isUserCartClosed()) {
+				isAnyCartClosed = true;
+			}
+			if (workerCart.hasAnyItemQueued()) {
+				itemCountZero = false;
+			}
+		}
+
+		workerTask.setWorkerCarts(new HashSet<WorkerCart>(idToworkerCartMap.values()));
+		Map<Long, Integer> items = new HashMap<Long, Integer>();
+		if (isAnyCartClosed) {
+			workerTask.setTaskType(WorkerTask.TaskType.CREATE_CART);
+		} else if (!itemCountZero) {
+			workerTask.setTaskType(WorkerTask.TaskType.PICK_UP_PRODUCTS);
+			for (WorkerCart workerCart: idToworkerCartMap.values()) {
+				workerCart.queueItemsForProcessing();
+				Map<Long, Integer> pendingItemsForProcessing = workerCart.getPendingItemMap();
+				for (Entry<Long, Integer> entry : pendingItemsForProcessing.entrySet()) {
+					if(items.get(entry.getKey()) != null) {
+						items.put(entry.getKey(), items.get(entry.getKey()) + entry.getValue());
+					} else {
+						items.put(entry.getKey(), entry.getValue());
+					}
+				}
+			}
+			workerTask.setItems(items);
 		} else {
+			workerTask.setTaskType(WorkerTask.TaskType.NO_OPERATION);
+		}
+
+		return workerTask;
+	}
+
+	public synchronized void completeWorkerTask(Long workTaskId) {
+		if (lastWorkerTaskId != workTaskId && lastWorkerTaskId < workTaskId) {
 			// throw exception
 		}
-		return null;
+		else if (lastWorkerTaskId == workTaskId && null != currentWorkerTask) {
+			if (currentWorkerTask.getTaskType() == WorkerTask.TaskType.PICK_UP_PRODUCTS) {
+				for (WorkerCart workerCart: idToworkerCartMap.values()) {
+					workerCart.pendingItemsProcessed();
+				}
+			} else if (currentWorkerTask.getTaskType() == WorkerTask.TaskType.CREATE_CART) {
+				// we can remove carts here but better let it be there till worker remove
+				//himself
+			}
+		}
 	}
 
 	@Override

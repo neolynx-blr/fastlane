@@ -83,6 +83,10 @@ public class WorkerCartHandler {
 
 	public void deleteCart(long cartId) {
 		WorkerCart workerCart = idToWorkerCartMap.remove(cartId);
+		WorkerSession workerSession = workerCart.getWorkerSession();
+		if (null != workerSession) {
+			workerSession.removeWorkerCart(cartId);
+		}
 		if (workerCart != null) {
 			// persist in db
 		}
