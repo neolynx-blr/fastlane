@@ -12,13 +12,13 @@ import com.neolynks.curator.model.Cart;
  * Created by nitesh.garg on 26-Dec-2015
  * 
  */
-public class CartCacheLoader extends CacheLoader<String, Cart> {
+public class CartCacheLoader extends CacheLoader<Long, Cart> {
 
 	static Logger LOGGER = LoggerFactory.getLogger(CartCacheLoader.class);
 
 	@UnitOfWork
 	@Override
-	public Cart load(String cartId) throws Exception {
+	public Cart load(Long cartId) throws Exception {
 
 		Cart cart = null;
 		if (cartId == null) {

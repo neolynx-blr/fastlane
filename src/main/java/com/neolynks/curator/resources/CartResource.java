@@ -51,7 +51,7 @@ public class CartResource {
 	@Path("/{id}/set/{barcode}/{count}")
 	@GET
 	@UnitOfWork
-	public CartResponse setToCart(@PathParam(value = "id") String cartId,
+	public CartResponse setToCart(@PathParam(value = "id") Long cartId,
 			@PathParam(value = "barcode") Long barcode, @PathParam(value = "count") Integer count) {
 		return this.cartEvaluator.setToCart(cartId, barcode, count);
 	}
@@ -59,7 +59,7 @@ public class CartResource {
 	@Path("/{id}/status/{id}")
 	@GET
 	@UnitOfWork
-	public CartResponse setCartStatus(@PathParam(value = "id") String cartId,
+	public CartResponse setCartStatus(@PathParam(value = "id") Long cartId,
 			@PathParam(value = "id") Integer statusId) {
 		return this.cartEvaluator.setCartStatus(cartId, statusId);
 	}
@@ -74,7 +74,7 @@ public class CartResource {
 	@Path("{id}/set")
 	@POST
 	@UnitOfWork
-	public CartResponse setCartContent(@PathParam(value = "id") String cartId, CartPreview cartPreview) {
+	public CartResponse setCartContent(@PathParam(value = "id") Long cartId, CartPreview cartPreview) {
 		return this.cartEvaluator.setCartContent(cartId, cartPreview);
 	}
 

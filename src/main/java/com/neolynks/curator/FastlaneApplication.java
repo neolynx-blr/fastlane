@@ -99,6 +99,8 @@ import com.neolynks.curator.util.PasswordHash;
 import com.neolynks.vendor.ClientResource;
 import com.neolynks.vendor.job.InventorySync;
 import com.neolynks.vendor.manager.InventoryService;
+import com.neolynks.worker.manager.WorkerCartHandler;
+import com.neolynks.worker.manager.WorkerSessionHandler;
 
 public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
@@ -189,7 +191,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			LOGGER.info("Setting up definitions for various caches for vendor,version,inventory, differential data points...");
 			
 			// Key: Cart-Id, Value: Cart Details
-			final LoadingCache<String, Cart> cartCache = CacheBuilder.newBuilder().build(new CartCacheLoader());
+			final LoadingCache<Long, Cart> cartCache = CacheBuilder.newBuilder().build(new CartCacheLoader());
 			
 			// Key: Vendor-Id, Value: Latest known inventory version
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
@@ -243,7 +245,16 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 				e.printStackTrace();
 			}
 			
-			final CartHandler cartEvaluator = new CartHandler(cartCache, vendorVersionCache);
+			/**
+			 * All the cart handlers including interfacing with the user
+			 * device-app as well as the worker side cart operations.
+			 */
+			final WorkerSessionHandler workerSessionHandler = new WorkerSessionHandler();
+			final WorkerCartHandler workerCartHandler = new WorkerCartHandler(workerSessionHandler);
+			
+			final CartHandler cartEvaluator = new CartHandler(cartCache, vendorVersionCache, workerCartHandler);
+			
+			
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
 			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator, vendorBarcodeInventoryCache);
 			
@@ -275,7 +286,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			LOGGER.info("Setting up lifecycle for periodic inventory DB updates, corresponding updates for data and caches...");
 			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache, currentInventoryCache));
 			environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, recentItemsCache, cacheCurator));
-			environment.lifecycle().manage(new CartOperatorJob(cartCache));
+			environment.lifecycle().manage(new CartOperatorJob(cartCache, workerCartHandler));
 
 			LOGGER.info("Registering the various resources with the runtime environment for serving...");
 			environment.jersey().register(new CacheResource(cacheEvaluator));

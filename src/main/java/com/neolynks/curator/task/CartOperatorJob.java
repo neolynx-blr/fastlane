@@ -14,6 +14,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.neolynks.curator.manager.CartOperator;
 import com.neolynks.curator.model.Cart;
+import com.neolynks.worker.manager.WorkerCartHandler;
 
 /**
  * Created by nitesh.garg on Dec 29, 2015
@@ -23,14 +24,16 @@ public class CartOperatorJob implements Managed {
 	
 	static Logger LOGGER = LoggerFactory.getLogger(CartOperatorJob.class);
 	
-	final LoadingCache<String, Cart> cartCache;
+	private final LoadingCache<Long, Cart> cartCache;
+	private final WorkerCartHandler workerCartHandler;
 	
 	/**
 	 * @param cartCache
 	 */
-	public CartOperatorJob(LoadingCache<String, Cart> cartCache) {
+	public CartOperatorJob(LoadingCache<Long, Cart> cartCache, WorkerCartHandler workerCartHandler) {
 		super();
 		this.cartCache = cartCache;
+		this.workerCartHandler = workerCartHandler;
 	}
 
 	final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CartOperatorJob-%d").setDaemon(true).build();
@@ -43,7 +46,7 @@ public class CartOperatorJob implements Managed {
 	@Override
 	public void start() throws Exception {
 		LOGGER.info("Starting the CartOperator executor service...");
-		executorService.execute(new CartOperator(cartCache));
+		executorService.execute(new CartOperator(cartCache, workerCartHandler));
 	}
 
 	/* (non-Javadoc)

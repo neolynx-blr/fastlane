@@ -17,8 +17,8 @@ public class RandomString {
 		StringBuilder tmp = new StringBuilder();
 		for (char ch = '0'; ch <= '9'; ++ch)
 			tmp.append(ch);
-		for (char ch = 'A'; ch <= 'Z'; ++ch)
-			tmp.append(ch);
+/*		for (char ch = 'A'; ch <= 'Z'; ++ch)
+			tmp.append(ch);*/
 		symbols = tmp.toString().toCharArray();
 	}
 
@@ -33,7 +33,7 @@ public class RandomString {
 	}
 	
 	public static String nextCartId() {
-		char[] buf = new char[6];
+		char[] buf = new char[8];
 		for (int idx = 0; idx < buf.length; ++idx)
 			buf[idx] = symbols[random.nextInt(symbols.length)];
 		return new String(buf);

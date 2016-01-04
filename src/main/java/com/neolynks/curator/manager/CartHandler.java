@@ -19,6 +19,7 @@ import com.neolynks.curator.meta.UserInfo;
 import com.neolynks.curator.meta.VendorInfo;
 import com.neolynks.curator.model.Cart;
 import com.neolynks.curator.util.RandomString;
+import com.neolynks.worker.manager.WorkerCartHandler;
 
 /**
  * Created by nitesh.garg on Dec 26, 2015
@@ -28,10 +29,20 @@ import com.neolynks.curator.util.RandomString;
 @Data
 public class CartHandler {
 
-	private final LoadingCache<String, Cart> cartCache;
+	private final WorkerCartHandler workerCartHandler; 
+	private final LoadingCache<Long, Cart> cartCache;
 	private final LoadingCache<Long, Long> vendorVersionCache;
 	
 	static Logger LOGGER = LoggerFactory.getLogger(CartHandler.class);
+	
+	public CartHandler(LoadingCache<Long, Cart> cartCache, LoadingCache<Long, Long> vendorVersionCache, WorkerCartHandler workerCartHandler) {
+		super();
+		
+		this.cartCache = cartCache;
+		this.workerCartHandler = workerCartHandler;
+		this.vendorVersionCache = vendorVersionCache;
+		
+	}
 
 	public CartResponse initializeCart(Long vendorId, Long userId) {
 
@@ -47,7 +58,7 @@ public class CartHandler {
 		cart.setLatestVendorDataVersionId(vendorInfo.getLatestDataVersionId());
 
 		boolean isCartIdUnique = false;
-		String cartId = vendorInfo.getVendorAbbr() + "-" + RandomString.nextCartId();
+		Long cartId = Long.parseLong(RandomString.nextCartId());
 		while (!isCartIdUnique) {
 			// TODO Check for uniqueness
 			isCartIdUnique = true;
@@ -67,7 +78,7 @@ public class CartHandler {
 		return response;
 	}
 	
-	public CartResponse setCartContent(String cartId, CartPreview cartPreview) {
+	public CartResponse setCartContent(Long cartId, CartPreview cartPreview) {
 		
 		// TODO: data validator, properly populate the item-request object
 		
@@ -128,7 +139,7 @@ public class CartHandler {
 		
 		CartResponse response = initializeCart(cartPreview.getVendorId(), cartPreview.getUserId());
 		
-		String cartId = response.getCartBase().getId();
+		Long cartId = response.getCartBase().getId();
 		Cart cart = this.cartCache.getIfPresent(cartId);
 
 		if(cart == null) {
@@ -141,7 +152,7 @@ public class CartHandler {
 		return response;
 	}
 
-	public CartResponse setToCart(String cartId, Long barcode, Integer count) {
+	public CartResponse setToCart(Long cartId, Long barcode, Integer count) {
 
 		// TODO: data validator, populate item-request properly
 		CartResponse response = new CartResponse();
@@ -201,7 +212,7 @@ public class CartHandler {
 		return response;
 	}
 	
-	public CartResponse setCartStatus(String cartId, Integer statusId) {
+	public CartResponse setCartStatus(Long cartId, Integer statusId) {
 
 		// TODO: data validator, add proper flow of state changes among status
 		CartResponse response = new CartResponse();
@@ -270,13 +281,5 @@ public class CartHandler {
 
 		return response;
 	}
-
-	public CartHandler(LoadingCache<String, Cart> cartCache, LoadingCache<Long, Long> vendorVersionCache) {
-		super();
-		
-		this.cartCache = cartCache;
-		this.vendorVersionCache = vendorVersionCache;
-	}
-
 
 }
