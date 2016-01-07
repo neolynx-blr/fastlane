@@ -38,7 +38,7 @@ public class OrderDetailDAO extends AbstractDAO<OrderDetail> {
 		return (OrderDetail) currentSession().save(orderDetail);
 	}
 
-	public OrderDetail findOrderById(String orderId) {
+	public OrderDetail findOrderById(Long orderId) {
 
 		List<OrderDetail> orderDetails = list(namedQuery(
 				"com.neolynks.curator.core.OrderDetail.findByOrderId")

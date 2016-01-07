@@ -252,7 +252,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final WorkerSessionHandler workerSessionHandler = new WorkerSessionHandler();
 			final WorkerCartHandler workerCartHandler = new WorkerCartHandler(workerSessionHandler);
 			
-			final CartHandler cartEvaluator = new CartHandler(cartCache, vendorVersionCache, workerCartHandler);
+			final CartHandler cartEvaluator = new CartHandler(cartCache, vendorVersionCache, workerCartHandler, orderDetailDAO);
 			
 			
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);

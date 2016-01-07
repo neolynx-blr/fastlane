@@ -197,14 +197,14 @@ create table vendor_user_order_mapper (
 	id bigserial primary key,
 	vendor_id integer not null,
 	user_id integer not null,
-	order_id varchar(16) not null unique,
+	order_id integer not null unique,
 	status smallint not null,
 	last_modified_on timestamp not null);
 		
 drop table if exists order_detail;
 create table order_detail (
 	id bigserial primary key,
-	order_id varchar(16) not null unique,
+	order_id integer not null unique,
 	status integer,
 	
 	item_list varchar(2048),

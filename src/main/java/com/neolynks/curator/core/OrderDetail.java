@@ -33,7 +33,7 @@ public class OrderDetail {
 	private long id;
 
 	@Column(name = "order_id")
-	private String orderId;
+	private Long orderId;
 
 	@Column(name = "status", nullable = false)
 	private Integer status;

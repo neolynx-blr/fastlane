@@ -13,6 +13,8 @@ import com.neolynks.common.model.cart.CartResponse;
 import com.neolynks.common.model.cart.CartStatus;
 import com.neolynks.common.model.order.CartPreview;
 import com.neolynks.common.model.order.ItemRequest;
+import com.neolynks.curator.core.OrderDetail;
+import com.neolynks.curator.db.OrderDetailDAO;
 import com.neolynks.curator.meta.CartLogistics;
 import com.neolynks.curator.meta.DataEvaluator;
 import com.neolynks.curator.meta.UserInfo;
@@ -29,16 +31,18 @@ import com.neolynks.worker.manager.WorkerCartHandler;
 @Data
 public class CartHandler {
 
+	private final OrderDetailDAO orderDetailDAO;
 	private final WorkerCartHandler workerCartHandler; 
 	private final LoadingCache<Long, Cart> cartCache;
 	private final LoadingCache<Long, Long> vendorVersionCache;
 	
 	static Logger LOGGER = LoggerFactory.getLogger(CartHandler.class);
 	
-	public CartHandler(LoadingCache<Long, Cart> cartCache, LoadingCache<Long, Long> vendorVersionCache, WorkerCartHandler workerCartHandler) {
+	public CartHandler(LoadingCache<Long, Cart> cartCache, LoadingCache<Long, Long> vendorVersionCache, WorkerCartHandler workerCartHandler, OrderDetailDAO orderDetailDAO) {
 		super();
 		
 		this.cartCache = cartCache;
+		this.orderDetailDAO = orderDetailDAO;
 		this.workerCartHandler = workerCartHandler;
 		this.vendorVersionCache = vendorVersionCache;
 		
@@ -60,8 +64,12 @@ public class CartHandler {
 		boolean isCartIdUnique = false;
 		Long cartId = Long.parseLong(RandomString.nextCartId());
 		while (!isCartIdUnique) {
-			// TODO Check for uniqueness
-			isCartIdUnique = true;
+			
+			OrderDetail orderDetail = this.orderDetailDAO.findOrderById(cartId);
+			if(orderDetail == null) {
+				isCartIdUnique = true;
+			}
+
 		}
 		cart.getBase().setId(cartId);
 
