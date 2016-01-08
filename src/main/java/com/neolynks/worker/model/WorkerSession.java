@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.neolynks.util.RandomIdGenerator;
+import com.neolynks.worker.exception.WorkerException;
+import com.neolynks.worker.exception.WorkerException.WORKER_SESSION_ERROR;
 
 /**
  *
@@ -72,8 +74,6 @@ public class WorkerSession {
 	public Long getClosedOn() {
 		if (isClosed()) {
 			return closedOn;
-		} else {
-			// throw exception.
 		}
 		return null;
 	}
@@ -123,15 +123,13 @@ public class WorkerSession {
 		if (isOpen()) {
 			status = SessionStatus.PAUSED;
 		} else {
-			// throw exception
+			throw new WorkerException(isPaused() ? WORKER_SESSION_ERROR.SESSION_PAUSED: WORKER_SESSION_ERROR.SESSION_CLOSED);
 		}
 	}
 
 	public synchronized void restart() {
 		if (isPaused()) {
-			status = SessionStatus.PAUSED;
-		} else {
-			// throw exception
+			status = SessionStatus.OPEN;
 		}
 	}
 	
@@ -154,9 +152,9 @@ public class WorkerSession {
 			workerCart.setWorkerSession(this);
 			load += workerCart.getLoad(false);
 		} else if (isOverLoaded()) {
-			// throw exception
+			throw new WorkerException(WORKER_SESSION_ERROR.WORKER_OVERLOADED);
 		} else {
-
+			throw new WorkerException(isPaused() ? WORKER_SESSION_ERROR.SESSION_PAUSED: WORKER_SESSION_ERROR.SESSION_CLOSED);
 		}
 	}
 
@@ -192,6 +190,7 @@ public class WorkerSession {
 			Collection<WorkerCart> allWorkerCarts  = idToworkerCartMap.values();
 			removeWorkerCarts(allWorkerCarts);
 			idToworkerCartMap.clear();
+			closedOn = System.currentTimeMillis();
 			return allWorkerCarts;
 		} 
 		// no need to throw exception for calling close multiple times
@@ -247,7 +246,7 @@ public class WorkerSession {
 
 	public synchronized void completeWorkerTask(Long workTaskId) {
 		if (lastWorkerTaskId != workTaskId && lastWorkerTaskId < workTaskId) {
-			// throw exception
+			throw new WorkerException(WORKER_SESSION_ERROR.INVALID_WORKER_TASK);
 		}
 		else if (lastWorkerTaskId == workTaskId && null != currentWorkerTask) {
 			if (currentWorkerTask.getTaskType() == WorkerTask.TaskType.PICK_UP_PRODUCTS) {

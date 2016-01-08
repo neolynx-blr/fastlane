@@ -3,6 +3,8 @@ package com.neolynks.worker.manager;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.neolynks.worker.exception.WorkerException;
+import com.neolynks.worker.exception.WorkerException.WORKER_CART_ERROR;
 import com.neolynks.worker.model.WorkerCart;
 import com.neolynks.worker.model.WorkerSession;
 
@@ -28,7 +30,7 @@ public class WorkerCartHandler {
 	private WorkerCart getWorkerCart(long cartId) {
 		WorkerCart workerCart = idToWorkerCartMap.get(cartId);
 		if (null == workerCart) {
-			// throw exception
+			throw new WorkerException(WORKER_CART_ERROR.UNKNOWN_CART_ID);
 		}
 		return workerCart;
 	}
@@ -38,7 +40,7 @@ public class WorkerCartHandler {
 		if (null != idToWorkerCartMap.putIfAbsent(cartId, workerCart) ) {
 			workerSessionHandler.addWorkerCartForWorkerSessionAssignment(workerCart);
 		} else {
-			// throw exception
+			throw new WorkerException(WORKER_CART_ERROR.DUPLICATE_CART_ID);
 		}
 	}
 

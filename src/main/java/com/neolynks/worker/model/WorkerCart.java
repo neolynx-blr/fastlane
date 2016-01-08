@@ -7,6 +7,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.neolynks.util.Pair;
+import com.neolynks.worker.exception.WorkerException;
+import com.neolynks.worker.exception.WorkerException.WORKER_CART_ERROR;
 
 /**
  *
@@ -77,8 +79,6 @@ public class WorkerCart {
 	public Long getClosedOn() {
 		if (isClosed()) {
 			return closedOn;
-		} else {
-			// throw exception.
 		}
 		return null;
 	}
@@ -111,7 +111,7 @@ public class WorkerCart {
 			}
 			this.workerSession = workerSession;
 		} else {
-			// throw exception
+			throw new WorkerException(WORKER_CART_ERROR.CART_CLOSED);
 		}
 	}
 
@@ -150,7 +150,7 @@ public class WorkerCart {
 				}
 			}
 		} else {
-			// throw exception
+			throw new WorkerException(WORKER_CART_ERROR.CART_CLOSED);
 		}
 	}
 
@@ -179,7 +179,7 @@ public class WorkerCart {
 			pendingItemCountMap = queuedItemCountMap;
 			queuedItemCountMap.clear();
 		} else {
-			// throw exception
+			throw new WorkerException(WORKER_CART_ERROR.CART_CLOSED);
 		}
 	}
 

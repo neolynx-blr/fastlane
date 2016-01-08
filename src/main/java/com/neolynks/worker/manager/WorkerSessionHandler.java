@@ -11,9 +11,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.neolynks.util.RandomIdGenerator;
+import com.neolynks.worker.exception.WorkerException;
+import com.neolynks.worker.exception.WorkerException.WORKER_SESSION_ERROR;
 import com.neolynks.worker.model.WorkerCart;
 import com.neolynks.worker.model.WorkerSession;
 import com.neolynks.worker.model.WorkerTask;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 /**
@@ -27,7 +30,6 @@ public class WorkerSessionHandler {
 
 	private ConcurrentHashMap<Long, Set<WorkerSession>> storeIdToWorkerSessionsMap;
 	private ConcurrentHashMap<Long, WorkerSession> idToWorkerSessionMap;
-	private ConcurrentHashMap<Long, WorkerTask> sessionIdToActiveWorkerTaskMap;
 	private ConcurrentLinkedQueue<WorkerCart> unassignedWorkerCartQueue ;
 	private ExecutorService executorService = Executors.newSingleThreadExecutor();
 	private volatile boolean isShutDown = false;
@@ -35,7 +37,6 @@ public class WorkerSessionHandler {
 	public WorkerSessionHandler() {
 		storeIdToWorkerSessionsMap = new ConcurrentHashMap<Long, Set<WorkerSession>>();
 		idToWorkerSessionMap = new ConcurrentHashMap<Long, WorkerSession>();
-		sessionIdToActiveWorkerTaskMap = new ConcurrentHashMap<Long, WorkerTask>();
 		unassignedWorkerCartQueue = new ConcurrentLinkedQueue<WorkerCart>();
 		executorService.execute(new WorkerCartProcessor());
 	}
@@ -101,7 +102,7 @@ public class WorkerSessionHandler {
 	private WorkerSession getWorkerSessionForId(long workerSessionId) {
 		WorkerSession workerSession = idToWorkerSessionMap.get(workerSessionId);
 		if (null == workerSession) {
-			// throw exception.
+			throw new WorkerException(WORKER_SESSION_ERROR.UNKNOWN_SESSION_ID);
 		}
 		return workerSession;
 	}
