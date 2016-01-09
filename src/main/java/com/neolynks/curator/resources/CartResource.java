@@ -28,7 +28,7 @@ import com.neolynks.curator.manager.OrderProcessor;
 @Produces(MediaType.APPLICATION_JSON)
 public class CartResource {
 
-	private final CartHandler cartEvaluator;
+	private final CartHandler cartHandler;
 	private final OrderProcessor processor;
 
 	/**
@@ -36,7 +36,7 @@ public class CartResource {
 	 */
 	public CartResource(CartHandler cartEvaluator, OrderProcessor processor) {
 		super();
-		this.cartEvaluator = cartEvaluator;
+		this.cartHandler = cartEvaluator;
 		this.processor = processor;
 	}
 
@@ -45,7 +45,7 @@ public class CartResource {
 	@UnitOfWork
 	public CartResponse initialiseCart(@HeaderParam(value = "vendorId") Long vendorId,
 			@HeaderParam(value = "userId") Long userId) {
-		return this.cartEvaluator.initializeCart(vendorId, userId);
+		return this.cartHandler.initializeCart(vendorId, userId);
 	}
 
 	@Path("/{id}/set/{barcode}/{count}")
@@ -53,30 +53,39 @@ public class CartResource {
 	@UnitOfWork
 	public CartResponse setToCart(@PathParam(value = "id") Long cartId,
 			@PathParam(value = "barcode") Long barcode, @PathParam(value = "count") Integer count) {
-		return this.cartEvaluator.setToCart(cartId, barcode, count);
+		return this.cartHandler.setToCart(cartId, barcode, count);
 	}
 
-	@Path("/{id}/status/{id}")
+	@Path("/{id}/set/status/{id}")
 	@GET
 	@UnitOfWork
 	public CartResponse setCartStatus(@PathParam(value = "id") Long cartId,
 			@PathParam(value = "id") Integer statusId) {
-		return this.cartEvaluator.setCartStatus(cartId, statusId);
+		return this.cartHandler.setCartStatus(cartId, statusId);
 	}
 
 	@Path("/init/set")
 	@POST
 	@UnitOfWork
 	public CartResponse initialiseNSetCart(CartPreview cartPreview) {
-		return this.cartEvaluator.initializeNSetCart(cartPreview);
+		return this.cartHandler.initializeNSetCart(cartPreview);
 	}
 
+	/**
+	 *  Close this operation because tracking w.r.t. worker app is complete lost, need to check when it'll make sense.
+	 * @param cartId
+	 * @param cartPreview
+	 * @return
+	 */
+	
+	/*
 	@Path("{id}/set")
 	@POST
 	@UnitOfWork
 	public CartResponse setCartContent(@PathParam(value = "id") Long cartId, CartPreview cartPreview) {
-		return this.cartEvaluator.setCartContent(cartId, cartPreview);
+		return this.cartHandler.setCartContent(cartId, cartPreview);
 	}
+	*/
 
 	@Path("/{id}/order")
 	@POST

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,49 +59,60 @@ public class CartOperator implements Runnable {
 					for (Long cartId : CartLogistics.getInstance().getUpdatedCartIds()) {
 						
 						int count = 0;
-						Map<Long, Integer> itemsToBeSynced = new HashMap<Long, Integer>();
+						
 						
 						Cart unsyncedCart = this.cartCache.get(cartId);
 						Set<Long> barcodeKeys = unsyncedCart.getItemList().keySet();
+						
+						if(CollectionUtils.isEmpty(barcodeKeys)) {
+							
+							workerCartHandler.initWorkerCart(cartId, unsyncedCart.getBase().getVendorId());
+							
+						} else {
 
 						for(Long barcode : barcodeKeys) {
 							
-							Integer earlierSyncedItemCount = 0;
-							Integer newUnsyncedItemCount = unsyncedCart.getItemList().get(barcode).getCountForInStorePickup() + unsyncedCart.getItemList().get(barcode).getCountForDelivery();
+								Integer earlierSyncedItemCount = 0;
+								Integer newUnsyncedItemCount = unsyncedCart.getItemList().get(barcode).getCountForInStorePickup() + unsyncedCart.getItemList().get(barcode).getCountForDelivery();
 							
-							boolean isBarcodeSyncedEarlier = unsyncedCart.getAdminSyncedBarcodeCount().containsKey(barcode);
-							
-							if(isBarcodeSyncedEarlier) {
-								earlierSyncedItemCount = unsyncedCart.getAdminSyncedBarcodeCount().get(barcode);
+								Map<Long, Integer> itemsToBeSynced = new HashMap<Long, Integer>();
+								
+								boolean isBarcodeSyncedEarlier = unsyncedCart.getAdminSyncedBarcodeCount().containsKey(barcode);
+								
+								if(isBarcodeSyncedEarlier) {
+									earlierSyncedItemCount = unsyncedCart.getAdminSyncedBarcodeCount().get(barcode);
+								}
+								
+								if(!isBarcodeSyncedEarlier || earlierSyncedItemCount.compareTo(newUnsyncedItemCount) != 0) {
+									
+									count++;
+									Long missingItemBarcode = barcode;
+									Integer deltaItemCount = newUnsyncedItemCount - earlierSyncedItemCount;
+									
+									// TODO Shukla!!! Remember to check for status & items check
+									itemsToBeSynced.put(missingItemBarcode, deltaItemCount);
+									workerCartHandler.addCartDelta(cartId, itemsToBeSynced);
+									
+									unsyncedCart.getAdminSyncedBarcodeCount().put(barcode, newUnsyncedItemCount);
+									
+								}
+								
+								if(unsyncedCart.getBase().getStatus() == CartStatus.IN_PREPARATION) {
+									workerCartHandler.closeCart(cartId);
+								}
+								
+								
 							}
-							
-							if(!isBarcodeSyncedEarlier || earlierSyncedItemCount.compareTo(newUnsyncedItemCount) != 0) {
-								
-								count++;
-								Long missingItemBarcode = barcode;
-								Integer deltaItemCount = newUnsyncedItemCount - earlierSyncedItemCount;
-								
-								// TODO Shukla!!! Remember to check for status & items check
-								workerCartHandler.addCartDelta(cartId, itemsToBeSynced);
-								
-								itemsToBeSynced.put(missingItemBarcode, deltaItemCount);
-								unsyncedCart.getAdminSyncedBarcodeCount().put(barcode, newUnsyncedItemCount);
-								
-							}
-							
-							if(unsyncedCart.getBase().getStatus() == CartStatus.IN_PREPARATION) {
-								workerCartHandler.closeCart(cartId);
-							}
-							
-							
 						}
 						
 						unsyncedCart.setCartSyncedWithAdmin(Boolean.TRUE);
 						
-						this.cartCache.put(cartId, unsyncedCart);
-						
-						CartLogistics.getInstance().getSyncedCartIds().add(cartId);
-						CartLogistics.getInstance().getUpdatedCartIds().remove(cartId);
+						synchronized (cartId) {
+							this.cartCache.put(cartId, unsyncedCart);
+							
+							CartLogistics.getInstance().getSyncedCartIds().add(cartId);
+							CartLogistics.getInstance().getUpdatedCartIds().remove(cartId);
+						}
 						
 						LOGGER.debug("Completed updating [{}] items of cart [{}] to the logistics service", count, cartId);
 
@@ -127,10 +139,14 @@ public class CartOperator implements Runnable {
 						workerCartHandler.closeCart(cartId);
 						
 						unsyncedCart.setCartSyncedWithAdmin(Boolean.TRUE);
-						this.cartCache.put(cartId, unsyncedCart);
 						
-						CartLogistics.getInstance().getSyncedCartIds().add(cartId);
-						CartLogistics.getInstance().getClosedCartIds().remove(cartId);
+						synchronized (cartId) {
+							this.cartCache.put(cartId, unsyncedCart);
+							
+							CartLogistics.getInstance().getSyncedCartIds().add(cartId);
+							CartLogistics.getInstance().getClosedCartIds().remove(cartId);
+							CartLogistics.getInstance().getUpdatedCartIds().remove(cartId);
+						}
 						
 						LOGGER.debug("Completed updating [{}] items of cart [{}] to the logistics service", count, cartId);
 

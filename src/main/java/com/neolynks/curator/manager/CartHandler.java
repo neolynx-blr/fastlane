@@ -65,6 +65,7 @@ public class CartHandler {
 		Long cartId = Long.parseLong(RandomString.nextCartId());
 		while (!isCartIdUnique) {
 			
+			// TODO How to make thread safe?
 			OrderDetail orderDetail = this.orderDetailDAO.findOrderById(cartId);
 			if(orderDetail == null) {
 				isCartIdUnique = true;
