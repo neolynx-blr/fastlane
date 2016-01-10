@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+	<changeSet id="1" author="codahale">
+		<createTable tableName="people">
+			<column name="id" type="bigint" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="fullName" type="varchar(255)">
+				<constraints nullable="false" />
+			</column>
+			<column name="jobTitle" type="varchar(255)" />
+		</createTable>
+	</changeSet>
+
+	<changeSet id="1" author="NeoLynks">
+<!-- 
+		<createTable tableName="discount_type">
+			<column name="id" type="smallint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="name" type="varchar(64)"><constraints nullable="false" /></column>
+			<column name="description" type="varchar(512)"><constraints nullable="false" /></column>
+		</createTable>
+
+		<addUniqueConstraint columnNames="name" tableName="discount_type" />
+		<loadData file="data/discount_type.csv" tableName="discount_type">
+		</loadData>
+
+		<createTable tableName="vendor">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="name" type="varchar(256)"><constraints nullable="false" /></column>
+			<column name="description" type="varchar(512)" />
+			<column name="address" type="varchar(2048)"><constraints nullable="false" /></column>
+			<column name="created_on" type="timestamp" defaultValueDate="now()" ><constraints nullable="false" /></column>
+			<column name="last_inventory_update_on" type="timestamp" defaultValueDate="now()" ><constraints nullable="false" /></column>
+			<column name="last_modified_on" type="timestamp" defaultValueDate="now()" ><constraints nullable="false" /></column>
+		</createTable>
+
+		<addUniqueConstraint columnNames="name, address" tableName="vendor" />
+		<loadData file="data/vendor.csv" tableName="vendor">
+		</loadData>
+
+		<createTable tableName="product_core">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="vendor_id" type="bigint" />
+			<column name="name" type="varchar(256)"><constraints nullable="false" /></column>
+			<column name="description" type="varchar(1024)"><constraints nullable="false" /></column>
+			<column name="tag_line" type="varchar(256)" />
+			<column name="barcode" type="bigint"><constraints nullable="false" /></column>
+		</createTable>
+	
+		<addUniqueConstraint columnNames="barcode" tableName="product_core" />
+		<loadData file="data/product_core.csv" tableName="product_core">
+		</loadData>
+
+		<createTable tableName="product_master">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="barcode" type="bigint"><constraints nullable="false" /></column>
+			<column name="name" type="varchar(256)"><constraints nullable="false" /></column>
+			<column name="description" type="varchar(1024)"><constraints nullable="false" /></column>
+			<column name="tag_line" type="varchar(256)" />
+			<column name="vendor_id" type="LONG_ARRAY" /> 
+			<column name="image_json" type="varchar(512)" />
+		</createTable>
+		<addUniqueConstraint columnNames="barcode" tableName="product_core" />
+		<loadData file="data/product_master.csv" tableName="product_core">
+		</loadData>
+		
+		<createTable tableName="vendor_item_master">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="vendor_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="item_code" type="varchar(128)"><constraints nullable="false" /></column>
+			<column name="product_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="version_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="mrp" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="price" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="discount_type" type="smallint" />
+			<column name="discount_value" type="decimal(8,2)" />
+		</createTable>
+
+		<createTable tableName="item_core">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="vendor_id" type="bigint" />
+			<column name="product_id" type="bigint"><constraints nullable="false" /></column>
+		</createTable>
+	
+		<addUniqueConstraint columnNames="vendor_id, product_id" tableName="item_core" />
+		<loadData file="data/item_core.csv" tableName="item_core">
+		</loadData>		
+
+		<createTable tableName="item_detail">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="item_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="vendor_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="version_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="mrp" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="price" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="image_json" type="varchar(512)" />
+			<column name="discount_type" type="smallint" />
+			<column name="discount_value" type="decimal(8,2)" />
+		</createTable>
+		
+		<addUniqueConstraint columnNames="item_id, version_id" tableName="item_detail" />
+		<loadData file="data/item_detail.csv" tableName="item_detail">
+		</loadData>
+		
+		<createTable tableName="all_inventory">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="vendor_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="item_code" type="varchar(128)"><constraints nullable="false" /></column>
+			<column name="version_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="name" type="varchar(256)"><constraints nullable="false" /></column>
+			<column name="description" type="varchar(1024)"><constraints nullable="false" /></column>
+			<column name="tag_line" type="varchar(256)" />
+			<column name="barcode" type="bigint"><constraints nullable="false" /></column>
+			<column name="mrp" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="price" type="decimal(8, 2)"><constraints nullable="false" /></column>
+			<column name="image_json" type="varchar(512)" />
+			<column name="discount_type" type="smallint" />
+			<column name="discount_value" type="decimal(8,2)" />
+			<column name="created_on" type="timestamp" />
+		</createTable>	
+
+		<loadData file="data/all_inventory.csv" tableName="all_inventory">
+			<column name="last_modified_on" header="last_modified_on" type="DATE"/>
+		</loadData>
+				
+		<createTable tableName="inventory_sync">
+			<column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false" /></column>
+			<column name="vendor_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="last_synced_version_id" type="bigint"><constraints nullable="false" /></column>
+			<column name="last_modified_on" type="timestamp" defaultValueDate="now()"><constraints nullable="false" /></column>
+		</createTable>
+		<loadData file="data/inventory_sync.csv" tableName="inventory_sync">
+		</loadData>
+		-->
+	</changeSet>
+
+</databaseChangeLog>
