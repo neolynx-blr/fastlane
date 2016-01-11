@@ -1,5 +1,6 @@
 package com.neolynks.curator;
 
+import com.neolynks.vendor.job.InventorySyncJob;
 import com.neolynks.worker.manager.WorkerCartHandler;
 import com.neolynks.worker.manager.WorkerSessionHandler;
 import io.dropwizard.Application;
@@ -79,7 +80,6 @@ import com.neolynks.curator.task.CartOperatorJob;
 import com.neolynks.curator.task.DaemonJob;
 import com.neolynks.curator.task.DataLoaderJob;
 import com.neolynks.vendor.ClientResource;
-import com.neolynks.vendor.job.InventorySync;
 import com.neolynks.vendor.manager.InventoryService;
 
 public class FastlaneApplication extends Application<FastlaneConfiguration> {
@@ -151,7 +151,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			LOGGER.info("Setting up the business-logic class followed by registering the inventory resource and it's lifecycle...");
 			final InventoryService inventoryService = new InventoryService(configuration.getCurationConfig());
 			environment.jersey().register(new ClientResource(inventoryService));
-			environment.lifecycle().manage(new InventorySync(configuration.getCurationConfig()));
+			environment.lifecycle().manage(new InventorySyncJob(configuration.getCurationConfig()));
 
 		}
 

@@ -44,7 +44,7 @@ public class CartResource {
     @GET
     @UnitOfWork
     public CartResponse initialiseCart(@HeaderParam(value = "vendorId") Long vendorId,
-                                       @HeaderParam(value = "userId") Long userId) {
+                                       @HeaderParam(value = "userId") String userId) {
         return this.cartHandler.initializeCart(vendorId, userId);
     }
 
@@ -70,22 +70,6 @@ public class CartResource {
     public CartResponse initialiseNSetCart(CartPreview cartPreview) {
         return this.cartHandler.initializeNSetCart(cartPreview);
     }
-
-    /**
-     *  Close this operation because tracking w.r.t. worker app is complete lost, need to check when it'll make sense.
-     * @param cartId
-     * @param cartPreview
-     * @return
-     */
-	
-	/*
-	@Path("{id}/set")
-	@POST
-	@UnitOfWork
-	public CartResponse setCartContent(@PathParam(value = "id") Long cartId, CartPreview cartPreview) {
-		return this.cartHandler.setCartContent(cartId, cartPreview);
-	}
-	*/
 
     @Path("/{id}/order")
     @POST

@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.neolynks.vendor.client.VendorDataSyncHandler;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.neolynks.vendor.client.HttpClientCustom;
 import com.neolynks.vendor.manager.test.TestVendorAdapter;
 import com.neolynks.vendor.model.CurationConfig;
 import com.neolynks.common.model.BaseResponse;
@@ -319,7 +319,7 @@ public class InventorySyncCron implements Runnable {
 				if (CollectionUtils.isNotEmpty(records)) {
 
 					List<Long> successIds = new ArrayList<Long>();
-					HttpClientCustom client = new HttpClientCustom(this.curationConfig);
+					VendorDataSyncHandler client = new VendorDataSyncHandler(this.curationConfig);
 					
 					InventoryRequest request = new InventoryRequest();
 					request.setItemsUpdated(new ArrayList<ItemMaster>());

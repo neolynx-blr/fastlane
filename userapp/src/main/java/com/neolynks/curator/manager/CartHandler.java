@@ -45,7 +45,7 @@ public class CartHandler {
 		
 	}
 
-	public CartResponse initializeCart(Long vendorId, Long userId) {
+	public CartResponse initializeCart(Long vendorId, String userId) {
 
 		CartResponse response = new CartResponse();
 

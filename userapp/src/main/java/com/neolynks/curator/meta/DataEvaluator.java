@@ -45,7 +45,7 @@ public class DataEvaluator {
 
 	}
 
-	public static UserInfo getUserDetails(Long userId) {
+	public static UserInfo getUserDetails(String userId) {
 
 		UserInfo userInfo = new UserInfo();
 		userInfo.setUserId(userId);

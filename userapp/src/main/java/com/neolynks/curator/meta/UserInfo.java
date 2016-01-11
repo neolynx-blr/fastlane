@@ -16,6 +16,6 @@ public class UserInfo extends BaseResponse {
 	
 	private static final long serialVersionUID = 3608682167219574096L;
 
-	Long userId;
+	String userId;
 
 }
