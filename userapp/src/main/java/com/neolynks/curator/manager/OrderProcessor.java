@@ -387,27 +387,5 @@ public class OrderProcessor {
 		this.orderDetailDAO.update(orderDetail);
 		return response;
 	}
-
-	
-	public Response completeDeliveryProcessing(ClosureRequest closureRequest) {
-		Response response = new Response();
-		OrderDetail orderDetail = this.orderDetailDAO.findOrderById(closureRequest.getOrderId());
-		
-		if(orderDetail == null) {
-			response.setIsError(Boolean.TRUE);
-			response.getErrorDetail().add(ErrorCode.ORDER_ID_DOESNT_EXIST_IN_DB);
-			return response;
-		}
-		
-		orderDetail.setLastModifiedOn(new Date(System.currentTimeMillis()));
-		orderDetail.setStatus(Status.COMPLETED.getValue());
-		
-		this.orderDetailDAO.update(orderDetail);
-		
-		response.setOrderId(closureRequest.getOrderId());
-		response.setOrderStatus(Status.COMPLETED.getValue());
-		
-		return response;
-	}
 	
 }

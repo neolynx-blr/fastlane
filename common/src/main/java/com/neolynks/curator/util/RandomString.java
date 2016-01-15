@@ -1,6 +1,7 @@
 package com.neolynks.curator.util;
 
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * Created by nitesh.garg on Dec 27, 2015
@@ -33,13 +34,15 @@ public class RandomString {
 	}
 	
 	public static String nextCartId() {
-		char[] buf = new char[8];
-		for (int idx = 0; idx < buf.length; ++idx)
-			buf[idx] = symbols[random.nextInt(symbols.length)];
-		return new String(buf);
+        return UUID.randomUUID().toString();
 	}
 
-	public String nextString() {
+//    public static Long nextCartId() {
+//        Random random = new Random(1000);
+//        return Long.parseLong(String.valueOf(System.currentTimeMillis()) + String.valueOf(random.nextInt()));
+//    }
+
+    public String nextString() {
 		for (int idx = 0; idx < buf.length; ++idx)
 			buf[idx] = symbols[random.nextInt(symbols.length)];
 		return new String(buf);

@@ -48,11 +48,20 @@ public class CartHandler {
 		
 	}
 
+<<<<<<< Updated upstream
+	public CartResponse initializeCart(Long vendorId, String userId) {
+
+		CartResponse response = new CartResponse();
+
+		UserInfo userInfo = DataEvaluator.getUserDetails(userId);
+		VendorInfo vendorInfo = DataEvaluator.getVendorDetails(vendorId);
+=======
 	public Response<String>  initializeCart() {
         Response<String> cartInitResp = new Response<>();
         UserVendorContext userVendorContext = UserContextThreadLocal.getUserVendorContextLocale().get();
 		UserInfo userInfo = DataEvaluator.getUserDetails(userVendorContext.getUserId());
 		VendorInfo vendorInfo = DataEvaluator.getVendorDetails(userVendorContext.getVendorInventorySnap().getVendorId());
+>>>>>>> Stashed changes
 
 		Cart cart = new Cart();
 	    cart.setUserVendorContext(userVendorContext);

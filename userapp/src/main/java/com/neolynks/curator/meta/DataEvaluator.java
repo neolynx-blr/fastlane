@@ -49,7 +49,6 @@ public class DataEvaluator {
 
 		UserInfo userInfo = new UserInfo();
 		userInfo.setUserId(userId);
-
 		return userInfo;
 
 	}

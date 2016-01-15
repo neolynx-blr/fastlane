@@ -31,6 +31,15 @@
         <module>user-worker-interaction</module>
     </modules>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.6</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
 	<repositories>
 		<repository>
 			<id>sonatype-nexus-snapshots</id>

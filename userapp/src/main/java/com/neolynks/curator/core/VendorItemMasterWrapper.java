@@ -2,6 +2,11 @@ package com.neolynks.curator.core;
 
 import java.io.IOException;
 
+import com.neolynks.api.common.inventory.ItemInfo;
+import com.neolynks.api.common.inventory.ProductInfo;
+import com.neolynks.api.userapp.price.DiscountDetail;
+import com.neolynks.api.userapp.price.ItemPrice;
+import com.neolynks.api.userapp.price.TaxDetail;
 import lombok.Data;
 
 import org.apache.commons.lang3.StringUtils;
@@ -9,11 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.neolynks.common.model.client.ItemInfo;
-import com.neolynks.common.model.client.ProductInfo;
-import com.neolynks.common.model.client.price.DiscountDetail;
-import com.neolynks.common.model.client.price.ItemPrice;
-import com.neolynks.common.model.client.price.TaxDetail;
 
 /**
  * Created by nitesh.garg on Oct 30, 2015
@@ -39,9 +39,7 @@ public class VendorItemMasterWrapper {
 	public ItemInfo generateVIMItemInfo() {
 
 		ItemInfo returnItemInfo = new ItemInfo();
-
-		returnItemInfo.setBarcode(this.getVimRecord().getBarcode());
-		returnItemInfo.setItemCode(this.getVimRecord().getItemCode());
+        returnItemInfo.setItemCode(this.getVimRecord().getItemCode());
 
 		ItemPrice itemPrice = new ItemPrice();
 
@@ -65,13 +63,10 @@ public class VendorItemMasterWrapper {
 
 		ProductInfo productInfo = new ProductInfo();
 		productInfo.setName(this.getVimRecord().getName());
-		productInfo.setBenefits(this.getVimRecord().getBenefits());
-		productInfo.setHowToUse(this.getVimRecord().getHowToUse());
 		productInfo.setBrandName(this.getVimRecord().getBrandName());
 		productInfo.setTagLine(this.getVimRecord().getTagLine());
 		productInfo.setImageJSON(this.getVimRecord().getImageJSON());
-		productInfo.setDescription(this.getVimRecord().getDescription());
-
+        productInfo.setBarcode(this.getVimRecord().getBarcode());
 		returnItemInfo.setItemPrice(itemPrice);
 		returnItemInfo.setProductInfo(productInfo);
 
@@ -82,8 +77,6 @@ public class VendorItemMasterWrapper {
 	public ItemInfo generateVIHItemInfo() {
 
 		ItemInfo returnItemInfo = new ItemInfo();
-		
-		returnItemInfo.setBarcode(this.getVihRecord().getBarcode());
 		returnItemInfo.setItemCode(this.getVihRecord().getItemCode());
 
         ItemPrice itemPrice = new ItemPrice();
@@ -107,10 +100,10 @@ public class VendorItemMasterWrapper {
         }
 
         ProductInfo productInfo = new ProductInfo();
+        productInfo.setBarcode(this.getVihRecord().getBarcode());
         productInfo.setName(this.getVihRecord().getName());
         productInfo.setTagLine(this.getVihRecord().getTagLine());
         productInfo.setImageJSON(this.getVihRecord().getImageJSON());
-        productInfo.setDescription(this.getVihRecord().getDescription());
 
         returnItemInfo.setItemPrice(itemPrice);
         returnItemInfo.setProductInfo(productInfo);

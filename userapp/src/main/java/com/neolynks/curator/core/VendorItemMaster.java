@@ -31,7 +31,7 @@ public class VendorItemMaster {
 	@Column(name = "name", nullable = false)
 	private String name;
 	@Column(name = "barcode", nullable = false)
-	private Long barcode;
+	private String barcode;
 	@Column(name = "item_code", nullable = false)
 	private String itemCode;
 	

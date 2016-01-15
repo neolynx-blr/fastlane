@@ -2,6 +2,7 @@ package com.neolynks.curator.manager;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -15,13 +16,12 @@ import com.neolynks.curator.core.Account;
 /**
  * Created by nitesh.garg on Oct 5, 2015
  */
+@Slf4j
 public class AccountService {
 
 	private final SessionFactory sessionFactory;
-	static Logger LOGGER = LoggerFactory.getLogger(InventoryCurator.class);
 
 	public AccountService(SessionFactory sessionFactory) {
-		super();
 		this.sessionFactory = sessionFactory;
 	}
 

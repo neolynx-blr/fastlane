@@ -8,6 +8,10 @@ import java.util.Map;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
+import com.neolynks.api.common.ErrorCode;
+import com.neolynks.api.common.Response;
+import com.neolynks.api.common.inventory.InventoryInfo;
+import com.neolynks.api.common.inventory.ItemInfo;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -23,9 +27,6 @@ import com.amazon.webservices.awsecommerceservice._2013_08_01.ItemLookupResponse
 import com.amazon.webservices.awsecommerceservice._2013_08_01.Items;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
-import com.neolynks.common.model.ErrorCode;
-import com.neolynks.common.model.client.InventoryInfo;
-import com.neolynks.common.model.client.ItemInfo;
 import com.neolynks.curator.core.InventoryMaster;
 import com.neolynks.curator.core.VendorItemMaster;
 import com.neolynks.curator.core.VendorItemMasterWrapper;
@@ -52,49 +53,52 @@ public class InventoryEvaluator {
 	}
 
 	// Simply pull the data from the cache
-	public InventoryInfo getInventoryDifferential(Long vendorId, Long dataVersionId) {
-
-		InventoryInfo inventoryResponse = null;
+	public Response<InventoryInfo> getInventoryDifferential(Long vendorId, Long dataVersionId) {
+        Response<InventoryInfo> response = new Response<InventoryInfo>();
+		InventoryInfo inventoryInfo = null;
 		LOGGER.debug("Request received for inventory differential for vendor-version [{}-{}]", vendorId, dataVersionId);
 
 		if (vendorId == null || dataVersionId == null) {
 			LOGGER.debug("Invalid request received for missing vendor and/or version id.");
 
-			inventoryResponse = new InventoryInfo();
-			inventoryResponse.setIsError(Boolean.TRUE);
-			inventoryResponse.setVendorId(vendorId);
-			inventoryResponse.setCurrentDataVersionId(dataVersionId);
-
+            inventoryInfo = new InventoryInfo();
+            response.setIsError(Boolean.TRUE);
+            inventoryInfo.setVendorId(vendorId);
+            inventoryInfo.setCurrentDataVersionId(dataVersionId);
+            response.setData(inventoryInfo);
 		} else {
 
-			inventoryResponse = this.differentialInventoryCache.getIfPresent(vendorId + "-" + dataVersionId);
-			if (inventoryResponse == null) {
+            inventoryInfo = this.differentialInventoryCache.getIfPresent(vendorId + "-" + dataVersionId);
+			if (inventoryInfo == null) {
 				LOGGER.debug(
 						"Unable to get anydata from the cache for vendor-version [{}-{}], will instead pull latest inventory.",
 						vendorId, dataVersionId);
-				inventoryResponse = getLatestInventory(vendorId);
+                inventoryInfo = getLatestInventory(vendorId);
 			}
+            response.setData(inventoryInfo);
+            response.setIsError(false);
 		}
 
-		return inventoryResponse;
+		return response;
 	}
 
-	public InventoryInfo getLatestInventory(Long vendorId) {
-
-		InventoryInfo inventoryResponse = null;
-
+	public  Response<InventoryInfo> getLatestInventory(Long vendorId) {
+        Response<InventoryInfo> response = new  Response<InventoryInfo>();
+		InventoryInfo inventoryResponse =  new InventoryInfo();
+        inventoryResponse.setVendorId(vendorId);
 		if (vendorId == null) {
 			LOGGER.debug("Invalid request received for NULL vendor id.");
 			inventoryResponse = new InventoryInfo();
-			inventoryResponse.setIsError(Boolean.TRUE);
-			inventoryResponse.setVendorId(vendorId);
+            response.setIsError(Boolean.TRUE);
 
+            response.setData(inventoryResponse);
 		} else {
 			ObjectMapper mapper = new ObjectMapper();
 			String latestInventory = this.currentInventoryCache.getIfPresent(vendorId);
 
 			try {
 				inventoryResponse = mapper.readValue(latestInventory, InventoryInfo.class);
+                response.setIsError(Boolean.FALSE);
 			} catch (Exception e) {
 				LOGGER.error(
 						"Unable to deserialize and return latest inventory for vendor [{}] with error message [{}]",
@@ -103,9 +107,8 @@ public class InventoryEvaluator {
 				e.printStackTrace();
 
 				inventoryResponse = new InventoryInfo();
-				inventoryResponse.setIsError(Boolean.TRUE);
-				inventoryResponse.setVendorId(vendorId);
-
+                response.setIsError(Boolean.TRUE);
+                response.setData(inventoryResponse);
 			}
 
 			LOGGER.debug(
@@ -114,18 +117,19 @@ public class InventoryEvaluator {
 					inventoryResponse.getUpdatedItems().size());
 		}
 
-		return inventoryResponse;
+		return response;
 	}
 
-	public InventoryInfo getLatestItemForVendorBarcode(Long vendorId, Long barcode) {
+	public Response<InventoryInfo> getLatestItemForVendorBarcode(Long vendorId, Long barcode) {
+        Response<InventoryInfo> response = new Response<InventoryInfo>();
+		InventoryInfo inventoryResponse = new InventoryInfo();
+        response.setData(inventoryResponse);
+        inventoryResponse.setVendorId(vendorId);
 
-		InventoryInfo inventoryResponse = null;
-
-		if (vendorId == null || barcode == null) {
+        if (vendorId == null || barcode == null) {
 			LOGGER.debug("Invalid request received for NULL vendor id or NULL barcode.");
 			inventoryResponse = new InventoryInfo();
-			inventoryResponse.setIsError(Boolean.TRUE);
-			inventoryResponse.setVendorId(vendorId);
+            response.setIsError(Boolean.TRUE);
 
 		} else {
 			inventoryResponse = this.recentItemCache.getIfPresent(vendorId + Constants.CACHE_KEY_SEPARATOR_STRING
@@ -143,11 +147,9 @@ public class InventoryEvaluator {
 				if(inventoryMaster == null) {
 					inventoryResponse = new InventoryInfo();
 					inventoryResponse.setVendorId(Constants.AMAZON_VENDOR_ID);
-					
-					inventoryResponse.setIsError(Boolean.TRUE);
-					inventoryResponse.getErrorDetail().add(ErrorCode.INVALID_OR_MISSING_BARCODE);
-					
-					return inventoryResponse;
+                    response.setIsError(Boolean.TRUE);
+                    response.getErrorDetail().add(ErrorCode.INVALID_OR_MISSING_BARCODE);
+					return response;
 				}
 				
 				this.invMasterDAO.create(inventoryMaster);
@@ -190,7 +192,7 @@ public class InventoryEvaluator {
 
 		}
 
-		return inventoryResponse;
+		return response;
 	}
 
 	private static InventoryMaster fetchItemDetailFromAmazon(Long barcode) {

@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.neolynks.api.common.CartStatus;
+import com.neolynks.api.common.UserVendorContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -21,24 +23,14 @@ public class Cart implements Serializable {
 
 	private static final long serialVersionUID = -5941199729342263523L;
 
-	private CartInfo base = new CartInfo();
-	
-	private Long latestVendorDataVersionId;
-	private Long onDeviceVendorDataVersionId;
-
-	private Map<Long, ItemRequest> itemList = new HashMap<Long, ItemRequest>();
-
-	private Double netAmount = 0.0D;
-	
-	private Double discountAmount = 0.0D;
-
-	private Double taxAmount = 0.0D;
-	private Double taxableAmount = 0.0D;
-
+    private String cartId;
+	private UserVendorContext userVendorContext;
+	private Map<String, Integer> itemCount = new HashMap<String, Integer>();
+    private CartStatus status;
 	/**
 	 * Captures the interactions with Admin service
 	 */
-	private Boolean cartSyncedWithAdmin = Boolean.FALSE;
-	private Map<Long, Integer> adminSyncedBarcodeCount = new HashMap<Long, Integer>();
+	private Boolean cartSyncedWithWorker = Boolean.FALSE;
+	private Map<String, Integer> workerSyncedBarcodeCount = new HashMap<String, Integer>();
 	
 }

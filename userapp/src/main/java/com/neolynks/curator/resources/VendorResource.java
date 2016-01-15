@@ -1,5 +1,7 @@
 package com.neolynks.curator.resources;
 
+import com.neolynks.api.common.Response;
+import com.neolynks.api.common.inventory.InventoryInfo;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.hibernate.UnitOfWork;
 
@@ -44,7 +46,7 @@ public class VendorResource {
 	@GET
 	@RolesAllowed("Administrator, Vendor")
 	@UnitOfWork
-	public InventoryInfo getLastKnownSyncId(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
+	public Response<InventoryInfo> getLastKnownSyncId(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
 		// TODO
 		return evaluator.getLatestInventory(vendorId);
 	}

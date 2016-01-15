@@ -13,10 +13,10 @@ import lombok.Data;
 @Data
 public class CartLogistics {
 
-	private final Set<Long> closedCartIds = new HashSet<Long>();
+	private final Set<String> closedCartIds = new HashSet<String>();
 
-	private final Set<Long> syncedCartIds = new HashSet<Long>();
-	private final Set<Long> updatedCartIds = new HashSet<Long>();
+	private final Set<String> syncedCartIds = new HashSet<String>();
+	private final Set<String> updatedCartIds = new HashSet<String>();
 
 	private static final CartLogistics instance = new CartLogistics();
 

@@ -46,9 +46,15 @@ public class CartResource {
     @Path("/init")
     @GET
     @UnitOfWork
+<<<<<<< Updated upstream
+    public CartResponse initialiseCart(@HeaderParam(value = "vendorId") Long vendorId,
+                                       @HeaderParam(value = "userId") String userId) {
+        return this.cartHandler.initializeCart(vendorId, userId);
+=======
     @UserContextRequired
     public Response<String> initialiseCart() {
         return this.cartHandler.initializeCart();
+>>>>>>> Stashed changes
     }
 
     @Path("/{id}/set")
@@ -68,6 +74,16 @@ public class CartResource {
         return this.cartHandler.setCartStatus(cartId, statusId);
     }
 
+<<<<<<< Updated upstream
+    @Path("/init/set")
+    @POST
+    @UnitOfWork
+    public CartResponse initialiseNSetCart(CartPreview cartPreview) {
+        return this.cartHandler.initializeNSetCart(cartPreview);
+    }
+
+=======
+>>>>>>> Stashed changes
     @Path("/{id}/order")
     @POST
     @UnitOfWork
