@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>userapp</artifactId>
+    <artifactId>dbmodel</artifactId>
 
 
     <dependencies>
@@ -139,30 +139,6 @@
             <artifactId>lombok</artifactId>
             <version>1.16.6</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.neolynks</groupId>
-            <artifactId>aws</artifactId>
-            <version>0.9.0-rc4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.neolynks</groupId>
-            <artifactId>common</artifactId>
-            <version>0.9.0-rc4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.neolynks</groupId>
-            <artifactId>user-worker-interaction</artifactId>
-            <version>0.9.0-rc4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.neolynks</groupId>
-            <artifactId>dbmodel</artifactId>
-            <version>0.9.0-rc4</version>
         </dependency>
 
     </dependencies>

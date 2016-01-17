@@ -1,5 +1,6 @@
 package com.neolynks.curator.cache;
 
+import com.neolynks.api.common.Response;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import java.util.List;
@@ -11,14 +12,13 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.cache.CacheLoader;
 import com.neolynks.curator.core.VendorVersionDetail;
 
 /**
  * Created by nitesh.garg on Nov 1, 2015
  *
  */
-public class CurrentInventoryLoader extends CacheLoader<Long, String> {
+public class CurrentInventoryLoader implements CacheLoader<Long, String> {
 
 	private SessionFactory sessionFactory;
 	static Logger LOGGER = LoggerFactory.getLogger(CurrentInventoryLoader.class);
@@ -34,9 +34,8 @@ public class CurrentInventoryLoader extends CacheLoader<Long, String> {
 	 */
 	@SuppressWarnings("unchecked")
 	@UnitOfWork
-	@Override
 	public String load(Long vendorId) throws Exception {
-		
+
 		String currentInventory = null;
 		LOGGER.info("Request received for refreshing current inventory cache for vendor [{}]", vendorId);
 

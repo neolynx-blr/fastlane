@@ -5,12 +5,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
+import com.neolynks.api.common.Response;
+import com.neolynks.api.common.inventory.InventoryInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
-import com.neolynks.common.model.client.InventoryInfo;
 import com.neolynks.curator.cache.model.CacheDetail;
 import com.neolynks.curator.util.Constants;
 
@@ -34,9 +35,9 @@ public class CacheEvaluator {
 	}
 
 	// Simply pull the data from the cache for given vendor
-	public List<CacheDetail> getVendorCacheDetails(Long vendorId) {
-
-		List<CacheDetail> cacheResponse = new ArrayList<CacheDetail>();
+	public Response<List<CacheDetail>> getVendorCacheDetails(Long vendorId) {
+        Response<List<CacheDetail>> cacheResponse = new Response<>();
+		List<CacheDetail> cacheDetails = new ArrayList<CacheDetail>();
 		LOGGER.trace("Request received for cache details of vendor [{}]", vendorId);
 
 		if (vendorId == null) {
@@ -54,7 +55,7 @@ public class CacheEvaluator {
 					CacheDetail cDetail = new CacheDetail();
 					cDetail.setVersionId(Long.parseLong(key.substring(key.indexOf(Constants.CACHE_KEY_SEPARATOR_STRING) + 1)));
 					cDetail.setResponse(this.differentialInventoryCache.getIfPresent(key));
-					cacheResponse.add(cDetail);
+                    cacheDetails.add(cDetail);
 					versionEntriesCount++;
 
 				}
@@ -62,14 +63,14 @@ public class CacheEvaluator {
 			}
 			LOGGER.debug("Returning [{}] version cache entries for vendor [{}]", versionEntriesCount, vendorId);
 		}
-
+        cacheResponse.setIsError(false);
 		return cacheResponse;
 	}
 
 	// Simply pull the data from the cache for given vendor
-	public List<CacheDetail> getCurrentInventoryCacheDetails(Long vendorId) {
-
-		List<CacheDetail> cacheResponse = new ArrayList<CacheDetail>();
+	public Response<List<CacheDetail>> getCurrentInventoryCacheDetails(Long vendorId) {
+        Response<List<CacheDetail>> cacheResponse = new Response<>();
+        List<CacheDetail> cacheDetails = new ArrayList<CacheDetail>();
 
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -83,17 +84,18 @@ public class CacheEvaluator {
 			LOGGER.error("Error [{}] while deserializing the read current inventory from the cache", e.getMessage());
 		}
 		cDetail.setVersionId(cDetail.getResponse() == null ? null : cDetail.getResponse().getNewDataVersionId());
-		cacheResponse.add(cDetail);
+        cacheDetails.add(cDetail);
 		versionEntriesCount++;
 		LOGGER.debug("Returning [{}] entries for items from recent-items cache.", versionEntriesCount);
 
-		return cacheResponse;
-	}
+        cacheResponse.setIsError(false);
+        return cacheResponse;
+    }
 
 	// Simply pull the data from the cache for given vendor
-	public List<CacheDetail> getRecentItemsCacheDetails() {
-
-		List<CacheDetail> cacheResponse = new ArrayList<CacheDetail>();
+	public Response<List<CacheDetail>> getRecentItemsCacheDetails() {
+        Response<List<CacheDetail>> cacheResponse = new Response<>();
+		List<CacheDetail> cacheDetails = new ArrayList<CacheDetail>();
 
 		int versionEntriesCount = 0;
 		ConcurrentMap<String, InventoryInfo> cacheMap = this.recentItemsCache.asMap();
@@ -104,12 +106,12 @@ public class CacheEvaluator {
 			CacheDetail cDetail = new CacheDetail();
 			cDetail.setResponse(this.recentItemsCache.getIfPresent(key));
 			cDetail.setVersionId(cDetail.getResponse() == null ? null : cDetail.getResponse().getNewDataVersionId());
-			cacheResponse.add(cDetail);
+            cacheDetails.add(cDetail);
 			versionEntriesCount++;
 
 		}
 		LOGGER.debug("Returning [{}] entries for items from recent-items cache.", versionEntriesCount);
-
+        cacheResponse.setIsError(false);
 		return cacheResponse;
 	}
 

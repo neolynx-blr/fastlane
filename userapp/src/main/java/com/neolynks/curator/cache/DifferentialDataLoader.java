@@ -1,5 +1,6 @@
 package com.neolynks.curator.cache;
 
+import com.neolynks.api.common.inventory.InventoryInfo;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import java.io.IOException;
@@ -14,15 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.cache.CacheLoader;
-import com.neolynks.common.model.client.InventoryInfo;
 import com.neolynks.curator.core.VendorVersionDifferential;
 import com.neolynks.curator.util.Constants;
 
 /**
  * Created by nitesh.garg on 06-Sep-2015
  */
-public class DifferentialDataLoader extends CacheLoader<String, InventoryInfo> {
+public class DifferentialDataLoader implements CacheLoader<String, InventoryInfo> {
 
 	private SessionFactory sessionFactory;
 	static Logger LOGGER = LoggerFactory.getLogger(DifferentialDataLoader.class);
@@ -38,7 +37,6 @@ public class DifferentialDataLoader extends CacheLoader<String, InventoryInfo> {
 	 */
 	@SuppressWarnings("unchecked")
 	@UnitOfWork
-	@Override
 	public InventoryInfo load(String vendorVersionKey) throws Exception {
 
 		if (vendorVersionKey == null) {

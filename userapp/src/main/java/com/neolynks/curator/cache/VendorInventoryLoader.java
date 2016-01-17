@@ -1,5 +1,6 @@
 package com.neolynks.curator.cache;
 
+import com.neolynks.api.common.inventory.ItemInfo;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import java.util.List;
@@ -11,17 +12,14 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.cache.CacheLoader;
-import com.neolynks.common.model.client.ItemInfo;
 import com.neolynks.curator.core.VendorItemMaster;
-import com.neolynks.curator.core.VendorItemMasterWrapper;
 import com.neolynks.curator.util.Constants;
 
 /**
  * Created by nitesh.garg on Dec 28, 2015
  *
  */
-public class VendorInventoryLoader extends CacheLoader<String, ItemInfo> {
+public class VendorInventoryLoader implements CacheLoader<String, ItemInfo> {
 
 	private SessionFactory sessionFactory;
 	static Logger LOGGER = LoggerFactory.getLogger(VendorInventoryLoader.class);
@@ -59,9 +57,8 @@ public class VendorInventoryLoader extends CacheLoader<String, ItemInfo> {
 			List<VendorItemMaster> vendorBarcodeDetails = vendorBarcodeDetailQuery.list();
 
 			if (CollectionUtils.isNotEmpty(vendorBarcodeDetails)) {
-				
-				VendorItemMasterWrapper wrapper = new VendorItemMasterWrapper(vendorBarcodeDetails.get(0));
-				vendorBarcodeItemInfo = wrapper.generateVIMItemInfo();
+
+                //TODO: fill vendorBarcodeItemInfo here ....
 
 				LOGGER.debug("Found item code [{}] to cache for vendor-barcode [{}]-[{}]", vendorBarcodeItemInfo.getItemCode(), barcode, vendorId);
 			} else {

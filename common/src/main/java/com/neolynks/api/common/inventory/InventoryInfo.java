@@ -23,8 +23,8 @@ public class InventoryInfo {
 	private Long newDataVersionId;
 	private Long currentDataVersionId;
 
-	private Set<Long> deletedItems = new HashSet<Long>();
-	private Map<Long, ItemInfo> addedItems = new HashMap<Long, ItemInfo>();
-	private Map<Long, ItemInfo> updatedItems = new HashMap<Long, ItemInfo>();
+	private Set<String> deletedItems = new HashSet<String>();
+	private Map<String, ItemInfo> addedItems = new HashMap<String, ItemInfo>();
+	private Map<String, ItemInfo> updatedItems = new HashMap<String, ItemInfo>();
 
 }

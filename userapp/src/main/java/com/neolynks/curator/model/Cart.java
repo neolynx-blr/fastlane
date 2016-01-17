@@ -8,10 +8,6 @@ import com.neolynks.api.common.CartStatus;
 import com.neolynks.api.common.UserVendorContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import com.neolynks.common.model.cart.CartInfo;
-import com.neolynks.common.model.order.ItemRequest;
-
 /**
  * Created by nitesh.garg on Dec 27, 2015
  *

@@ -1,7 +1,5 @@
 package com.neolynks.curator.meta;
 
-import com.neolynks.common.model.BaseResponse;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +10,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode (callSuper=false)
-public class VendorInfo extends BaseResponse {
+public class VendorInfo {
 	
 	private static final long serialVersionUID = 3608682167219574096L;
 

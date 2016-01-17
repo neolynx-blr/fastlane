@@ -4,6 +4,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import com.neolynks.api.common.Response;
+import com.neolynks.api.common.inventory.InventoryInfo;
+import com.neolynks.api.common.inventory.ItemInfo;
+import com.neolynks.api.common.inventory.ProductInfo;
+import com.neolynks.api.userapp.price.DiscountDetail;
+import com.neolynks.api.userapp.price.ItemPrice;
+import com.neolynks.api.userapp.price.TaxDetail;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.text.StrTokenizer;
 import org.hibernate.Query;
@@ -14,20 +21,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.cache.CacheLoader;
-import com.neolynks.common.model.client.InventoryInfo;
-import com.neolynks.common.model.client.ItemInfo;
-import com.neolynks.common.model.client.ProductInfo;
-import com.neolynks.common.model.client.price.DiscountDetail;
-import com.neolynks.common.model.client.price.ItemPrice;
-import com.neolynks.common.model.client.price.TaxDetail;
 import com.neolynks.curator.core.VendorItemMaster;
 import com.neolynks.curator.util.Constants;
 
 /**
  * Created by nitesh.garg on Oct 3, 2015
  */
-public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
+public class RecentItemLoader implements CacheLoader<String, InventoryInfo> {
 
 	private SessionFactory sessionFactory;
 	static Logger LOGGER = LoggerFactory.getLogger(RecentItemLoader.class);
@@ -79,16 +79,15 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			inventoryResponse.setVendorId(vendorId);
 			inventoryResponse.setCurrentDataVersionId(vendorItemData.getVersionId());
 			inventoryResponse.setNewDataVersionId(vendorItemData.getVersionId());
-			inventoryResponse.setUpdatedItems(new HashMap<Long, ItemInfo>());
+			inventoryResponse.setUpdatedItems(new HashMap<String, ItemInfo>());
 
 			ItemInfo itemInfo = new ItemInfo();
 			ProductInfo productInfo = new ProductInfo();
 			ItemPrice itemPrice = new ItemPrice();
-
+            productInfo.setBarcode(vendorItemData.getBarcode());
 			productInfo.setName(vendorItemData.getName());
 			productInfo.setTagLine(vendorItemData.getTagLine());
 			productInfo.setImageJSON(vendorItemData.getImageJSON());
-			productInfo.setDescription(vendorItemData.getDescription());
 
 			try {
 				ObjectMapper mapper = new ObjectMapper();
@@ -109,16 +108,14 @@ public class RecentItemLoader extends CacheLoader<String, InventoryInfo> {
 			itemInfo.setItemPrice(itemPrice);
 			itemInfo.setProductInfo(productInfo);
 
-			itemInfo.setBarcode(vendorItemData.getBarcode());
 			itemInfo.setItemCode(vendorItemData.getItemCode());
 
-			inventoryResponse.getAddedItems().put(itemInfo.getBarcode(), itemInfo);
+			inventoryResponse.getAddedItems().put(productInfo.getBarcode(), itemInfo);
 			LOGGER.debug("Adding recent data with item-code [{}] for vendor-version-barcode [{}-{}-{}]",
 					itemInfo.getItemCode(), vendorId, inventoryResponse.getNewDataVersionId(), barcode);
 		}
 
 		session.close();
-		inventoryResponse.setIsError(Boolean.FALSE);
 		return inventoryResponse;
 	}
 

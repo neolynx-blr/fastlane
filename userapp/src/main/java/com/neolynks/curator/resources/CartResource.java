@@ -1,6 +1,7 @@
 package com.neolynks.curator.resources;
 
 import com.neolynks.api.common.Response;
+import com.neolynks.api.userapp.CartRequest;
 import com.neolynks.api.userapp.ClosureRequest;
 import com.neolynks.curator.annotation.UserContextRequired;
 import io.dropwizard.hibernate.UnitOfWork;
@@ -55,44 +56,18 @@ public class CartResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @POST
     @UnitOfWork
+    @UserContextRequired
     public Response<Void> setToCart(@PathParam(value = "id") String cartId,
-                                  @Valid Map<String, Integer> itemCount) {
-        return this.cartHandler.setToCart(cartId, itemCount);
+                                  @Valid CartRequest cartRequest) {
+        return this.cartHandler.setToCart(cartId, cartRequest.getItemCount());
     }
 
     @Path("/{id}/set/status/{id}")
     @POST
     @UnitOfWork
+    @UserContextRequired
     public Response<Void> setCartStatus(@PathParam(value = "id") String cartId,
                                       @PathParam(value = "id") Integer statusId) {
         return this.cartHandler.setCartStatus(cartId, statusId);
     }
-
-    @Path("/{id}/order")
-    @POST
-    @UnitOfWork
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response createOrder(CartRequest request) {
-        System.out.println("Request received from vendor::" + request.getVendorId());
-        return processor.createOrder(request);
-    }
-
-    @Path("/{id}/update")
-    @POST
-    @UnitOfWork
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response updateOrder(CartRequest request) {
-        System.out.println("Request received from vendor::" + request.getVendorId());
-        return processor.updateOrder(request);
-    }
-
-    @Path("{id}/close/instore")
-    @POST
-    @UnitOfWork
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response closeOrderInStore(ClosureRequest request) {
-        log.info("Request received from vendor::" + request.getOrderId());
-        return processor.completeInStoreProcessing(request);
-    }
-
 }

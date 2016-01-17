@@ -18,7 +18,9 @@ import java.io.IOException;
  */
 @Provider
 public class CustomerVendorContextFilter implements ContainerRequestFilter {
+
     private static final String REQUEST_TOKEN = "requestToken";
+
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         final String requestToken = requestContext.getHeaderString(REQUEST_TOKEN);

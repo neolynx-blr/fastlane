@@ -23,6 +23,7 @@
 	</properties>
 
     <modules>
+        <module>dbmodel</module>
         <module>common</module>
         <module>aws</module>
         <module>userapp</module>

@@ -45,11 +45,4 @@ public class DataEvaluator {
 
 	}
 
-	public static UserInfo getUserDetails(String userId) {
-
-		UserInfo userInfo = new UserInfo();
-		userInfo.setUserId(userId);
-		return userInfo;
-
-	}
 }

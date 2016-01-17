@@ -20,7 +20,6 @@ import com.google.common.cache.LoadingCache;
 import com.neolynks.curator.db.OrderDetailDAO;
 import com.neolynks.curator.meta.CartLogistics;
 import com.neolynks.curator.meta.DataEvaluator;
-import com.neolynks.curator.meta.UserInfo;
 import com.neolynks.curator.meta.VendorInfo;
 import com.neolynks.curator.model.Cart;
 import com.neolynks.curator.util.RandomString;
@@ -51,7 +50,6 @@ public class CartHandler {
 	public Response<String>  initializeCart() {
         Response<String> cartInitResp = new Response<>();
         UserVendorContext userVendorContext = UserContextThreadLocal.getUserVendorContextLocale().get();
-		UserInfo userInfo = DataEvaluator.getUserDetails(userVendorContext.getUserId());
 		VendorInfo vendorInfo = DataEvaluator.getVendorDetails(userVendorContext.getVendorInventorySnap().getVendorId());
 
 		Cart cart = new Cart();
@@ -63,68 +61,13 @@ public class CartHandler {
 		CartLogistics.getInstance().getUpdatedCartIds().add(cartId);
 
 		LOGGER.debug("Cart [{}], for user [{}] and vendor [{}], initialized and loaded in cache", cartId,
-				userInfo.getUserId(), vendorInfo.getVendorId());
+                userVendorContext.getUserId(), vendorInfo.getVendorId());
 
         cartInitResp.setData(cartId);
         cartInitResp.setIsError(false);
 		return cartInitResp;
 	}
 	
-	public CartResponse setCartContent(Long cartId, CartPreview cartPreview) {
-		
-		// TODO: data validator, properly populate the item-request object
-		
-		CartResponse response = new CartResponse();
-		Cart cart = this.cartCache.getIfPresent(cartId);
-		
-		if(cart == null) {
-			response.setIsError(Boolean.TRUE);
-			return response;
-		}
-		
-		cart.setAdminSyncedBarcodeCount(new HashMap<Long, Integer>());
-		cart.setCartSyncedWithAdmin(Boolean.FALSE);
-		cart.setDiscountAmount(0.0D);
-		cart.setItemList(new HashMap<Long, ItemRequest>());
-		cart.setNetAmount(0.0D);
-		cart.setTaxableAmount(0.0D);
-		cart.setTaxAmount(0.0D);
-
-		Integer totalItemCount = 0;
-		Integer uniqueItemCount = 0;
-		
-		Set<Long> itemBarcodeList = cartPreview.getItemBarcodeCountMap().keySet();
-
-		for(Long barcode : itemBarcodeList) {
-
-			uniqueItemCount++;
-			totalItemCount += cartPreview.getItemBarcodeCountMap().get(barcode);
-			
-			ItemRequest itemRequest = new ItemRequest();
-			itemRequest.setBarcode(barcode);
-			itemRequest.setCountForInStorePickup(cartPreview.getItemBarcodeCountMap().get(barcode));
-			
-			cart.getItemList().put(barcode, itemRequest);
-			
-		}
-		
-		cart.getBase().setTotalItemCount(totalItemCount);
-		cart.getBase().setUniqueItemCount(uniqueItemCount);
-
-		cart.getBase().setDeliveryMode(cartPreview.getDeliveryMode());
-		
-		synchronized (cartId) {
-			cart.setCartSyncedWithAdmin(Boolean.FALSE);
-			this.cartCache.put(cartId, cart);
-			
-			CartLogistics.getInstance().getUpdatedCartIds().add(cartId);
-			CartLogistics.getInstance().getSyncedCartIds().remove(cartId);
-		}
-		
-		return response;
-		
-	}
-
 	public Response<Void> setToCart(String cartId, Map<String, Integer> itemCount) {
         Response<Void> response = new Response<>();
 		Cart cart = this.cartCache.getIfPresent(cartId);
@@ -185,12 +128,12 @@ public class CartHandler {
 			switch(statusId) {
 			
 				case 1:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getBase().getStatus().name(), CartStatus.OPEN.name());
+					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.OPEN.name());
 					cart.setStatus(CartStatus.OPEN);
 					break;
 	
 				case 2:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getBase().getStatus().name(), CartStatus.IN_PREPARATION.name());
+					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.IN_PREPARATION.name());
 					cart.setStatus(CartStatus.IN_PREPARATION);
 					CartLogistics.getInstance().getClosedCartIds().add(cartId);
 					break;

@@ -1,5 +1,6 @@
 package com.neolynks.curator.task;
 
+import com.neolynks.api.common.inventory.InventoryInfo;
 import io.dropwizard.hibernate.UnitOfWork;
 import io.dropwizard.lifecycle.Managed;
 
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.neolynks.common.model.client.InventoryInfo;
 import com.neolynks.curator.manager.CacheCurator;
 import com.neolynks.curator.manager.CacheSetup;
 
