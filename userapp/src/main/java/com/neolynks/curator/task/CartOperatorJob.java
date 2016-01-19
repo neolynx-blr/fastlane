@@ -1,6 +1,5 @@
 package com.neolynks.curator.task;
 
-import com.neolynks.UserWorkerSignalExchange;
 import io.dropwizard.lifecycle.Managed;
 
 import java.util.concurrent.ExecutorService;
@@ -14,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.neolynks.curator.manager.CartOperator;
-import com.neolynks.curator.model.Cart;
+import com.neolynks.curator.dto.Cart;
 
 /**
  * Created by nitesh.garg on Dec 29, 2015

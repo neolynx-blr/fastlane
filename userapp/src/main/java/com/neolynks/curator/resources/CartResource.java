@@ -1,15 +1,16 @@
 package com.neolynks.curator.resources;
 
+import com.neolynks.api.common.ErrorCode;
 import com.neolynks.api.common.Response;
 import com.neolynks.api.userapp.CartRequest;
-import com.neolynks.api.userapp.ClosureRequest;
 import com.neolynks.curator.annotation.UserContextRequired;
+import com.neolynks.curator.exception.InvalidCartIdException;
 import io.dropwizard.hibernate.UnitOfWork;
 
+import javax.annotation.Nonnull;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -20,11 +21,8 @@ import com.neolynks.curator.manager.CartHandler;
 import com.neolynks.curator.manager.OrderProcessor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
-
 /**
  * Created by nitesh.garg on Dec 26, 2015
- *
  */
 
 @Slf4j
@@ -49,7 +47,9 @@ public class CartResource {
     @UnitOfWork
     @UserContextRequired
     public Response<String> initialiseCart() {
-        return this.cartHandler.initializeCart();
+        String cartId = this.cartHandler.initializeCart();
+        Response<String> successResponse =  Response.getSuccessResponse(cartId);
+        return successResponse;
     }
 
     @Path("/{id}/set")
@@ -57,9 +57,17 @@ public class CartResource {
     @POST
     @UnitOfWork
     @UserContextRequired
-    public Response<Void> setToCart(@PathParam(value = "id") String cartId,
-                                  @Valid CartRequest cartRequest) {
-        return this.cartHandler.setToCart(cartId, cartRequest.getItemCount());
+    public Response<Void> setToCart(@PathParam(value = "id")
+                                    @Nonnull String cartId,
+                                    @Valid CartRequest cartRequest) {
+        try {
+            this.cartHandler.setToCart(cartId, cartRequest.getItemCount());
+            Response successResponse = Response.getSuccessResponse(null);
+            return successResponse;
+        }catch (InvalidCartIdException cim){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
+            return failureResponse;
+        }
     }
 
     @Path("/{id}/set/status/{id}")
@@ -67,7 +75,14 @@ public class CartResource {
     @UnitOfWork
     @UserContextRequired
     public Response<Void> setCartStatus(@PathParam(value = "id") String cartId,
-                                      @PathParam(value = "id") Integer statusId) {
-        return this.cartHandler.setCartStatus(cartId, statusId);
+                                        @PathParam(value = "id") Integer statusId) {
+        try {
+            this.cartHandler.setCartStatus(cartId, statusId);
+            Response successResponse = Response.getSuccessResponse(null);
+            return successResponse;
+        }catch (InvalidCartIdException cim){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
+            return failureResponse;
+        }
     }
 }

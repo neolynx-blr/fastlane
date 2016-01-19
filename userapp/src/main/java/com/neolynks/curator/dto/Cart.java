@@ -1,4 +1,4 @@
-package com.neolynks.curator.model;
+package com.neolynks.curator.dto;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -23,10 +23,4 @@ public class Cart implements Serializable {
 	private UserVendorContext userVendorContext;
 	private Map<String, Integer> itemCount = new HashMap<String, Integer>();
     private CartStatus status;
-	/**
-	 * Captures the interactions with Admin service
-	 */
-	private Boolean cartSyncedWithWorker = Boolean.FALSE;
-	private Map<String, Integer> workerSyncedBarcodeCount = new HashMap<String, Integer>();
-	
 }

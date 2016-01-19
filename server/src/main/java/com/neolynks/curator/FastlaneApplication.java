@@ -70,7 +70,7 @@ import com.neolynks.curator.manager.ProductMasterService;
 import com.neolynks.curator.manager.VendorItemService;
 import com.neolynks.curator.manager.VendorVersionDifferentialService;
 import com.neolynks.curator.manager.VendorVersionService;
-import com.neolynks.curator.model.Cart;
+import com.neolynks.curator.dto.Cart;
 import com.neolynks.curator.resources.CacheResource;
 import com.neolynks.curator.resources.CartResource;
 import com.neolynks.curator.resources.OrderResource;

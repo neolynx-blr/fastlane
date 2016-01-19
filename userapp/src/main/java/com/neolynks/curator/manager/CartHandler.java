@@ -1,27 +1,25 @@
 package com.neolynks.curator.manager;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.cache.Cache;
+import com.neolynks.CartSignalExchange;
 import com.neolynks.api.common.CartStatus;
-import com.neolynks.api.common.ErrorCode;
-import com.neolynks.api.common.Response;
 import com.neolynks.api.common.UserVendorContext;
+import com.neolynks.curator.exception.InvalidCartIdException;
 import com.neolynks.curator.util.UserContextThreadLocal;
+import com.neolynks.dao.OrderDetailDAO;
+import com.neolynks.dto.CartDelta;
+import com.neolynks.dto.CartOperation;
 import lombok.Data;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynks.curator.db.OrderDetailDAO;
-import com.neolynks.curator.meta.CartLogistics;
 import com.neolynks.curator.meta.DataEvaluator;
 import com.neolynks.curator.meta.VendorInfo;
-import com.neolynks.curator.model.Cart;
+import com.neolynks.curator.dto.Cart;
 import com.neolynks.curator.util.RandomString;
 
 /**
@@ -47,8 +45,7 @@ public class CartHandler {
 		
 	}
 
-	public Response<String>  initializeCart() {
-        Response<String> cartInitResp = new Response<>();
+	public String initializeCart() {
         UserVendorContext userVendorContext = UserContextThreadLocal.getUserVendorContextLocale().get();
 		VendorInfo vendorInfo = DataEvaluator.getVendorDetails(userVendorContext.getVendorInventorySnap().getVendorId());
 
@@ -58,125 +55,79 @@ public class CartHandler {
         cart.setCartId(cartId);
 
 		this.cartCache.put(cartId, cart);
-		CartLogistics.getInstance().getUpdatedCartIds().add(cartId);
 
 		LOGGER.debug("Cart [{}], for user [{}] and vendor [{}], initialized and loaded in cache", cartId,
                 userVendorContext.getUserId(), vendorInfo.getVendorId());
-
-        cartInitResp.setData(cartId);
-        cartInitResp.setIsError(false);
-		return cartInitResp;
+		return cartId;
 	}
 	
-	public Response<Void> setToCart(String cartId, Map<String, Integer> itemCount) {
-        Response<Void> response = new Response<>();
+	public void setToCart(String cartId, Map<String, Integer> itemCount) throws InvalidCartIdException {
 		Cart cart = this.cartCache.getIfPresent(cartId);
 		
 		if(cart == null || !CartStatus.OPEN.equals(cart.getStatus())) {
-			response.setIsError(Boolean.TRUE);
-            response.setErrorDetail(new ArrayList<ErrorCode>() {{
-                add(ErrorCode.MISSING_ORDER_ID);
-
-            }});
-			return response;
+            throw InvalidCartIdException.getDefaut();
 		}
 
-        for(String barcode: itemCount.keySet()){
-            Integer count = cart.getItemCount().get(barcode);
-
-            if (count == null || count==0) {
-                cart.getItemCount().put(barcode, itemCount.get(barcode));
-                cart.setCartSyncedWithWorker(Boolean.FALSE);
-                LOGGER.debug("Added barcode [{}] ([{}] times) to cart [{}]", barcode, count, cartId);
+        for (String barcode : itemCount.keySet()) {
+            Integer existingItemCount = cart.getItemCount().get(barcode);
+            Integer newItemCount = itemCount.get(barcode);
+            if (newItemCount == 0) {
+                cart.getItemCount().remove(barcode);
+                CartSignalExchange.getInstance().addCartDelta(new CartDelta(cartId, barcode, 0, CartDelta.Operation.REMOVED));
+                LOGGER.debug("Removed barcode [{}] from user [{}]'s cart [{}]", barcode, cartId);
+            } else if (existingItemCount == null) {
+                cart.getItemCount().put(barcode, newItemCount);
+                LOGGER.debug("Updated barcode [{}] from user [{}]'s cart [{}] to count [{}] from [{]]", barcode, newItemCount, existingItemCount);
+                CartSignalExchange.getInstance().addCartDelta(new CartDelta(cartId, barcode, newItemCount, CartDelta.Operation.ADDED));
             } else {
-                Integer existingItemCount = cart.getItemCount().get(barcode);
-                if (count == 0) {
-                    cart.getItemCount().remove(barcode);
-                    LOGGER.debug("Removed barcode [{}] from user [{}]'s cart [{}]", barcode, cartId);
-                } else {
-                    cart.getItemCount().put(barcode, itemCount.get(barcode) + count);
-                    cart.setCartSyncedWithWorker(Boolean.FALSE);
-                    LOGGER.debug("Updated barcode [{}] from user [{}]'s cart [{}] to count [{}] from [{]]", barcode, count, existingItemCount);
-                }
-
+                cart.getItemCount().put(barcode, newItemCount + existingItemCount);
+                CartSignalExchange.getInstance().addCartDelta(new CartDelta(cartId, barcode, newItemCount, CartDelta.Operation.ADDED));
+                LOGGER.debug("Updated barcode [{}] from user [{}]'s cart [{}] to count [{}] from [{]]", barcode, newItemCount, existingItemCount);
             }
         }
 
-        cart.setCartSyncedWithWorker(Boolean.FALSE);
-
-        CartLogistics.getInstance().getUpdatedCartIds().add(cartId);
-        CartLogistics.getInstance().getSyncedCartIds().remove(cartId);
-
-        response.setIsError(false);
-        return response;
 	}
-	
-	public Response<Void> setCartStatus(String cartId, Integer statusId) {
 
-		// TODO: data validator, add proper flow of state changes among status
-        Response<Void> response = new Response<Void>();
-		
-		Cart cart = this.cartCache.getIfPresent(cartId);
-		
-		if(cart == null) {
-			response.setIsError(Boolean.TRUE);
-			return response;
-		}
-		
-		synchronized (cartId) {
-		
-			switch(statusId) {
-			
-				case 1:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.OPEN.name());
-					cart.setStatus(CartStatus.OPEN);
-					break;
-	
-				case 2:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.IN_PREPARATION.name());
-					cart.setStatus(CartStatus.IN_PREPARATION);
-					CartLogistics.getInstance().getClosedCartIds().add(cartId);
-					break;
-	
-				case 3:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_USER_REVIEW.name());
-					cart.setStatus(CartStatus.PENDING_USER_REVIEW);
-					break;
-	
-				case 4:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_PAYMENT.name());
-					cart.setStatus(CartStatus.PENDING_PAYMENT);
-					break;
-	
-				case 5:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_DELIVERY.name());
-					cart.setStatus(CartStatus.PENDING_DELIVERY);
-					break;
-	
-				case 6:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_PARTIAL_DELIVERY.name());
-					cart.setStatus(CartStatus.PENDING_PARTIAL_DELIVERY);
-					break;
-	
-				case 7:
-					LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.COMPLETE.name());
-					cart.setStatus(CartStatus.COMPLETE);
-					break;
-	
-				default:
-					LOGGER.debug("Unable to understand status [{}] while updating status for cary [{}] ", statusId, cartId);
-			
-			}
-	
-			cart.setCartSyncedWithWorker(Boolean.FALSE);
-			this.cartCache.put(cartId, cart);
-			
-			CartLogistics.getInstance().getUpdatedCartIds().add(cartId);
-			CartLogistics.getInstance().getSyncedCartIds().remove(cartId);
+    public void setCartStatus(String cartId, Integer statusId) throws InvalidCartIdException {
+        Cart cart = this.cartCache.getIfPresent(cartId);
+        if (cart == null) {
+            throw InvalidCartIdException.getDefaut();
+        }
 
-		}
-		response.setIsError(false);
-		return response;
-	}
+        switch (statusId) {
+            case 1:
+                LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.OPEN.name());
+                cart.setStatus(CartStatus.OPEN);
+                break;
+            case 2:
+                LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.IN_PREPARATION.name());
+                cart.setStatus(CartStatus.IN_PREPARATION);
+                break;
+            case 3:
+                LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_USER_REVIEW.name());
+                cart.setStatus(CartStatus.PENDING_USER_REVIEW);
+                break;
+            case 4:
+                LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_PAYMENT.name());
+                cart.setStatus(CartStatus.PENDING_PAYMENT);
+                break;
+            case 5:
+                LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_DELIVERY.name());
+                cart.setStatus(CartStatus.PENDING_DELIVERY);
+                break;
+            case 6:
+                LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.PENDING_PARTIAL_DELIVERY.name());
+                cart.setStatus(CartStatus.PENDING_PARTIAL_DELIVERY);
+                break;
+            case 7:
+                LOGGER.debug("Updating cart [{}] status from [{}] to [{}]", cartId, cart.getStatus().name(), CartStatus.COMPLETE.name());
+                cart.setStatus(CartStatus.COMPLETE);
+                break;
+            default:
+                LOGGER.debug("Unable to understand status [{}] while updating status for cart [{}] ", statusId, cartId);
+
+        }
+        CartSignalExchange.getInstance().addCartDelta(new CartOperation(cartId, cart.getUserVendorContext().getVendorInventorySnap().getVendorId(), cart.getStatus().getValue()));
+    }
 
 }

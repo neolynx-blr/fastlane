@@ -26,6 +26,11 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.neolynks</groupId>
+            <artifactId>common</artifactId>
+            <version>0.9.0-rc4</version>
+        </dependency>
     </dependencies>
 
 </project>
