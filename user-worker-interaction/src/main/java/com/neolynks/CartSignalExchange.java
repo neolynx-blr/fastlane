@@ -5,6 +5,7 @@ import com.neolynks.dto.CartOperation;
 import lombok.Getter;
 
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -12,21 +13,19 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class CartSignalExchange {
 
-    @Getter
     private final Queue<CartDelta> cartDeltaQueue;
-
     private final Queue<CartOperation> cartOperationQueue;
 
     @Getter
     private static CartSignalExchange instance = new CartSignalExchange();
 
     private CartSignalExchange(){
-        this.cartDeltaQueue = new LinkedBlockingQueue<>();
-        this.cartOperationQueue = new LinkedBlockingQueue<>();
+        this.cartDeltaQueue = new ConcurrentLinkedQueue<>();
+        this.cartOperationQueue = new ConcurrentLinkedQueue<>();
     }
 
     public CartDelta getCartDelta(){
-        return this.cartDeltaQueue.poll();
+        return this.cartDeltaQueue.peek();
     }
 
     public void addCartDelta(CartDelta cartDelta){
@@ -34,7 +33,15 @@ public class CartSignalExchange {
     }
 
     public CartOperation getCartOperation(){
-        return this.cartOperationQueue.poll();
+        return this.cartOperationQueue.peek();
+    }
+
+    public void removeCartOperation(){
+        this.cartOperationQueue.poll();
+    }
+
+    public void removeCartDelta(){
+        this.cartOperationQueue.poll();
     }
 
     public void addCartDelta(CartOperation cartOperation){

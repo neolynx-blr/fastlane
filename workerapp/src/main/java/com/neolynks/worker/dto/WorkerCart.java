@@ -1,4 +1,4 @@
-package com.neolynks.worker.model;
+package com.neolynks.worker.dto;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +9,8 @@ import java.util.Set;
 import com.neolynks.util.Pair;
 import com.neolynks.worker.exception.WorkerException;
 import com.neolynks.worker.exception.WorkerException.WORKER_CART_ERROR;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 /**
  *
@@ -17,6 +19,7 @@ import com.neolynks.worker.exception.WorkerException.WORKER_CART_ERROR;
  * operations.
  *
  */
+@EqualsAndHashCode(of = "id")
 public class WorkerCart {
 	public enum WorkerCartStatus {
 		OPEN, CLOSED, DISCARDED
@@ -29,15 +32,18 @@ public class WorkerCart {
 	 *  This class is expected to have moderate level of concurrency so improvement is
 	 *  required.
 	 */
-	private long id; // will take as userCartId
+    @Getter
+	private String id; // will take as userCartId
+    @Getter
 	private long storeId;
 	private WorkerCartStatus status;
 	private volatile boolean isUserCartClosed;
+    @Getter
 	private Long createdOn; // milliSeconds.
 	private Long closedOn;  // milliSeconds.
-	private Map<Long, Integer> processedItemCountMap;
-	private Map<Long, Integer> queuedItemCountMap;
-	private Map<Long, Integer> pendingItemCountMap;
+	private Map<String, Integer> processedItemCountMap;
+	private Map<String, Integer> queuedItemCountMap;
+	private Map<String, Integer> pendingItemCountMap;
 	private WorkerSession workerSession;
 
 	// Getting load is going to be costly operation
@@ -47,32 +53,20 @@ public class WorkerCart {
 	private Long load;
 	private long lastLoadUpdateTime;
 
-	public WorkerCart(long id, long storeId) {
+	public WorkerCart(String id, long storeId) {
 		this.id = id;
 		this.storeId = storeId;
 		status = WorkerCartStatus.OPEN;
 		isUserCartClosed = false;
-		processedItemCountMap = new HashMap<Long, Integer>();
-		queuedItemCountMap = new HashMap<Long, Integer>();
-		pendingItemCountMap = new HashMap<Long, Integer>();
+		processedItemCountMap = new HashMap<String, Integer>();
+		queuedItemCountMap = new HashMap<String, Integer>();
+		pendingItemCountMap = new HashMap<String, Integer>();
 		lastLoadUpdateTime = createdOn = System.currentTimeMillis();
-	}
-
-	public long getId() {
-		return id;
-	}
-
-	public long getStoreId() {
-		return storeId;
 	}
 
 	public Long getPriority() {
 		// decide some logic of calculating priority.
 		// first come first serve for now.
-		return createdOn;
-	}
-
-	public Long getCreatedOn() {
 		return createdOn;
 	}
 
@@ -139,9 +133,9 @@ public class WorkerCart {
 		return status == WorkerCartStatus.OPEN;
 	}
 
-	public synchronized void addItems(Map<Long, Integer> items) {
+	public synchronized void addItems(Map<String, Integer> items) {
 		if (isOpen()) {
-			for( Entry<Long, Integer> entry : items.entrySet()) {
+			for( Entry<String, Integer> entry : items.entrySet()) {
 				if (queuedItemCountMap.get(entry.getKey()) != null) {
 					queuedItemCountMap.put(entry.getKey(), entry.getValue() + queuedItemCountMap.get(entry.getKey()));
 				}
@@ -159,7 +153,7 @@ public class WorkerCart {
 	}
 
 	public synchronized void pendingItemsProcessed() {
-		for( Entry<Long, Integer> entry : pendingItemCountMap.entrySet()) {
+		for( Entry<String, Integer> entry : pendingItemCountMap.entrySet()) {
 			if (processedItemCountMap.get(entry.getKey()) != null) {
 				processedItemCountMap.put(entry.getKey(), entry.getValue() + processedItemCountMap.get(entry.getKey()));
 			}
@@ -183,16 +177,16 @@ public class WorkerCart {
 		}
 	}
 
-	public synchronized Map<Long, Integer> getPendingItemMap() {
-		return new HashMap<Long, Integer>(pendingItemCountMap);
+	public synchronized Map<String, Integer> getPendingItemMap() {
+		return new HashMap<String, Integer>(pendingItemCountMap);
 	}
 
-	public synchronized Map<Long, Integer> getProcessedItemMap() {
-		return new HashMap<Long, Integer>(processedItemCountMap);
+	public synchronized Map<String, Integer> getProcessedItemMap() {
+		return new HashMap<String, Integer>(processedItemCountMap);
 	}
 
 	public synchronized Pair<Integer, Integer> getTotalAndProcessedItems() {
-		Set<Long> items = new HashSet<Long>(processedItemCountMap.keySet());
+		Set<String> items = new HashSet<String>(processedItemCountMap.keySet());
 		items.addAll(pendingItemCountMap.keySet());
 		Integer totalItems = items.size();
 		items.removeAll(pendingItemCountMap.keySet());
@@ -200,17 +194,4 @@ public class WorkerCart {
 		return new Pair<Integer, Integer>(totalItems, processedItems);
 	}
 
-	@Override
-	public boolean equals(Object object) {
-		boolean result = true;
-		if (object == null || object.getClass() != getClass()) {
-			result = false;
-		} else {
-			WorkerCart workerCart = (WorkerCart) object;
-			if (this.id != workerCart.getId()){
-				result = false;
-			}
-		}
-		return result;
-	}
 }

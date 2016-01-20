@@ -1,9 +1,7 @@
 package com.neolynks.worker.manager;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -12,12 +10,10 @@ import java.util.concurrent.Executors;
 
 import com.neolynks.worker.exception.WorkerException;
 import com.neolynks.worker.exception.WorkerException.WORKER_SESSION_ERROR;
-import com.neolynks.worker.model.WorkerCart;
-import com.neolynks.worker.model.WorkerSession;
-import com.neolynks.worker.model.WorkerTask;
+import com.neolynks.worker.dto.WorkerCart;
+import com.neolynks.worker.dto.WorkerSession;
+import com.neolynks.worker.dto.WorkerTask;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 /**
  * 
  * @author abhishekshukla

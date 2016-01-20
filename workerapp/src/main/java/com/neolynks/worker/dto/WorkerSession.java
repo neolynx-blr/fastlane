@@ -1,4 +1,4 @@
-package com.neolynks.worker.model;
+package com.neolynks.worker.dto;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 import com.neolynks.util.RandomIdGenerator;
 import com.neolynks.worker.exception.WorkerException;
 import com.neolynks.worker.exception.WorkerException.WORKER_SESSION_ERROR;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 /**
  *
@@ -25,15 +27,19 @@ import com.neolynks.worker.exception.WorkerException.WORKER_SESSION_ERROR;
  * no check on load while adding a new cart.
  *
  */
+@EqualsAndHashCode(of = "id")
 public class WorkerSession {
 
 	public enum SessionStatus {
 		OPEN, PAUSED, CLOSED
 	}
 
+    @Getter
 	private long id;
+    @Getter
 	private Worker worker;
-	private Map<Long, WorkerCart> idToworkerCartMap;
+	private Map<String, WorkerCart> idToworkerCartMap;
+    @Getter
 	private long createdOn;
 	private Long closedOn;
 	private SessionStatus status;
@@ -55,20 +61,8 @@ public class WorkerSession {
 		// 1. I am not expecting lots of concurrency for single WorkerSession
 		// 2. Any way many operations iterating workerCarts so we need to handle
 		//    concurrent modification exception
-		this.idToworkerCartMap = new HashMap<Long, WorkerCart>();
+		this.idToworkerCartMap = new HashMap<String, WorkerCart>();
 		lastLoadUpdateTime = createdOn = System.currentTimeMillis();
-	}
-
-	public long getId() {
-		return id;
-	}
-
-	public Worker getWorker() {
-		return worker;
-	}
-
-	public long getCreatedOn() {
-		return createdOn;
 	}
 
 	public Long getClosedOn() {
@@ -147,11 +141,12 @@ public class WorkerSession {
 	}
 
 	public synchronized void addWorkerCart(WorkerCart workerCart) {
-		if (isOpen() && !isOverLoaded()) {
+        boolean isOverLoaded =  isOverLoaded();
+		if (isOpen() && !isOverLoaded) {
 			idToworkerCartMap.put(workerCart.getId(), workerCart);
 			workerCart.setWorkerSession(this);
 			load += workerCart.getLoad(false);
-		} else if (isOverLoaded()) {
+		} else if (isOverLoaded) {
 			throw new WorkerException(WORKER_SESSION_ERROR.WORKER_OVERLOADED);
 		} else {
 			throw new WorkerException(isPaused() ? WORKER_SESSION_ERROR.SESSION_PAUSED: WORKER_SESSION_ERROR.SESSION_CLOSED);
@@ -164,7 +159,7 @@ public class WorkerSession {
 		}
 	}
 
-	public synchronized void removeWorkerCart(long workerCartId) {
+	public synchronized void removeWorkerCart(String workerCartId) {
 		WorkerCart workerCart = idToworkerCartMap.get(workerCartId);
 		if (null != workerCart) {
 			idToworkerCartMap.remove(workerCartId);
@@ -173,7 +168,7 @@ public class WorkerSession {
 		}
 	}
 
-	public synchronized long getWorkerCartWaitTime(long workerCartId) {
+	public synchronized long getWorkerCartWaitTime(String workerCartId) {
 		if (isOpen()) {
 			WorkerCart workerCart = idToworkerCartMap.get(workerCartId);
 			if (null != workerCart) {
@@ -260,17 +255,4 @@ public class WorkerSession {
 		}
 	}
 
-	@Override
-	public boolean equals(Object object) {
-		boolean result = true;
-		if (object == null || object.getClass() != getClass()) {
-			result = false;
-		} else {
-			WorkerSession workerSession = (WorkerSession) object;
-			if (this.id != workerSession.getId()){
-				result = false;
-			}
-		}
-		return result;
-	}
 }

@@ -1,4 +1,4 @@
-package com.neolynks.worker.model;
+package com.neolynks.worker.dto;
 
 import lombok.Data;
 

@@ -1,10 +1,12 @@
 package com.neolynks.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 
 /**
  * Created by nishantgupta on 19/1/16.
  */
+@Data
 @AllArgsConstructor
 public class CartDelta {
     private final String cartId;
