@@ -12,9 +12,9 @@ import javax.persistence.*;
 @Entity
 @Table(name = "product_master")
 @NamedQueries({
-		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findAll", query = "SELECT p FROM ProductMaster p"),
-		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.findExclusiveToVendor", query = "SELECT p FROM ProductMaster p where vendor_id = :vendorId "),
-		@NamedQuery(name = "com.example.helloworld.core.ProductMaster.fetchByBarcode", query = "SELECT p FROM ProductMaster p where barcode = :barcode") })
+		@NamedQuery(name = "com.neolynks.model.ProductMaster.findAll", query = "SELECT p FROM ProductMaster p"),
+		@NamedQuery(name = "com.neolynks.model.ProductMaster.findExclusiveToVendor", query = "SELECT p FROM ProductMaster p where vendor_id = :vendorId "),
+		@NamedQuery(name = "com.neolynks.model.ProductMaster.fetchByBarcode", query = "SELECT p FROM ProductMaster p where barcode = :barcode") })
 public class ProductMaster implements Comparable<ProductMaster> {
 
 	@Id

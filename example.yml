@@ -106,6 +106,7 @@ logging:
 
   # Logger-specific levels.
   loggers:
+    org.glassfish.jersey.filter.LoggingFilter: INFO
 
     # Sets the level for 'com.example.app' to DEBUG.
     com.example.app: ERROR

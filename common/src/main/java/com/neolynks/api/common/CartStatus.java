@@ -20,7 +20,8 @@ public enum CartStatus {
     PENDING_DELIVERY(5),
     PENDING_PARTIAL_DELIVERY(6),
     COMPLETE(7),
-    DISCARDED(8);
+    DISCARDED(8),
+    CLOSED(9);
 
     @Getter
 	private final int value;

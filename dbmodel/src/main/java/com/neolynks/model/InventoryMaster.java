@@ -13,8 +13,8 @@ import java.util.Date;
 @Entity
 @Table(name = "inventory_master")
 @NamedQueries({
-		@NamedQuery(name = "com.example.helloworld.core.InventoryMaster.findInventoryByUniqueConstraint", query = "SELECT p FROM InventoryMaster p where p.vendorId = :vendorId and p.versionId = :versionId and (p.barcode = :barcode or p.itemCode = :itemCode)"),
-		@NamedQuery(name = "com.example.helloworld.core.AllInventory.findRecentInventoryUpdates", query = "select p from InventoryMaster p "
+		@NamedQuery(name = "com.neolynks.model.InventoryMaster.findInventoryByUniqueConstraint", query = "SELECT p FROM InventoryMaster p where p.vendorId = :vendorId and p.versionId = :versionId and (p.barcode = :barcode or p.itemCode = :itemCode)"),
+		@NamedQuery(name = "com.neolynks.model.AllInventory.findRecentInventoryUpdates", query = "select p from InventoryMaster p "
 				+ " where vendorId = :vendorId "
 				+ " and versionId = ("
 				+ "	select max(versionId) from InventoryMaster "

@@ -26,12 +26,12 @@ public class ProductMasterDAO extends AbstractDAO<ProductMaster> {
 	}
 
 	public List<ProductMaster> findAll() {
-		return list(namedQuery("com.example.helloworld.core.ProductMaster.findAll"));
+		return list(namedQuery("com.neolynks.model.ProductMaster.findAll"));
 	}
 
 	public ProductMaster findByBarcode(Long barcode) {
 		return list(
-				namedQuery("com.example.helloworld.core.ProductMaster.fetchByBarcode").setParameter("barcode", barcode))
+				namedQuery("com.neolynks.model.ProductMaster.fetchByBarcode").setParameter("barcode", barcode))
 				.get(0);
 	}
 
@@ -47,7 +47,7 @@ public class ProductMasterDAO extends AbstractDAO<ProductMaster> {
 	}
 
 	public List<ProductMaster> findExclusiveToVendor(Long vendorId) {
-		return list(namedQuery("com.example.helloworld.core.ProductMaster.findExclusiveToVendor").setParameter(
+		return list(namedQuery("com.neolynks.model.ProductMaster.findExclusiveToVendor").setParameter(
 				"vendorId", String.valueOf(vendorId)));
 	}
 

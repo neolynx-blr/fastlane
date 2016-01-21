@@ -12,9 +12,9 @@ import java.util.Date;
 @Entity
 @Table(name = "vendor_version_differential")
 @NamedQueries({
-		@NamedQuery(name = "com.example.helloworld.core.VendorVersionDifferential.findByVendor", query = "SELECT p FROM VendorVersionDifferential p where vendorId = :vendorId "),
-		@NamedQuery(name = "com.example.helloworld.core.VendorVersionDifferential.findByVendorVersion", query = "SELECT p FROM VendorVersionDifferential p where vendorId = :vendorId and version_id = :versionId"),
-		@NamedQuery(name = "com.example.helloworld.core.VendorVersionDifferential.findAll", query = "SELECT p FROM VendorVersionDifferential p") })
+		@NamedQuery(name = "com.neolynks.model.VendorVersionDifferential.findByVendor", query = "SELECT p FROM VendorVersionDifferential p where vendorId = :vendorId "),
+		@NamedQuery(name = "com.neolynks.model.VendorVersionDifferential.findByVendorVersion", query = "SELECT p FROM VendorVersionDifferential p where vendorId = :vendorId and version_id = :versionId"),
+		@NamedQuery(name = "com.neolynks.model.VendorVersionDifferential.findAll", query = "SELECT p FROM VendorVersionDifferential p") })
 public class VendorVersionDifferential {
 
 	@Id

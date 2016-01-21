@@ -5,6 +5,7 @@ import com.neolynks.api.common.Response;
 import com.neolynks.api.userapp.CartRequest;
 import com.neolynks.curator.annotation.UserContextRequired;
 import com.neolynks.curator.exception.InvalidCartIdException;
+import com.neolynks.curator.manager.OrderHandler;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import javax.annotation.Nonnull;
@@ -17,7 +18,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.neolynks.curator.manager.CartHandler;
 import com.neolynks.curator.manager.OrderProcessor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,17 +28,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Path("/curator/cart")
 @Produces(MediaType.APPLICATION_JSON)
-public class CartResource {
+public class OrderResource {
 
-    private final CartHandler cartHandler;
+    private final OrderHandler orderHandler;
     private final OrderProcessor processor;
 
     /**
      * @param cartEvaluator
      */
-    public CartResource(CartHandler cartEvaluator, OrderProcessor processor) {
+    public OrderResource(OrderHandler cartEvaluator, OrderProcessor processor) {
         super();
-        this.cartHandler = cartEvaluator;
+        this.orderHandler = cartEvaluator;
         this.processor = processor;
     }
 
@@ -47,7 +47,7 @@ public class CartResource {
     @UnitOfWork
     @UserContextRequired
     public Response<String> initialiseCart() {
-        String cartId = this.cartHandler.initializeCart();
+        String cartId = this.orderHandler.initializeCart();
         Response<String> successResponse =  Response.getSuccessResponse(cartId);
         return successResponse;
     }
@@ -61,7 +61,7 @@ public class CartResource {
                                     @Nonnull String cartId,
                                     @Valid CartRequest cartRequest) {
         try {
-            this.cartHandler.setToCart(cartId, cartRequest.getItemCount());
+            this.orderHandler.setToCart(cartId, cartRequest.getItemCount());
             Response successResponse = Response.getSuccessResponse(null);
             return successResponse;
         }catch (InvalidCartIdException cim){
@@ -77,7 +77,7 @@ public class CartResource {
     public Response<Void> setCartStatus(@PathParam(value = "id") String cartId,
                                         @PathParam(value = "id") Integer statusId) {
         try {
-            this.cartHandler.setCartStatus(cartId, statusId);
+            this.orderHandler.setCartStatus(cartId, statusId);
             Response successResponse = Response.getSuccessResponse(null);
             return successResponse;
         }catch (InvalidCartIdException cim){

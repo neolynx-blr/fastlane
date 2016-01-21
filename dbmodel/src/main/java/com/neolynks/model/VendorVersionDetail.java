@@ -11,7 +11,7 @@ import java.util.Date;
 @Data
 @Entity
 @Table(name = "vendor_version_detail")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.VendorVersionDetail.findByVendor", query = "SELECT p FROM VendorVersionDetail p where vendorId = :vendorId") })
+@NamedQueries({ @NamedQuery(name = "com.neolynks.model.VendorVersionDetail.findByVendor", query = "SELECT p FROM VendorVersionDetail p where vendorId = :vendorId") })
 public class VendorVersionDetail {
 
 	@Id

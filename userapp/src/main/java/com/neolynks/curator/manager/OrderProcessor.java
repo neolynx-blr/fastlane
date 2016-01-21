@@ -4,7 +4,7 @@ import com.neolynks.api.common.inventory.InventoryInfo;
 import com.neolynks.api.common.inventory.ItemInfo;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynks.curator.db.OrderDetailDAO;
+import com.neolynks.dao.OrderDetailDAO;
 
 /**
  * Created by nitesh.garg on Oct 22, 2015

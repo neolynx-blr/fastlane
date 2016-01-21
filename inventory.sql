@@ -199,30 +199,34 @@ create table vendor_user_order_mapper (
 	user_id integer not null,
 	order_id integer not null unique,
 	status smallint not null,
-	last_modified_on timestamp not null);
+	last_modified_on timestamp not null default CURRENT_TIMESTAMP);
 		
 drop table if exists order_detail;
 create table order_detail (
 	id bigserial primary key,
 	order_id integer not null unique,
-	status integer,
-	
-	item_list varchar(2048),
-	item_list_delivery varchar(2048),
-	delivery_address_id integer,
-	delivery_mode integer,
-	
 	vendor_id integer not null,
-	server_data_version_id bigint not null,
-	device_data_version_id bigint not null,
-	
+	status integer,
+	item_list varchar(2048),
+	version_id bigint not null,
 	net_amount real not null,
 	tax_amount real,
 	taxable_amount real,
 	discount_amount real,
-	
-	created_on timestamp not null,  
-	last_modified_on timestamp not null
+	created_on timestamp not null default CURRENT_TIMESTAMP,
+	last_modified_on timestamp not null default CURRENT_TIMESTAMP
+);
+
+drop table if exists under_processing_order;
+create table under_processing_order (
+	id bigserial primary key,
+	order_id varchar not null unique,
+	user_id varchar not null,
+	vendor_id integer not null,
+	item_list varchar(2048),
+	version_id bigint not null,
+	created_on timestamp not null default CURRENT_TIMESTAMP,
+	last_modified_on timestamp not null default CURRENT_TIMESTAMP
 );
 
 drop table if exists vendor_detail;

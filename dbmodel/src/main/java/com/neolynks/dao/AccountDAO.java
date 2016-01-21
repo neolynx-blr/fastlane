@@ -14,7 +14,7 @@ public class AccountDAO extends AbstractDAO<Account> {
 	}
 
 	public Account findByUserName(String userName) {
-		return list(namedQuery("com.neolynks.curator.core.Account.findByUserName").setParameter("userName", userName))
+		return list(namedQuery("com.neolynks.model.Account.findByUserName").setParameter("userName", userName))
 				.get(0);
 	}
 }

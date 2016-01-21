@@ -11,7 +11,7 @@ import javax.persistence.*;
 @Data
 @Entity
 @Table(name = "inventory.discount_type")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.DiscountType.findAll", query = "SELECT p FROM DiscountType p") })
+@NamedQueries({ @NamedQuery(name = "com.neolynks.model.DiscountType.findAll", query = "SELECT p FROM DiscountType p") })
 public class DiscountType {
 	
 	@Id

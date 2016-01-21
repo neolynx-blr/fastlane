@@ -1,9 +1,7 @@
-/**
- * 
- */
 package com.neolynks.model;
 
 import lombok.Data;
+import lombok.experimental.Builder;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -14,11 +12,12 @@ import java.util.Date;
  */
 
 @Data
+@Builder
 @Entity
-@Table(name = "order_detail")
+@Table(name = "under_processing_order")
 @NamedQueries({
-		@NamedQuery(name = "com.neolynks.model.OrderDetail.findByOrderId", query = "SELECT p FROM OrderDetail p where orderId = :orderId")})
-public class OrderDetail {
+		@NamedQuery(name = "com.neolynks.model.UnderProcessingOrder.findByOrderId", query = "SELECT p FROM UnderProcessingOrder p where orderId = :orderId")})
+public class UnderProcessingOrder {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,29 +26,17 @@ public class OrderDetail {
 	@Column(name = "order_id", nullable = false, updatable = false)
 	private String orderId;
 
+    @Column(name = "user_id", nullable = false, updatable = false)
+    private String userId;
+
     @Column(name = "vendor_id", nullable = false, updatable = false)
     private Long vendorId;
-
-    @Column(name = "status", nullable = false)
-	private Integer status;
 
 	@Column(name = "item_list")
 	private String itemList;
 
 	@Column(name = "version_id", nullable = false)
-	private Long versionId;
-
-	@Column(name = "net_amount", nullable = false)
-	private Double netAmount;
-
-	@Column(name = "tax_amount")
-	private Double taxAmount;
-	
-	@Column(name = "taxable_amount")
-	private Double taxableAmount;
-
-	@Column(name = "discount_amount")
-	private Double discountAmount;
+	private int versionId;
 
 	@Column(name = "created_on", nullable = false, updatable = false)
 	private Date createdOn;

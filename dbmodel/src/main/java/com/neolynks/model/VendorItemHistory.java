@@ -11,7 +11,7 @@ import javax.persistence.*;
 @Data
 @Entity
 @Table(name = "vendor_item_history")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.VendorItemHistory.findByVendor", query = "SELECT p FROM VendorItemHistory p where vendorId = :vendorId") })
+@NamedQueries({ @NamedQuery(name = "com.neolynks.model.VendorItemHistory.findByVendor", query = "SELECT p FROM VendorItemHistory p where vendorId = :vendorId") })
 public class VendorItemHistory {
 
 	public VendorItemHistory() {

@@ -24,6 +24,6 @@ public class VendorDAO extends AbstractDAO<Vendor> {
 	}
 
 	public List<Vendor> findAll() {
-		return list(namedQuery("com.example.helloworld.core.Vendor.findAll"));
+		return list(namedQuery("com.neolynks.model.Vendor.findAll"));
 	}
 }

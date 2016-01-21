@@ -24,7 +24,7 @@ public class VendorItemHistoryDAO extends AbstractDAO<VendorItemHistory> {
 	}
 
 	public List<VendorItemHistory> findByVendor(Long vendorId) {
-		return list(namedQuery("com.example.helloworld.core.VendorItemHistory.findByVendor").setParameter("vendorId",
+		return list(namedQuery("com.neolynks.model.VendorItemHistory.findByVendor").setParameter("vendorId",
 				vendorId));
 	}
 

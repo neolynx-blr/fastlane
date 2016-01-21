@@ -13,7 +13,7 @@ import java.util.Date;
 @Entity
 @Table(name = "vendor_item_master")
 @NamedQueries({
-		@NamedQuery(name = "com.example.helloworld.core.VendorItemMaster.findByVendor", query = "SELECT p FROM VendorItemMaster p where vendorId = :vendorId")})
+		@NamedQuery(name = "com.neolynks.model.VendorItemMaster.findByVendor", query = "SELECT p FROM VendorItemMaster p where vendorId = :vendorId")})
 public class VendorItemMaster {
 
 	@Id

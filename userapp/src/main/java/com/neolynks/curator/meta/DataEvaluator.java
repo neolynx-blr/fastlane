@@ -2,11 +2,11 @@ package com.neolynks.curator.meta;
 
 import java.util.concurrent.ExecutionException;
 
+import com.neolynks.curator.manager.OrderHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynks.curator.manager.CartHandler;
 
 /**
  * Created by nitesh.garg on Dec 27, 2015
@@ -18,7 +18,7 @@ public class DataEvaluator {
 
 	private static LoadingCache<Long, Long> vendorVersionCache;
 
-	static Logger LOGGER = LoggerFactory.getLogger(CartHandler.class);
+	static Logger LOGGER = LoggerFactory.getLogger(OrderHandler.class);
 
 	/**
 	 * @param vendorVersionCache

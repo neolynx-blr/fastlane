@@ -26,17 +26,17 @@ public class VendorVersionDifferentialDAO extends AbstractDAO<VendorVersionDiffe
 
 	public VendorVersionDifferential findByVendorVersion(Long vendorId, Long versionId) {
 		return list(
-				namedQuery("com.example.helloworld.core.VendorVersionDifferential.findByVendorVersion").setParameter(
+				namedQuery("com.neolynks.model.VendorVersionDifferential.findByVendorVersion").setParameter(
 						"vendorId", vendorId).setParameter("versionId", versionId)).get(0);
 	}
 
 	public List<VendorVersionDifferential> findByVendor(Long vendorId) {
-		return list(namedQuery("com.example.helloworld.core.VendorVersionDifferential.findByVendor").setParameter(
+		return list(namedQuery("com.neolynks.model.VendorVersionDifferential.findByVendor").setParameter(
 				"vendorId", vendorId));
 	}
 
 	public List<VendorVersionDifferential> findAll() {
-		return list(namedQuery("com.example.helloworld.core.VendorVersionDifferential.findAll"));
+		return list(namedQuery("com.neolynks.model.VendorVersionDifferential.findAll"));
 	}
 
 	public void deleteByVendorId(Long vendorId) {

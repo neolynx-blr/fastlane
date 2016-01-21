@@ -26,7 +26,7 @@ public class InventorySyncStatusDAO extends
 	}
 
 	public List<InventorySyncStatus> findAll() {
-		return list(namedQuery("com.example.helloworld.core.InventorySyncStatus.findAll"));
+		return list(namedQuery("com.neolynks.model.findAll"));
 	}
 
 }

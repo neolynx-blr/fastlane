@@ -12,7 +12,7 @@ import java.util.Date;
 @Data
 @Entity
 @Table(name = "vendor")
-@NamedQueries({ @NamedQuery(name = "com.example.helloworld.core.Vendor.findAll", query = "SELECT p FROM Vendor p") })
+@NamedQueries({ @NamedQuery(name = "com.neolynks.model.Vendor.findAll", query = "SELECT p FROM Vendor p") })
 public class Vendor {
 	
 	@Id

@@ -12,7 +12,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "account")
 @NamedQueries({
-		@NamedQuery(name = "com.neolynks.curator.core.Account.findByUserName", query = "SELECT p FROM Account p where userName = :userName")})
+		@NamedQuery(name = "com.neolynks.model.Account.findByUserName", query = "SELECT p FROM Account p where userName = :userName")})
 public class Account {
 
 	@Id

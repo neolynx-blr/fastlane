@@ -25,7 +25,7 @@ public class DiscountTypeDAO extends AbstractDAO<DiscountType> {
 	}
 
 	public List<DiscountType> findAll() {
-		return list(namedQuery("com.example.helloworld.core.DiscountType.findAll"));
+		return list(namedQuery("com.neolynks.model.DiscountType.findAll"));
 	}
 
 }

@@ -25,7 +25,7 @@ public class VendorVersionDetailDAO extends AbstractDAO<VendorVersionDetail> {
 	}
 
 	public List<VendorVersionDetail> findByVendor(Long vendorId) {
-		return list(namedQuery("com.example.helloworld.core.VendorVersionDetail.findByVendor").setParameter("vendorId",
+		return list(namedQuery("com.neolynks.model.VendorVersionDetail.findByVendor").setParameter("vendorId",
 				vendorId));
 	}
 

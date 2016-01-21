@@ -25,13 +25,13 @@ public class InventoryMasterDAO extends AbstractDAO<InventoryMaster> {
 
 	public List<InventoryMaster> getInventoryByUniqueConstraint(Long vendorId, Long versionId, String itemCode,
 			Long barcode) {
-		return list(namedQuery("com.example.helloworld.core.InventoryMaster.findInventoryByUniqueConstraint")
+		return list(namedQuery("com.neolynks.model.findInventoryByUniqueConstraint")
 				.setParameter("vendorId", vendorId).setParameter("versionId", versionId)
 				.setParameter("itemCode", itemCode).setParameter("barcode", barcode));
 	}
 
 	public List<InventoryMaster> getRecentInventoryUpdatesByVendor(Long vendorId, Long lastSyncedVersionId) {
-		return list(namedQuery("com.example.helloworld.core.InventoryMaster.findRecentInventoryUpdates").setParameter(
+		return list(namedQuery("com.neolynks.model.findRecentInventoryUpdates").setParameter(
 				"vendorId", vendorId).setParameter("lastSyncedVersionId", lastSyncedVersionId));
 	}
 }
