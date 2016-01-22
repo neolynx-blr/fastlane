@@ -1,10 +1,9 @@
-package com.neolynks.curator.cache;
+package com.neolynks.curator.cache.inventory;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import com.neolynks.api.common.Response;
 import com.neolynks.api.common.inventory.InventoryInfo;
 import com.neolynks.api.common.inventory.ItemInfo;
 import com.neolynks.api.common.inventory.ProductInfo;

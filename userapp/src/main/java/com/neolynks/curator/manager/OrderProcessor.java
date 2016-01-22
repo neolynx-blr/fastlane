@@ -32,4 +32,5 @@ public class OrderProcessor {
 		this.vendorBarcodeInventoryCache = vendorBarcodeInventoryCache;
 	}
 
+    private
 }

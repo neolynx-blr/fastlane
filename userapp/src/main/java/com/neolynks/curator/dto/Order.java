@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper=false)
-public class Cart implements Serializable {
+public class Order implements Serializable {
 
 	private static final long serialVersionUID = -5941199729342263523L;
 

@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
-import com.neolynks.curator.cache.model.CacheDetail;
+import com.neolynks.curator.cache.inventory.model.CacheDetail;
 import com.neolynks.curator.util.Constants;
 
 /**

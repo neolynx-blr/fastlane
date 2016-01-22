@@ -1,6 +1,7 @@
 package com.neolynks.curator;
 
 import com.neolynks.curator.manager.*;
+import com.neolynks.curator.manager.cachesupport.OrderCacheLoader;
 import com.neolynks.curator.resources.OrderResource;
 import com.neolynks.dao.*;
 import com.neolynks.model.*;
@@ -38,13 +39,13 @@ import com.neolynks.common.model.client.price.TaxInfo;
 import com.neolynks.common.model.order.CartRequest;
 import com.neolynks.common.model.order.DeliveryMode;
 import com.neolynks.common.model.order.ItemRequest;
-import com.neolynks.curator.cache.CurrentInventoryLoader;
-import com.neolynks.curator.cache.DifferentialDataLoader;
-import com.neolynks.curator.cache.RecentItemLoader;
-import com.neolynks.curator.cache.VendorInventoryLoader;
-import com.neolynks.curator.cache.VendorVersionLoader;
+import com.neolynks.curator.cache.inventory.CurrentInventoryLoader;
+import com.neolynks.curator.cache.inventory.DifferentialDataLoader;
+import com.neolynks.curator.cache.inventory.RecentItemLoader;
+import com.neolynks.curator.cache.inventory.VendorInventoryLoader;
+import com.neolynks.curator.cache.inventory.VendorVersionLoader;
 import com.neolynks.curator.manager.OrderHandler;
-import com.neolynks.curator.dto.Cart;
+import com.neolynks.curator.dto.Order;
 import com.neolynks.curator.resources.CacheResource;
 import com.neolynks.curator.resources.UserResource;
 import com.neolynks.curator.task.CartOperatorJob;
@@ -100,6 +101,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 		log.info("Initialising server side, starting with setting up DAO classes & service layer for authentication and authorization...");
 		final OrderDetailDAO orderDetailDAO = new OrderDetailDAO(hibernateBundle.getSessionFactory());
+        final UnderProcessingOrderDAO underProcessingOrderDAO = new UnderProcessingOrderDAO(hibernateBundle.getSessionFactory());
 		final AccountService accountService = new AccountService(hibernateBundle.getSessionFactory());
 
 		/**
@@ -137,7 +139,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			log.info("Setting up definitions for various caches for vendor,version,inventory, differential data points...");
 			
 			// Key: Cart-Id, Value: Cart Details
-			final LoadingCache<Long, Cart> cartCache = CacheBuilder.newBuilder().build(new CartCacheLoader());
+			final LoadingCache<String, Order> cartCache = CacheBuilder.newBuilder().build(new OrderCacheLoader(underProcessingOrderDAO));
 			
 			// Key: Vendor-Id, Value: Latest known inventory version
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
@@ -198,7 +200,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final WorkerSessionHandler workerSessionHandler = new WorkerSessionHandler();
 			final WorkerCartHandler workerCartHandler = new WorkerCartHandler(workerSessionHandler);
 			
-			final OrderHandler cartEvaluator = new OrderHandler(cartCache, vendorVersionCache, orderDetailDAO);
+			final OrderHandler cartEvaluator = new OrderHandler(underProcessingOrderDAO, orderDetailDAO, cartCache, vendorVersionCache);
 			
 			
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
@@ -238,8 +240,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			environment.jersey().register(new CacheResource(cacheEvaluator));
 			environment.jersey().register(new UserResource(inventoryEvaluator));
 			environment.jersey().register(new VendorResource(inventoryEvaluator, inventoryLoader));
-			environment.jersey().register(new OrderResource(orderProcessor));
-			environment.jersey().register(new OrderResource(cartEvaluator, orderProcessor));
+			environment.jersey().register(new OrderResource(cartEvaluator));
 
             //To enable request/response logging
             environment.jersey().register(new LoggingFilter(

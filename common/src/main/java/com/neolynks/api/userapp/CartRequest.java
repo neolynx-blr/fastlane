@@ -9,5 +9,6 @@ import java.util.Map;
  */
 @Data
 public class CartRequest {
+    private boolean completeSnap;
     private Map<String, Integer> itemCount;
 }

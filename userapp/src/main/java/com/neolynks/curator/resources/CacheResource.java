@@ -12,7 +12,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.neolynks.curator.cache.model.CacheDetail;
+import com.neolynks.curator.cache.inventory.model.CacheDetail;
 import com.neolynks.curator.manager.CacheEvaluator;
 
 /**

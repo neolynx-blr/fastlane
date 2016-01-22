@@ -1,4 +1,4 @@
-package com.neolynks.curator.cache;
+package com.neolynks.curator.cache.inventory;
 
 import com.neolynks.api.common.inventory.InventoryInfo;
 import io.dropwizard.hibernate.UnitOfWork;

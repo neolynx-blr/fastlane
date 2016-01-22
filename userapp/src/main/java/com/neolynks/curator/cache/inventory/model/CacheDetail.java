@@ -1,4 +1,4 @@
-package com.neolynks.curator.cache.model;
+package com.neolynks.curator.cache.inventory.model;
 
 
 import com.neolynks.api.common.inventory.InventoryInfo;

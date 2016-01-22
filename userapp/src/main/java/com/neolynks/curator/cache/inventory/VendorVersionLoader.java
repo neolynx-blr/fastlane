@@ -1,6 +1,5 @@
-package com.neolynks.curator.cache;
+package com.neolynks.curator.cache.inventory;
 
-import com.neolynks.api.common.Response;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import java.util.List;
@@ -12,18 +11,21 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.cache.CacheLoader;
 import com.neolynks.curator.core.VendorVersionDetail;
 
 /**
- * Created by nitesh.garg on Nov 1, 2015
- *
+ * Simply creates a cache of latest known data version for all vendors in the
+ * system
+ * 
+ * Created by nitesh.garg on 07-Sep-2015
  */
-public class CurrentInventoryLoader implements CacheLoader<Long, String> {
+public class VendorVersionLoader extends CacheLoader<Long, Long> {
 
 	private SessionFactory sessionFactory;
-	static Logger LOGGER = LoggerFactory.getLogger(CurrentInventoryLoader.class);
+	static Logger LOGGER = LoggerFactory.getLogger(VendorVersionLoader.class);
 
-	public CurrentInventoryLoader(SessionFactory sessionFactory) {
+	public VendorVersionLoader(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
 
@@ -34,11 +36,10 @@ public class CurrentInventoryLoader implements CacheLoader<Long, String> {
 	 */
 	@SuppressWarnings("unchecked")
 	@UnitOfWork
-	public String load(Long vendorId) throws Exception {
+	@Override
+	public Long load(Long vendorId) throws Exception {
 
-		String currentInventory = null;
-		LOGGER.info("Request received for refreshing current inventory cache for vendor [{}]", vendorId);
-
+		Long versionId = null;
 		if (vendorId == null) {
 			LOGGER.debug("Tried loading latest version of NULL vendor-id, obviously failed.");
 		} else {
@@ -49,23 +50,17 @@ public class CurrentInventoryLoader implements CacheLoader<Long, String> {
 					.createSQLQuery(" select vvd.* from vendor_version_detail vvd where vendor_id = :vendorId ")
 					.addEntity("vendor_version_detail", VendorVersionDetail.class).setParameter("vendorId", vendorId);
 
-			List<VendorVersionDetail> vendorVersionDetailList = vendorDetailQuery.list();
+			List<VendorVersionDetail> versionIds = vendorDetailQuery.list();
 
-			if (CollectionUtils.isNotEmpty(vendorVersionDetailList)) {
-
-				VendorVersionDetail vendorVersionDetail = vendorVersionDetailList.get(0);
-
-				currentInventory = (String) vendorVersionDetail.getCurrentInventory();
-				LOGGER.debug(
-						"Latest version [{}] is being cached against the vendor [{}] containing [{}] Added, [{}] Updated and [{}] Deleted items.",
-						vendorVersionDetail.getLatestSyncedVersionId(), vendorId);
+			if (CollectionUtils.isNotEmpty(versionIds)) {
+				versionId = (Long) versionIds.get(0).getLatestSyncedVersionId();
+				LOGGER.debug("Latest version [{}] is being cached against the vendor [{}]", versionId, vendorId);
 			} else {
 				LOGGER.debug("No data found while retrieving latest version for vendor [{}]", vendorId);
 			}
 			session.close();
 		}
-
-		return currentInventory;
+		return versionId;
 	}
 
 }

@@ -103,6 +103,11 @@ public class FastlaneConfiguration extends Configuration {
         return new Template(template, defaultName);
     }
 
+    @Valid
+    @NotNull
+    @JsonProperty
+    private RedisConfiguration redis = new RedisConfiguration();
+
     @JsonProperty("database")
     public DataSourceFactory getDataSourceFactory() {
         return database;
@@ -125,5 +130,9 @@ public class FastlaneConfiguration extends Configuration {
             builder.put(entry.getKey(), ImmutableMap.copyOf(entry.getValue()));
         }
         this.viewRendererConfiguration = builder.build();
+    }
+
+    public RedisConfiguration getRedis(){
+        return redis;
     }
 }

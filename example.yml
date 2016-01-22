@@ -146,3 +146,7 @@ viewRendererConfiguration:
     .ftl:
         strict_syntax: yes
         whitespace_stripping: yes
+
+redis:
+  hostname: localhost
+  port: 6379

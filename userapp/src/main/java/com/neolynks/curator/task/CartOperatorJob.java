@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.neolynks.curator.manager.CartOperator;
-import com.neolynks.curator.dto.Cart;
+import com.neolynks.curator.dto.Order;
 
 /**
  * Created by nitesh.garg on Dec 29, 2015
@@ -23,11 +23,11 @@ public class CartOperatorJob implements Managed {
 	
 	static Logger LOGGER = LoggerFactory.getLogger(CartOperatorJob.class);
 	
-	private final LoadingCache<Long, Cart> cartCache;
+	private final LoadingCache<Long, Order> cartCache;
 	/**
 	 * @param cartCache
 	 */
-	public CartOperatorJob(LoadingCache<Long, Cart> cartCache) {
+	public CartOperatorJob(LoadingCache<Long, Order> cartCache) {
 		super();
 		this.cartCache = cartCache;
 	}

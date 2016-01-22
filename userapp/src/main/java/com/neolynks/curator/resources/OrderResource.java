@@ -31,15 +31,13 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderResource {
 
     private final OrderHandler orderHandler;
-    private final OrderProcessor processor;
 
     /**
      * @param cartEvaluator
      */
-    public OrderResource(OrderHandler cartEvaluator, OrderProcessor processor) {
+    public OrderResource(OrderHandler cartEvaluator) {
         super();
         this.orderHandler = cartEvaluator;
-        this.processor = processor;
     }
 
     @Path("/init")
