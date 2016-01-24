@@ -1,9 +1,9 @@
-package com.neolynks.worker.resources;
+package com.neolynks.curator.resources;
 
 import com.neolynks.api.common.Response;
+import com.neolynks.curator.cache.inventory.model.CacheDetail;
+import com.neolynks.curator.manager.CacheEvaluator;
 import io.dropwizard.hibernate.UnitOfWork;
-
-import java.util.List;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
@@ -11,9 +11,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-
-import com.neolynks.curator.cache.inventory.model.CacheDetail;
-import com.neolynks.curator.manager.CacheEvaluator;
+import java.util.List;
 
 /**
  * This class is meant for all REST interfaces that will be invoked to check any

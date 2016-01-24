@@ -6,15 +6,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.neolynks.CartSignalExchange;
+import com.neolynks.signal.CartSignalExchange;
+import com.neolynks.signal.ISignalProcessor;
 import com.neolynks.api.common.CartStatus;
-import com.neolynks.dto.CartDelta;
-import com.neolynks.dto.CartOperation;
+import com.neolynks.signal.WorkerSignalExchange;
+import com.neolynks.signal.dto.CartDelta;
+import com.neolynks.signal.dto.CartOperation;
 import com.neolynks.worker.exception.WorkerException;
 import com.neolynks.worker.exception.WorkerException.WORKER_CART_ERROR;
 import com.neolynks.worker.dto.WorkerCart;
 import com.neolynks.worker.dto.WorkerSession;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SerializationUtils;
+import redis.clients.jedis.Jedis;
 
 /**
  * 
@@ -25,62 +30,51 @@ import lombok.extern.slf4j.Slf4j;
  * Class expect for every new order there will be a new cart id.
  */
 @Slf4j
+@AllArgsConstructor
 public class WorkerCartHandler{
 
 	// add WorkerCartDao here 
-	private ConcurrentHashMap<String, WorkerCart> idToWorkerCartMap;
-	private WorkerSessionHandler workerSessionHandler;
-    private CartSignalExchange cartSignalExchange = CartSignalExchange.getInstance();
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private volatile boolean isShutDown = false;
+	private final ConcurrentHashMap<String, WorkerCart> idToWorkerCartMap = new ConcurrentHashMap<>();
+	private final WorkerSessionHandler workerSessionHandler;
+    private final CartSignalExchange cartSignalExchange;
+    private final WorkerSignalExchange workerSignalExchange;
 
-    public WorkerCartHandler(WorkerSessionHandler workerSessionHandler) {
-		this.workerSessionHandler = workerSessionHandler;
-		idToWorkerCartMap = new ConcurrentHashMap<String, WorkerCart>();
-        executorService.execute(new CartSignalPicker());
-    }
+    /***************************************/
 
-    public void shutDown() {
-        isShutDown = true;
-        executorService.shutdown();
-    }
+    public class OderDeltaProcessor implements ISignalProcessor{
 
-    private class CartSignalPicker implements Runnable {
-        public void run() {
-            while (!isShutDown) {
-                try {
-
-                    CartOperation cartOperation = cartSignalExchange.getCartOperation();
-                    if (cartOperation != null) {
-                        if (cartOperation.getCartStatus() == CartStatus.OPEN.getValue()) {
-                            initWorkerCart(cartOperation.getCartId(), cartOperation.getVendorId());
-                        } else if (cartOperation.getCartStatus() == CartStatus.COMPLETE.getValue()) {
-                            closeCart(cartOperation.getCartId());
-                        }else if(cartOperation.getCartStatus() == CartStatus.DISCARDED.getValue()){
-                            discardCart(cartOperation.getCartId());
-                        }
-                        cartSignalExchange.removeCartOperation();
-                    }
-
-                    CartDelta cartDelta = cartSignalExchange.getCartDelta();
-                    if (cartDelta != null) {
-                        if(cartDelta.getOperation().equals(CartDelta.Operation.ADDED)) {
-                            Map<String, Integer> newItemCountMap = new HashMap<>();
-                            newItemCountMap.put(cartDelta.getBarCode(), cartDelta.getCount());
-                            addCartDelta(cartDelta.getCartId(), newItemCountMap);
-                        }
-                        cartSignalExchange.removeCartDelta();
-                    }
-
-                } catch (Exception e) {
-                    // log exception and ignore.
-                    log.error("Exception in CartSignalPicker", e);
+        @Override
+        public void process(byte[] message) {
+            CartDelta cartDelta = (CartDelta)SerializationUtils.deserialize(message);
+            if (cartDelta != null) {
+                if(cartDelta.getOperation().equals(CartDelta.Operation.ADDED)) {
+                    Map<String, Integer> newItemCountMap = new HashMap<>();
+                    newItemCountMap.put(cartDelta.getBarCode(), cartDelta.getCount());
+                    addCartDelta(cartDelta.getCartId(), newItemCountMap);
                 }
             }
         }
     }
 
-	private WorkerCart getWorkerCart(String cartId) {
+    public class OderOperationProcessor implements ISignalProcessor{
+        @Override
+        public void process(byte[] message) {
+            CartOperation cartOperation = (CartOperation)SerializationUtils.deserialize(message);
+            if (cartOperation != null) {
+                if (cartOperation.getCartStatus().equals(CartStatus.OPEN)) {
+                    initWorkerCart(cartOperation.getCartId(), cartOperation.getVendorId());
+                } else if (cartOperation.getCartStatus().equals(CartStatus.COMPLETE)){
+                    closeCart(cartOperation.getCartId());
+                }else if(cartOperation.getCartStatus().equals(CartStatus.DISCARDED)){
+                    discardCart(cartOperation.getCartId());
+                }
+            }
+        }
+    }
+
+    /***************************************/
+    
+   	private WorkerCart getWorkerCart(String cartId) {
 		WorkerCart workerCart = idToWorkerCartMap.get(cartId);
 		if (null == workerCart) {
 			throw new WorkerException(WORKER_CART_ERROR.UNKNOWN_CART_ID);

@@ -169,6 +169,12 @@
             <artifactId>workerapp</artifactId>
             <version>0.9.0-rc4</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.neolynks</groupId>
+            <artifactId>user-worker-interaction</artifactId>
+            <version>0.9.0-rc4</version>
+        </dependency>
     </dependencies>
 
 </project>

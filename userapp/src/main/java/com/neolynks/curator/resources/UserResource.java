@@ -1,7 +1,8 @@
-package com.neolynks.worker.resources;
+package com.neolynks.curator.resources;
 
 import com.neolynks.api.common.Response;
 import com.neolynks.api.common.inventory.InventoryInfo;
+import com.neolynks.curator.manager.InventoryEvaluator;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import javax.ws.rs.GET;
@@ -9,8 +10,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-
-import com.neolynks.curator.manager.InventoryEvaluator;
 
 /**
  * This class is meant for all REST interfaces that will be involved by the user from Mobile App

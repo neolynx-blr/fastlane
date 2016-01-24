@@ -1,4 +1,4 @@
-package com.neolynks.worker.resources;
+package com.neolynks.curator.resources;
 
 import com.neolynks.api.common.ErrorCode;
 import com.neolynks.api.common.Response;
@@ -8,18 +8,12 @@ import com.neolynks.curator.exception.CacheException;
 import com.neolynks.curator.exception.InvalidCartIdException;
 import com.neolynks.curator.manager.OrderHandler;
 import io.dropwizard.hibernate.UnitOfWork;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import javax.validation.Valid;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by nitesh.garg on Dec 26, 2015
@@ -101,4 +95,4 @@ public class OrderResource {
             return failureResponse;
         }
     }
-}   
+}
