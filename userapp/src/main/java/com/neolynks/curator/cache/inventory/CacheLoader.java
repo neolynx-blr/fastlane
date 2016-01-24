@@ -1,8 +1,5 @@
 package com.neolynks.curator.cache.inventory;
 
-import com.neolynks.api.common.Response;
-import com.neolynks.api.common.inventory.InventoryInfo;
-
 /**
  * Created by nishantgupta on 17/1/16.
  */

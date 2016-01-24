@@ -13,7 +13,7 @@ public class WorkerTask {
 
 	private long id;
 	private TaskType taskType;
-	private Map<Long, Integer> items;
+	private Map<String, Integer> items;
 	private Set<WorkerCart> workerCarts;
 
 	public WorkerTask(long id) {

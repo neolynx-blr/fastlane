@@ -17,7 +17,7 @@ import java.util.List;
  *
  */
 @Slf4j
-public class OrderDetailDAO extends AbstractDAO<OrderDetail> {
+public class OrderDetailDAO extends AbstractDAO<OrderDetail>{
 
 	/**
 	 * @param sessionFactory
@@ -30,29 +30,26 @@ public class OrderDetailDAO extends AbstractDAO<OrderDetail> {
 		return persist(orderDetail);
 	}
 
-	public OrderDetail update(OrderDetail orderDetail) {
-		currentSession().merge(orderDetail);
-		return (OrderDetail) currentSession().save(orderDetail);
-	}
+	public OrderDetail getById(String orderId) {
+        List<OrderDetail> orderDetails = list(namedQuery(
+                "com.neolynks.model.OrderDetail.findByOrderId")
+                .setParameter("orderId", orderId));
 
-	public OrderDetail findOrderById(String orderId) {
+        if (CollectionUtils.isEmpty(orderDetails)) {
+            log.info("No order was found in the database for id [{}]",
+                    orderId);
+            return null;
+        } else if (orderDetails.size() != 1) {
+            log.error(
+                    "Something is horribly wrong as multiple orders found in DB for order-id [{}]",
+                    orderId);
+        }
 
-		List<OrderDetail> orderDetails = list(namedQuery(
-				"com.neolynks.model.OrderDetail.findByOrderId")
-				.setParameter("orderId", orderId));
+        return orderDetails.get(0);
+    }
 
-		if (CollectionUtils.isEmpty(orderDetails)) {
-			log.info("No order was found in the database for id [{}]",
-					orderId);
-			return null;
-		} else if (orderDetails.size() != 1) {
-			log.error(
-					"Something is horribly wrong as multiple orders found in DB for order-id [{}]",
-					orderId);
-		}
-
-		return orderDetails.get(0);
-
-	}
-
+    public OrderDetail update(OrderDetail orderDetail) {
+        currentSession().merge(orderDetail);
+        return (OrderDetail) currentSession().save(orderDetail);
+    }
 }

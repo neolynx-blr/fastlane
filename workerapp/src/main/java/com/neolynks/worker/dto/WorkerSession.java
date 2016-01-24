@@ -35,7 +35,7 @@ public class WorkerSession {
 	}
 
     @Getter
-	private long id;
+	private String id;
     @Getter
 	private Worker worker;
 	private Map<String, WorkerCart> idToworkerCartMap;
@@ -53,7 +53,7 @@ public class WorkerSession {
 	private Long load;
 	private long lastLoadUpdateTime;
 
-	public WorkerSession(long id, Worker worker) {
+	public WorkerSession(String id, Worker worker) {
 		this.id = id;
 		this.worker = worker;
 		this.status = SessionStatus.OPEN;
@@ -201,8 +201,8 @@ public class WorkerSession {
 		if (null != currentWorkerTask) {
 			return currentWorkerTask;
 		}
-		lastWorkerTaskId = RandomIdGenerator.getInstance().generateId();
-		WorkerTask workerTask = new WorkerTask(RandomIdGenerator.getInstance().generateId());
+		lastWorkerTaskId = RandomIdGenerator.getInstance().generateLongId();
+		WorkerTask workerTask = new WorkerTask(RandomIdGenerator.getInstance().generateLongId());
 		boolean isAnyCartClosed = false;
 		boolean itemCountZero = true;
 		for (WorkerCart workerCart: idToworkerCartMap.values()) {
@@ -215,15 +215,15 @@ public class WorkerSession {
 		}
 
 		workerTask.setWorkerCarts(new HashSet<WorkerCart>(idToworkerCartMap.values()));
-		Map<Long, Integer> items = new HashMap<Long, Integer>();
+		Map<String, Integer> items = new HashMap<String, Integer>();
 		if (isAnyCartClosed) {
 			workerTask.setTaskType(WorkerTask.TaskType.CREATE_CART);
 		} else if (!itemCountZero) {
 			workerTask.setTaskType(WorkerTask.TaskType.PICK_UP_PRODUCTS);
 			for (WorkerCart workerCart: idToworkerCartMap.values()) {
 				workerCart.queueItemsForProcessing();
-				Map<Long, Integer> pendingItemsForProcessing = workerCart.getPendingItemMap();
-				for (Entry<Long, Integer> entry : pendingItemsForProcessing.entrySet()) {
+				Map<String, Integer> pendingItemsForProcessing = workerCart.getPendingItemMap();
+				for (Entry<String, Integer> entry : pendingItemsForProcessing.entrySet()) {
 					if(items.get(entry.getKey()) != null) {
 						items.put(entry.getKey(), items.get(entry.getKey()) + entry.getValue());
 					} else {

@@ -1,12 +1,16 @@
 package com.neolynks.curator;
 
+import com.hubspot.dropwizard.guice.GuiceBundle;
+import com.neolynks.ApplicationModule;
 import com.neolynks.curator.manager.*;
 import com.neolynks.curator.manager.cachesupport.OrderCacheLoader;
-import com.neolynks.curator.resources.OrderResource;
+import com.neolynks.worker.dto.Worker;
+import com.neolynks.worker.resources.OrderResource;
 import com.neolynks.dao.*;
 import com.neolynks.model.*;
 import com.neolynks.worker.manager.WorkerCartHandler;
 import com.neolynks.worker.manager.WorkerSessionHandler;
+import com.neolynks.worker.resources.WorkerResource;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -46,8 +50,8 @@ import com.neolynks.curator.cache.inventory.VendorInventoryLoader;
 import com.neolynks.curator.cache.inventory.VendorVersionLoader;
 import com.neolynks.curator.manager.OrderHandler;
 import com.neolynks.curator.dto.Order;
-import com.neolynks.curator.resources.CacheResource;
-import com.neolynks.curator.resources.UserResource;
+import com.neolynks.worker.resources.CacheResource;
+import com.neolynks.worker.resources.UserResource;
 import com.neolynks.curator.task.CartOperatorJob;
 import com.neolynks.curator.task.DataLoaderJob;
 
@@ -94,6 +98,11 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			}
 		});
 
+        bootstrap.addBundle(GuiceBundle.newBuilder()
+                        .addModule(new ApplicationModule())
+                        .enableAutoConfig(getClass().getPackage().getName())
+                        .build()
+        );
 	}
 
 	@Override
@@ -204,7 +213,6 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			
 			
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
-			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator, vendorBarcodeInventoryCache);
 			
 
 			/*
@@ -241,6 +249,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			environment.jersey().register(new UserResource(inventoryEvaluator));
 			environment.jersey().register(new VendorResource(inventoryEvaluator, inventoryLoader));
 			environment.jersey().register(new OrderResource(cartEvaluator));
+            environment.jersey().register(new WorkerResource(new WorkerSessionHandler()));
 
             //To enable request/response logging
             environment.jersey().register(new LoggingFilter(

@@ -2,8 +2,6 @@ package com.neolynks.curator;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.neolynks.curator.core.Template;
-import com.neolynks.vendor.model.CurationConfig;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import org.hibernate.validator.constraints.NotEmpty;

@@ -1,4 +1,4 @@
-package com.neolynks.curator.resources;
+package com.neolynks.worker.resources;
 
 import com.neolynks.api.common.Response;
 import io.dropwizard.hibernate.UnitOfWork;

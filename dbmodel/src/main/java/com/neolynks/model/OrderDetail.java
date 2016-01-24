@@ -4,6 +4,7 @@
 package com.neolynks.model;
 
 import lombok.Data;
+import lombok.experimental.Builder;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -15,6 +16,7 @@ import java.util.Date;
 
 @Data
 @Entity
+@Builder
 @Table(name = "order_detail")
 @NamedQueries({
 		@NamedQuery(name = "com.neolynks.model.OrderDetail.findByOrderId", query = "SELECT p FROM OrderDetail p where orderId = :orderId")})
@@ -27,6 +29,9 @@ public class OrderDetail {
 	@Column(name = "order_id", nullable = false, updatable = false)
 	private String orderId;
 
+    @Column(name = "user_id", nullable = false, updatable = false)
+    private String userId;
+
     @Column(name = "vendor_id", nullable = false, updatable = false)
     private Long vendorId;
 
@@ -37,7 +42,7 @@ public class OrderDetail {
 	private String itemList;
 
 	@Column(name = "version_id", nullable = false)
-	private Long versionId;
+	private Integer versionId;
 
 	@Column(name = "net_amount", nullable = false)
 	private Double netAmount;

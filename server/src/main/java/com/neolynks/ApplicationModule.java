@@ -1,9 +1,10 @@
 package com.neolynks;
 
+import com.neolynks.curator.FastlaneConfiguration;
 import com.neolynks.curator.RedisConfiguration;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.yammer.dropwizard.config.Configuration;
+import io.dropwizard.Configuration;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 /**
@@ -18,13 +19,13 @@ public class ApplicationModule extends AbstractModule
     }
 
     @Provides
-    public ApplicationConfiguration configuration(Configuration configuration)
+    public FastlaneConfiguration configuration(Configuration configuration)
     {
-        return (ApplicationConfiguration) configuration;
+        return (FastlaneConfiguration) configuration;
     }
 
     @Provides
-    public JedisPool provideJedisPool(ApplicationConfiguration applicationConfiguration)
+    public JedisPool provideJedisPool(FastlaneConfiguration applicationConfiguration)
     {
         RedisConfiguration redisConfig = applicationConfiguration.getRedis();
         return new JedisPool(

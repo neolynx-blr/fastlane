@@ -7,7 +7,7 @@ import com.neolynks.api.common.VendorInventorySnap;
 /**
  * Created by nishantgupta on 15/1/16.
  */
-public class APIRequestResponseUtil {
+public class CustomerAPIRequestResponseUtil {
 
     //user-id, vendor-id, version-id
     private static final String REQUEST_TOKEN_DELIMITER = "_";

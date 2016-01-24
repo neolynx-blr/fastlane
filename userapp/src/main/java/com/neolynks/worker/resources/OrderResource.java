@@ -1,9 +1,10 @@
-package com.neolynks.curator.resources;
+package com.neolynks.worker.resources;
 
 import com.neolynks.api.common.ErrorCode;
 import com.neolynks.api.common.Response;
 import com.neolynks.api.userapp.CartRequest;
 import com.neolynks.curator.annotation.UserContextRequired;
+import com.neolynks.curator.exception.CacheException;
 import com.neolynks.curator.exception.InvalidCartIdException;
 import com.neolynks.curator.manager.OrderHandler;
 import io.dropwizard.hibernate.UnitOfWork;
@@ -18,7 +19,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.neolynks.curator.manager.OrderProcessor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,9 +45,19 @@ public class OrderResource {
     @UnitOfWork
     @UserContextRequired
     public Response<String> initialiseCart() {
-        String cartId = this.orderHandler.initializeCart();
-        Response<String> successResponse =  Response.getSuccessResponse(cartId);
-        return successResponse;
+        try {
+            String cartId = this.orderHandler.initializeCart();
+            Response<String> successResponse = Response.getSuccessResponse(cartId);
+            return successResponse;
+        }catch (CacheException e){
+            log.error("Exception:", e);
+            Response<String> failureResponse = Response.getFailureResponse(ErrorCode.CACHE_DOWN);
+            return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
+        }
     }
 
     @Path("/{id}/set")
@@ -65,6 +75,10 @@ public class OrderResource {
         }catch (InvalidCartIdException cim){
             Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
             return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
         }
     }
 
@@ -81,6 +95,10 @@ public class OrderResource {
         }catch (InvalidCartIdException cim){
             Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
             return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
         }
     }
-}
+}   

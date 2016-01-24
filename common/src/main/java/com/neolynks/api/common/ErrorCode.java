@@ -24,6 +24,7 @@ public enum ErrorCode {
 	
 	FAILED_CLEANING_VENDOR_DIFFERENTIAL_CACHE("CPE001", "Unable to remove vendor data from version differential cache."),
 	FAILED_CLEANING_VENDOR_VERSION_CACHE("CPE002", "Unable to remove vendor data from all-version cache."),
+    CACHE_DOWN("CPE003", "Cache is down"),
 	
 	FAILED_CLEANING_VENDOR_PRODUCT_MASTER_RECORDS("DBE001", "Unable to remove vendor records from product-master table."),
 	FAILED_CLEANING_VENDOR_ITEM_MASTER_RECORDS("DBE002", "Unable to remove vendor records from item-master table."),
@@ -45,7 +46,9 @@ public enum ErrorCode {
 	MISSING_UPDATE_CART_DETAILS ("DVE014", "Cart received for update order operation is missing the update structure within the cart"),
 	MISSING_UPDATE_OPERATION_REASON ("DVE015", "Update order call is missing whether item list or user details are being updated"),
 	MISSING_OR_INVALID_LAST_SEEN_SERVER_DATA_VERSION_ID ("DVE016", "Update order call is missing last seen server data version id"),
-	MISSING_ORDER_ID ("DVE017", "Update order call is missing the order-id received in the create call");
+	MISSING_ORDER_ID ("DVE017", "Update order call is missing the order-id received in the create call"),
+
+    UNKNOWN_ERROR ("UNK001", "Some unknown error");
 
     @Getter
 	private final String code;

@@ -30,6 +30,7 @@
         <module>workerapp</module>
         <module>server</module>
         <module>user-worker-interaction</module>
+        <module>app-notifications</module>
     </modules>
 
     <dependencies>
