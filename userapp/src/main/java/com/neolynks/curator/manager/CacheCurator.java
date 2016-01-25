@@ -4,6 +4,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import com.neolynks.api.common.inventory.InventoryInfo;
+import com.neolynks.api.common.inventory.ItemInfo;
+import com.neolynks.api.common.inventory.ProductInfo;
+import com.neolynks.api.userapp.price.DiscountDetail;
+import com.neolynks.api.userapp.price.ItemPrice;
+import com.neolynks.api.userapp.price.TaxDetail;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -13,12 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.LoadingCache;
-import com.neolynks.common.model.client.InventoryInfo;
-import com.neolynks.common.model.client.ItemInfo;
-import com.neolynks.common.model.client.ProductInfo;
-import com.neolynks.common.model.client.price.DiscountDetail;
-import com.neolynks.common.model.client.price.ItemPrice;
-import com.neolynks.common.model.client.price.TaxDetail;
 import com.neolynks.curator.core.VendorItemMaster;
 import com.neolynks.curator.core.VendorVersionDetail;
 import com.neolynks.curator.core.VendorVersionDifferential;
@@ -249,7 +249,7 @@ public class CacheCurator {
 				InventoryInfo inventoryResponse = new InventoryInfo();
 
 				Long vendorId = vendorItemData.getVendorId();
-				Long barcode = vendorItemData.getBarcode();
+                String barcode = vendorItemData.getBarcode();
 				Long lastSyncedVersionId = vendorItemData.getVersionId();
 
 				String key = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
@@ -277,10 +277,10 @@ public class CacheCurator {
 				ProductInfo productInfo = new ProductInfo();
 				ItemPrice itemPrice = new ItemPrice();
 
+                productInfo.setBarcode(vendorItemData.getBarcode());
 				productInfo.setName(vendorItemData.getName());
 				productInfo.setTagLine(vendorItemData.getTagLine());
 				productInfo.setImageJSON(vendorItemData.getImageJSON());
-				productInfo.setDescription(vendorItemData.getDescription());
 
 				try {
 					ObjectMapper mapper = new ObjectMapper();
@@ -303,10 +303,9 @@ public class CacheCurator {
 				itemInfo.setItemPrice(itemPrice);
 				itemInfo.setProductInfo(productInfo);
 
-				itemInfo.setBarcode(vendorItemData.getBarcode());
 				itemInfo.setItemCode(vendorItemData.getItemCode());
 
-				inventoryResponse.getAddedItems().put(itemInfo.getBarcode(), itemInfo);
+				inventoryResponse.getAddedItems().put(productInfo.getBarcode(), itemInfo);
 
 				String newKey = vendorId + Constants.CACHE_KEY_SEPARATOR_STRING + barcode;
 

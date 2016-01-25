@@ -2,8 +2,6 @@ package com.neolynks.curator;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.neolynks.curator.core.Template;
-import com.neolynks.vendor.model.CurationConfig;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -103,6 +101,11 @@ public class FastlaneConfiguration extends Configuration {
         return new Template(template, defaultName);
     }
 
+    @Valid
+    @NotNull
+    @JsonProperty
+    private RedisConfiguration redis = new RedisConfiguration();
+
     @JsonProperty("database")
     public DataSourceFactory getDataSourceFactory() {
         return database;
@@ -125,5 +128,9 @@ public class FastlaneConfiguration extends Configuration {
             builder.put(entry.getKey(), ImmutableMap.copyOf(entry.getValue()));
         }
         this.viewRendererConfiguration = builder.build();
+    }
+
+    public RedisConfiguration getRedis(){
+        return redis;
     }
 }

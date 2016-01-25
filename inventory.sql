@@ -97,7 +97,7 @@ create table vendor_item_master (
 	info_json varchar(2048),
 
 	vendor_id integer not null,
-	version_id bigint not null,
+	version_id integer not null,
 	product_id integer not null,
 	
 	-- price = base_price + taxes - discount
@@ -134,7 +134,7 @@ create table vendor_item_history (
 	info_json varchar(2048),
 
 	vendor_id integer not null,
-	version_id bigint not null,
+	version_id integer not null,
 	product_id integer not null,
 	
 	-- price = base_price + taxes - discount
@@ -199,30 +199,23 @@ create table vendor_user_order_mapper (
 	user_id integer not null,
 	order_id integer not null unique,
 	status smallint not null,
-	last_modified_on timestamp not null);
+	last_modified_on timestamp not null default CURRENT_TIMESTAMP);
 		
 drop table if exists order_detail;
 create table order_detail (
 	id bigserial primary key,
-	order_id integer not null unique,
-	status integer,
-	
-	item_list varchar(2048),
-	item_list_delivery varchar(2048),
-	delivery_address_id integer,
-	delivery_mode integer,
-	
+	order_id varchar not null unique,
+	user_id varchar not null unique,
 	vendor_id integer not null,
-	server_data_version_id bigint not null,
-	device_data_version_id bigint not null,
-	
+	status integer,
+	item_list varchar(2048),
+	version_id integer not null,
 	net_amount real not null,
 	tax_amount real,
 	taxable_amount real,
 	discount_amount real,
-	
-	created_on timestamp not null,  
-	last_modified_on timestamp not null
+	created_on timestamp not null default CURRENT_TIMESTAMP,
+	last_modified_on timestamp not null default CURRENT_TIMESTAMP
 );
 
 drop table if exists vendor_detail;

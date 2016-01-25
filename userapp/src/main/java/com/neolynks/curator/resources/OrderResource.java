@@ -1,68 +1,128 @@
 package com.neolynks.curator.resources;
 
+import com.neolynks.api.common.ErrorCode;
+import com.neolynks.api.common.Response;
+import com.neolynks.api.userapp.CartRequest;
+import com.neolynks.curator.annotation.UserContextRequired;
+import com.neolynks.curator.exception.CacheException;
+import com.neolynks.curator.exception.InvalidOrderIdException;
+import com.neolynks.curator.exception.InvalidStatusIdException;
+import com.neolynks.curator.exception.InvalidStatusTransitionException;
+import com.neolynks.curator.manager.OrderHandler;
 import io.dropwizard.hibernate.UnitOfWork;
+import lombok.extern.slf4j.Slf4j;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.annotation.Nonnull;
+import javax.validation.Valid;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
-import com.neolynks.curator.manager.OrderProcessor;
-import com.neolynks.common.model.order.CartRequest;
-import com.neolynks.common.model.order.ClosureRequest;
-import com.neolynks.common.model.order.Response;
-
 /**
- * Created by nitesh.garg on Oct 22, 2015
- *
+ * Created by nitesh.garg on Dec 26, 2015
  */
 
-@Path("/curator/order")
+@Slf4j
+@Path("/curator/cart")
 @Produces(MediaType.APPLICATION_JSON)
 public class OrderResource {
 
-	private final OrderProcessor processor;
+    private final OrderHandler orderHandler;
 
-	public OrderResource(OrderProcessor processor) {
-		super();
-		this.processor = processor;
-	}
+    /**
+     * @param cartEvaluator
+     */
+    public OrderResource(OrderHandler cartEvaluator) {
+        super();
+        this.orderHandler = cartEvaluator;
+    }
 
-	@Path("/create")
-	@POST
-	@UnitOfWork
-	@Consumes(MediaType.APPLICATION_JSON)
-	public Response createOrder(CartRequest request) {
-		System.out.println("Request received from vendor::" + request.getVendorId());
-		return processor.createOrder(request);
-	}
+    @Path("/init")
+    @GET
+    @UnitOfWork
+    @UserContextRequired
+    public Response<String> initialiseCart() {
+        try {
+            String cartId = this.orderHandler.initializeCart();
+            Response<String> successResponse = Response.getSuccessResponse(cartId);
+            return successResponse;
+        }catch (CacheException e){
+            log.error("Exception:", e);
+            Response<String> failureResponse = Response.getFailureResponse(ErrorCode.CACHE_DOWN);
+            return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
+        }
+    }
 
-	@Path("/update")
-	@POST
-	@UnitOfWork
-	@Consumes(MediaType.APPLICATION_JSON)
-	public Response updateOrder(CartRequest request) {
-		System.out.println("Request received from vendor::" + request.getVendorId());
-		return processor.updateOrder(request);
-	}
+    @Path("/{id}/set")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @POST
+    @UnitOfWork
+    @UserContextRequired
+    public Response<Void> setToCart(@PathParam(value = "id")
+                                    @Nonnull String cartId,
+                                    @Valid CartRequest cartRequest) {
+        try {
+            this.orderHandler.setToCart(cartId, cartRequest.getItemCount());
+            Response successResponse = Response.getSuccessResponse(null);
+            return successResponse;
+        }catch (InvalidOrderIdException cim){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
+            return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
+        }
+    }
 
-	@Path("/close/instore")
-	@POST
-	@UnitOfWork
-	@Consumes(MediaType.APPLICATION_JSON)
-	public Response closeOrderInStore(ClosureRequest request) {
-		System.out.println("Request received from vendor::" + request.getOrderId());
-		return processor.completeInStoreProcessing(request);
-	}
+    @Path("/{id}/close")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @POST
+    @UnitOfWork
+    @UserContextRequired
+    public Response<Void> orderClosed(@PathParam(value = "id")
+                                      @Nonnull String cartId,
+                                      @Valid CartRequest cartRequest) {
+        try {
+            this.orderHandler.orderClosed(cartId, cartRequest.getItemCount());
+            Response successResponse = Response.getSuccessResponse(null);
+            return successResponse;
+        }catch (InvalidOrderIdException cim){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
+            return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
+        }
+    }
 
-	@Path("/close/delivery")
-	@POST
-	@UnitOfWork
-	@Consumes(MediaType.APPLICATION_JSON)
-	public Response closeOrderDelivery(ClosureRequest request) {
-		System.out.println("Request received from vendor::" + request.getOrderId());
-		return processor.completeDeliveryProcessing(request);
-	}
-
+    @Path("/{id}/set/status/{id}")
+    @POST
+    @UnitOfWork
+    @UserContextRequired
+    public Response<Void> setCartStatus(@PathParam(value = "id") String cartId,
+                                        @PathParam(value = "id") Integer statusId) {
+        try {
+            this.orderHandler.setOrderStatus(cartId, statusId);
+            Response successResponse = Response.getSuccessResponse(null);
+            return successResponse;
+        }catch (InvalidOrderIdException cim){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
+            return failureResponse;
+        }catch (InvalidStatusIdException ise){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.INVALID_STATUS_ID);
+            return failureResponse;
+        }catch (InvalidStatusTransitionException ise){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.INVALID_STATUS_TRANSITION);
+            return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
+        }
+    }
 }

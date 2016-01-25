@@ -1,7 +1,18 @@
 package com.neolynks.curator;
 
+import com.hubspot.dropwizard.guice.GuiceBundle;
+import com.neolynks.ApplicationModule;
+import com.neolynks.curator.manager.*;
+import com.neolynks.curator.manager.cachesupport.OrderCacheLoader;
+import com.neolynks.signal.ISignalProcessor;
+import com.neolynks.signal.WorkerSignalExchange;
+import com.neolynks.worker.dto.Worker;
+import com.neolynks.worker.resources.OrderResource;
+import com.neolynks.dao.*;
+import com.neolynks.model.*;
 import com.neolynks.worker.manager.WorkerCartHandler;
 import com.neolynks.worker.manager.WorkerSessionHandler;
+import com.neolynks.worker.resources.WorkerResource;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -15,9 +26,10 @@ import io.dropwizard.views.ViewBundle;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.glassfish.jersey.filter.LoggingFilter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,66 +45,29 @@ import com.neolynks.common.model.client.price.TaxInfo;
 import com.neolynks.common.model.order.CartRequest;
 import com.neolynks.common.model.order.DeliveryMode;
 import com.neolynks.common.model.order.ItemRequest;
-import com.neolynks.curator.cache.CartCacheLoader;
-import com.neolynks.curator.cache.CurrentInventoryLoader;
-import com.neolynks.curator.cache.DifferentialDataLoader;
-import com.neolynks.curator.cache.RecentItemLoader;
-import com.neolynks.curator.cache.VendorInventoryLoader;
-import com.neolynks.curator.cache.VendorVersionLoader;
-import com.neolynks.curator.core.Account;
-import com.neolynks.curator.core.InventoryMaster;
-import com.neolynks.curator.core.OrderDetail;
-import com.neolynks.curator.core.Person;
-import com.neolynks.curator.core.ProductMaster;
-import com.neolynks.curator.core.VendorItemHistory;
-import com.neolynks.curator.core.VendorItemMaster;
-import com.neolynks.curator.core.VendorVersionDetail;
-import com.neolynks.curator.core.VendorVersionDifferential;
-import com.neolynks.curator.db.InventoryMasterDAO;
-import com.neolynks.curator.db.OrderDetailDAO;
-import com.neolynks.curator.db.PersonDAO;
-import com.neolynks.curator.db.ProductMasterDAO;
-import com.neolynks.curator.db.VendorItemHistoryDAO;
-import com.neolynks.curator.db.VendorItemMasterDAO;
-import com.neolynks.curator.db.VendorVersionDetailDAO;
-import com.neolynks.curator.db.VendorVersionDifferentialDAO;
-import com.neolynks.curator.manager.AccountService;
-import com.neolynks.curator.manager.CacheCurator;
-import com.neolynks.curator.manager.CacheEvaluator;
-import com.neolynks.curator.manager.CartHandler;
-import com.neolynks.curator.manager.InventoryCurator;
-import com.neolynks.curator.manager.InventoryEvaluator;
-import com.neolynks.curator.manager.InventoryLoader;
-import com.neolynks.curator.manager.OrderProcessor;
-import com.neolynks.curator.manager.PriceEvaluator;
-import com.neolynks.curator.manager.ProductMasterService;
-import com.neolynks.curator.manager.VendorItemService;
-import com.neolynks.curator.manager.VendorVersionDifferentialService;
-import com.neolynks.curator.manager.VendorVersionService;
-import com.neolynks.curator.model.Cart;
-import com.neolynks.curator.resources.CacheResource;
-import com.neolynks.curator.resources.CartResource;
-import com.neolynks.curator.resources.OrderResource;
-import com.neolynks.curator.resources.UserResource;
-import com.neolynks.curator.resources.VendorResource;
+import com.neolynks.curator.cache.inventory.CurrentInventoryLoader;
+import com.neolynks.curator.cache.inventory.DifferentialDataLoader;
+import com.neolynks.curator.cache.inventory.RecentItemLoader;
+import com.neolynks.curator.cache.inventory.VendorInventoryLoader;
+import com.neolynks.curator.cache.inventory.VendorVersionLoader;
+import com.neolynks.curator.manager.OrderHandler;
+import com.neolynks.curator.dto.Order;
+import com.neolynks.worker.resources.CacheResource;
+import com.neolynks.worker.resources.UserResource;
 import com.neolynks.curator.task.CartOperatorJob;
-import com.neolynks.curator.task.DaemonJob;
 import com.neolynks.curator.task.DataLoaderJob;
-import com.neolynks.vendor.ClientResource;
-import com.neolynks.vendor.job.InventorySync;
-import com.neolynks.vendor.manager.InventoryService;
 
+@Slf4j
 public class FastlaneApplication extends Application<FastlaneConfiguration> {
-
-	static Logger LOGGER = LoggerFactory.getLogger(FastlaneApplication.class);
 
 	public static void main(String[] args) throws Exception {
 		new FastlaneApplication().run(args);
 	}
 
 	private final HibernateBundle<FastlaneConfiguration> hibernateBundle = new HibernateBundle<FastlaneConfiguration>(
-			Person.class, VendorItemMaster.class, VendorItemHistory.class, ProductMaster.class, ItemResponse.class,
-			InventoryMaster.class, VendorVersionDetail.class, VendorVersionDifferential.class, Account.class, OrderDetail.class) {
+			VendorItemMaster.class, VendorItemHistory.class, ProductMaster.class, ItemResponse.class,
+			InventoryMaster.class, VendorVersionDetail.class, VendorVersionDifferential.class, Account.class, OrderDetail.class,
+            UnderProcessingOrder.class ) {
 		@Override
 		public DataSourceFactory getDataSourceFactory(FastlaneConfiguration configuration) {
 			return configuration.getDataSourceFactory();
@@ -125,14 +100,19 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			}
 		});
 
+        bootstrap.addBundle(GuiceBundle.newBuilder()
+                        .addModule(new ApplicationModule())
+                        .enableAutoConfig(getClass().getPackage().getName())
+                        .build()
+        );
 	}
 
 	@Override
 	public void run(FastlaneConfiguration configuration, Environment environment) {
 
-		LOGGER.info("Initialising server side, starting with setting up DAO classes & service layer for authentication and authorization...");
-		final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
+		log.info("Initialising server side, starting with setting up DAO classes & service layer for authentication and authorization...");
 		final OrderDetailDAO orderDetailDAO = new OrderDetailDAO(hibernateBundle.getSessionFactory());
+        final UnderProcessingOrderDAO underProcessingOrderDAO = new UnderProcessingOrderDAO(hibernateBundle.getSessionFactory());
 		final AccountService accountService = new AccountService(hibernateBundle.getSessionFactory());
 
 		/**
@@ -146,19 +126,19 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 		
 		if (configuration.getClientConfig()) {
 
-			LOGGER.info("Starting server for vendor-side interactions...");
+			log.info("Starting server for vendor-side interactions...");
 
-			LOGGER.info("Setting up the business-logic class followed by registering the inventory resource and it's lifecycle...");
+			log.info("Setting up the business-logic class followed by registering the inventory resource and it's lifecycle...");
 			final InventoryService inventoryService = new InventoryService(configuration.getCurationConfig());
 			environment.jersey().register(new ClientResource(inventoryService));
-			environment.lifecycle().manage(new InventorySync(configuration.getCurationConfig()));
+			environment.lifecycle().manage(new InventorySyncJob(configuration.getCurationConfig()));
 
 		}
 
 		if (configuration.getServerConfig()) {
 			
-			LOGGER.info("Starting server for user-device interactions...");
-			LOGGER.info("Setting up all the DAO classes...");
+			log.info("Starting server for user-device interactions...");
+			log.info("Setting up all the DAO classes...");
 
 			final InventoryMasterDAO invMasterDAO = new InventoryMasterDAO(hibernateBundle.getSessionFactory());
 			final ProductMasterDAO productMasterDAO = new ProductMasterDAO(hibernateBundle.getSessionFactory());
@@ -167,10 +147,10 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final VendorVersionDetailDAO vendorVersionDetailDAO = new VendorVersionDetailDAO(hibernateBundle.getSessionFactory());
 			final VendorVersionDifferentialDAO vendorVersionDiffDAO = new VendorVersionDifferentialDAO(hibernateBundle.getSessionFactory());
 
-			LOGGER.info("Setting up definitions for various caches for vendor,version,inventory, differential data points...");
+			log.info("Setting up definitions for various caches for vendor,version,inventory, differential data points...");
 			
 			// Key: Cart-Id, Value: Cart Details
-			final LoadingCache<Long, Cart> cartCache = CacheBuilder.newBuilder().build(new CartCacheLoader());
+			final LoadingCache<String, Order> cartCache = CacheBuilder.newBuilder().build(new OrderCacheLoader(underProcessingOrderDAO));
 			
 			// Key: Vendor-Id, Value: Latest known inventory version
 			final LoadingCache<Long, Long> vendorVersionCache = CacheBuilder.newBuilder().build(new VendorVersionLoader(hibernateBundle.getSessionFactory()));
@@ -189,7 +169,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 
 			final LoadingCache<String, InventoryInfo> recentItemsCache = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.DAYS).build(new RecentItemLoader(hibernateBundle.getSessionFactory()));
 
-			LOGGER.info("Setting up various service classes, abstracting the DAO classes from the business logic objects...");
+			log.info("Setting up various service classes, abstracting the DAO classes from the business logic objects...");
 			final VendorVersionService vvDetailService = new VendorVersionService(vendorVersionDetailDAO);
 			final VendorItemService vendorItemService = new VendorItemService(vendorItemMasterDAO, vendorItemHistoryDAO);
 			final VendorVersionDifferentialService vvDiffService = new VendorVersionDifferentialService(vendorVersionDiffDAO);
@@ -199,11 +179,13 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * Contains the logic of serving the requests including latest
 			 * vendor inventory and since a specific version
 			 */
-			LOGGER.info("Setting up various business-logic classes which actually dictates the business logic...");
+			log.info("Setting up various business-logic classes which actually dictates the business logic...");
 			final InventoryCurator invCurator = new InventoryCurator(hibernateBundle.getSessionFactory());
 			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, recentItemsCache, currentInventoryCache);
 			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(invMasterDAO, differentialInventoryCache, recentItemsCache, currentInventoryCache);
 
+
+            WorkerSignalExchange workerSignalExchange = new WorkerSignalExchange();
 			/*
 			 * Meant for DB updates, basically setting up new inventory if any
 			 * (since the last similar process) in the master tables for all
@@ -213,13 +195,13 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * the data inconsistent. Although everything is under a transaction
 			 * so unlikely, but need to double check.
 			 */
-			LOGGER.info("Quick look at DB for new inventory from vendor to setup the right inventory tables...");
+			log.info("Quick look at DB for new inventory from vendor to setup the right inventory tables...");
 			try {
 				invCurator.processNewInventory();
 				invCurator.processDifferentialData(differentialInventoryCache);
 				invCurator.processVendorDetailData(vendorVersionCache, currentInventoryCache);
 			} catch (Exception e) {
-				LOGGER.warn("Exception [{}] with error message [{}] occurred while loading the new inventory and setting up right tables in DB during server start-up. \n"
+				log.warn("Exception [{}] with error message [{}] occurred while loading the new inventory and setting up right tables in DB during server start-up. \n"
 						+ "Moving on for now given that this will be re-executed every few second.", e.getClass().getName(), e.getMessage());
 				e.printStackTrace();
 			}
@@ -231,11 +213,10 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final WorkerSessionHandler workerSessionHandler = new WorkerSessionHandler();
 			final WorkerCartHandler workerCartHandler = new WorkerCartHandler(workerSessionHandler);
 			
-			final CartHandler cartEvaluator = new CartHandler(cartCache, vendorVersionCache, orderDetailDAO);
+			final OrderHandler cartHandler = new OrderHandler(underProcessingOrderDAO, orderDetailDAO, cartCache, vendorVersionCache);
 			
 			
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
-			final OrderProcessor orderProcessor = new OrderProcessor(orderDetailDAO, vendorVersionCache, differentialInventoryCache, priceEvaluator, vendorBarcodeInventoryCache);
 			
 
 			/*
@@ -246,7 +227,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			 * crashed last time in the middle or immediately post the DB
 			 * operation etc.
 			 */
-			LOGGER.info("Based on latest DB updates for vendor, version, inventory, setting up the caches...");
+			log.info("Based on latest DB updates for vendor, version, inventory, setting up the caches...");
 			final CacheCurator cacheCurator = new CacheCurator(hibernateBundle.getSessionFactory(),
 					differentialInventoryCache, vendorVersionCache, recentItemsCache, currentInventoryCache);
 			cacheCurator.processVendorVersionCache();
@@ -256,28 +237,33 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			
 			final InventoryLoader inventoryLoader = new InventoryLoader(invMasterDAO, configuration.getCurationConfig(), cacheCurator, pmService, vvDiffService, vvDetailService, vendorItemService);
 
-			LOGGER.debug(
+			log.debug(
 					"Done setting up differential cache with entries [{}] for vendor-version, [{}] for current-inventory, [{}] for recent-items, [{}] for differential data.",
 					vendorVersionCache.size(), currentInventoryCache.size(), recentItemsCache.size(),
 					differentialInventoryCache.size());
 
 
-			LOGGER.info("Setting up lifecycle for periodic inventory DB updates, corresponding updates for data and caches...");
+			log.info("Setting up lifecycle for periodic inventory DB updates, corresponding updates for data and caches...");
 			environment.lifecycle().manage(new DaemonJob(hibernateBundle.getSessionFactory(), differentialInventoryCache, vendorVersionCache, currentInventoryCache));
 			environment.lifecycle().manage(new DataLoaderJob(differentialInventoryCache, vendorVersionCache, recentItemsCache, cacheCurator));
 			environment.lifecycle().manage(new CartOperatorJob(cartCache));
 
-			LOGGER.info("Registering the various resources with the runtime environment for serving...");
+			log.info("Registering the various resources with the runtime environment for serving...");
 			environment.jersey().register(new CacheResource(cacheEvaluator));
 			environment.jersey().register(new UserResource(inventoryEvaluator));
 			environment.jersey().register(new VendorResource(inventoryEvaluator, inventoryLoader));
-			environment.jersey().register(new OrderResource(orderProcessor));
-			environment.jersey().register(new CartResource(cartEvaluator, orderProcessor));
-			
-		}
+			environment.jersey().register(new OrderResource(cartHandler));
+            environment.jersey().register(new WorkerResource(new WorkerSessionHandler()));
+
+            //To enable request/response logging
+            environment.jersey().register(new LoggingFilter(
+                            Logger.getLogger(LoggingFilter.class.getName()),
+                            true)
+            );
+        }
 
 		temporaryCode();
-		LOGGER.info("Initialisation complete.");
+		log.info("Initialisation complete.");
 		
 	}
 	

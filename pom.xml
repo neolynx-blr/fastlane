@@ -23,13 +23,24 @@
 	</properties>
 
     <modules>
+        <module>dbmodel</module>
         <module>common</module>
         <module>aws</module>
         <module>userapp</module>
         <module>workerapp</module>
         <module>server</module>
         <module>user-worker-interaction</module>
+        <module>app-notifications</module>
     </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.6</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
 	<repositories>
 		<repository>

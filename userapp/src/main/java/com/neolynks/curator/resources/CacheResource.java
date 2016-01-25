@@ -1,9 +1,9 @@
 package com.neolynks.curator.resources;
 
-import io.dropwizard.auth.Auth;
+import com.neolynks.api.common.Response;
+import com.neolynks.curator.cache.inventory.model.CacheDetail;
+import com.neolynks.curator.manager.CacheEvaluator;
 import io.dropwizard.hibernate.UnitOfWork;
-
-import java.util.List;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
@@ -11,10 +11,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-
-import com.neolynks.curator.cache.model.CacheDetail;
-import com.neolynks.curator.core.User;
-import com.neolynks.curator.manager.CacheEvaluator;
+import java.util.List;
 
 /**
  * This class is meant for all REST interfaces that will be invoked to check any
@@ -38,7 +35,7 @@ public class CacheResource {
 	@GET
 	@RolesAllowed("Administrator, Analyst")
 	@UnitOfWork
-	public List<CacheDetail> getVendorCacheDetails(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
+	public Response<List<CacheDetail>> getVendorCacheDetails(@PathParam(value = "vendorId") Long vendorId) {
 		return this.cacheEvaluator.getVendorCacheDetails(vendorId);
 	}
 
@@ -46,7 +43,7 @@ public class CacheResource {
 	@GET
 	@RolesAllowed("Administrator, Analyst")
 	@UnitOfWork
-	public List<CacheDetail> getVendorCurrentInventoryCacheDetails(@Auth User user, @PathParam(value = "vendorId") Long vendorId) {
+	public Response<List<CacheDetail>> getVendorCurrentInventoryCacheDetails( @PathParam(value = "vendorId") Long vendorId) {
 		return this.cacheEvaluator.getCurrentInventoryCacheDetails(vendorId);
 	}
 
@@ -54,7 +51,7 @@ public class CacheResource {
 	@GET
 	@RolesAllowed("Administrator, Analyst")
 	@UnitOfWork
-	public List<CacheDetail> getVendorCacheDetails(@Auth User user) {
+	public Response<List<CacheDetail>> getVendorCacheDetails() {
 		return this.cacheEvaluator.getRecentItemsCacheDetails();
 	}
 }

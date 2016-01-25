@@ -1,5 +1,7 @@
 package com.neolynks.worker.exception;
 
+import lombok.Getter;
+
 public class WorkerException extends RuntimeException{
 
 	/**

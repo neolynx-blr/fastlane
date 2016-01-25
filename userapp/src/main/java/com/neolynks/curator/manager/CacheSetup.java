@@ -1,12 +1,12 @@
 package com.neolynks.curator.manager;
 
+import com.neolynks.api.common.inventory.InventoryInfo;
 import io.dropwizard.hibernate.UnitOfWork;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
-import com.neolynks.common.model.client.InventoryInfo;
 
 /**
  * Created by nitesh.garg on 06-Sep-2015

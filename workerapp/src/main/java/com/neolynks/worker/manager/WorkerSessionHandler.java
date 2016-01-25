@@ -1,23 +1,21 @@
 package com.neolynks.worker.manager;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.neolynks.util.RandomIdGenerator;
+import com.neolynks.worker.dto.Worker;
 import com.neolynks.worker.exception.WorkerException;
 import com.neolynks.worker.exception.WorkerException.WORKER_SESSION_ERROR;
-import com.neolynks.worker.model.WorkerCart;
-import com.neolynks.worker.model.WorkerSession;
-import com.neolynks.worker.model.WorkerTask;
+import com.neolynks.worker.dto.WorkerCart;
+import com.neolynks.worker.dto.WorkerSession;
+import com.neolynks.worker.dto.WorkerTask;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 /**
  * 
  * @author abhishekshukla
@@ -28,14 +26,14 @@ import java.util.concurrent.locks.ReentrantLock;
 public class WorkerSessionHandler {
 
 	private ConcurrentHashMap<Long, Set<WorkerSession>> storeIdToWorkerSessionsMap;
-	private ConcurrentHashMap<Long, WorkerSession> idToWorkerSessionMap;
+	private ConcurrentHashMap<String, WorkerSession> idToWorkerSessionMap;
 	private ConcurrentLinkedQueue<WorkerCart> unassignedWorkerCartQueue ;
 	private ExecutorService executorService = Executors.newSingleThreadExecutor();
 	private volatile boolean isShutDown = false;
 	
 	public WorkerSessionHandler() {
 		storeIdToWorkerSessionsMap = new ConcurrentHashMap<Long, Set<WorkerSession>>();
-		idToWorkerSessionMap = new ConcurrentHashMap<Long, WorkerSession>();
+		idToWorkerSessionMap = new ConcurrentHashMap<String, WorkerSession>();
 		unassignedWorkerCartQueue = new ConcurrentLinkedQueue<WorkerCart>();
 		executorService.execute(new WorkerCartProcessor());
 	}
@@ -98,7 +96,7 @@ public class WorkerSessionHandler {
 		return selectedWorkerSession;
 	}
 
-	private WorkerSession getWorkerSessionForId(long workerSessionId) {
+	private WorkerSession getWorkerSessionForId(String workerSessionId) {
 		WorkerSession workerSession = idToWorkerSessionMap.get(workerSessionId);
 		if (null == workerSession) {
 			throw new WorkerException(WORKER_SESSION_ERROR.UNKNOWN_SESSION_ID);
@@ -113,31 +111,62 @@ public class WorkerSessionHandler {
 		workerSessions.add(workerSession);
 	}
 
-	public void pauseWorkerSession(long workerSesssionId) {
-		WorkerSession workerSession = getWorkerSessionForId(workerSesssionId);
-		workerSession.pause();
-	}
-
-	public void terminateWorkerSession(long workerSesssionId) {
-		WorkerSession workerSesssion = getWorkerSessionForId(workerSesssionId);
-		unassignedWorkerCartQueue.addAll(workerSesssion.closeAndReleaseWorkerCarts());
-		storeIdToWorkerSessionsMap.get(workerSesssion.getWorker().getStoreId()).remove(workerSesssion);
-		idToWorkerSessionMap.remove(workerSesssionId);
-	}
-
-	public void reactivateWorkerSession(long workerSesssionId) {
-		WorkerSession workerSession = getWorkerSessionForId(workerSesssionId);
-		workerSession.restart();
-	}
-
-	public WorkerTask getWorkerTaskDetails(long workerSessionId) {
+	public WorkerTask getWorkerTaskDetails(String workerSessionId) {
 		WorkerSession workerSession = getWorkerSessionForId(workerSessionId);
 		WorkerTask workerTask = workerSession.getWorkerTask();
 		return workerTask;
 	}
 
-	public void completeWorkerTask(long workerSessionId, long workerTaskId) {
+	public void completeWorkerTask(String workerSessionId, long workerTaskId) {
 		WorkerSession workerSession = getWorkerSessionForId(workerSessionId);
 		workerSession.completeWorkerTask(workerTaskId);
 	}
+
+
+    public void setWorkerSessionStatus(String workerSessionId, int workerSessionStatus){
+        switch (workerSessionStatus){
+            case 1:
+                pauseWorkerSession(workerSessionId);
+                break;
+            case 2:
+                terminateWorkerSession(workerSessionId);
+                break;
+            case 3:
+                reactivateWorkerSession(workerSessionId);
+                break;
+        }
+    }
+
+    public WorkerSession initWorkerSession(String workerId, long storeId){
+        Worker worker = new Worker();
+        worker.setUniqueId(workerId);
+        worker.setStoreId(storeId);
+
+        String workerSessionId = RandomIdGenerator.getInstance().generateStringId();
+        WorkerSession workerSession = new WorkerSession(workerSessionId, worker);
+        addWorkerSession(workerSession);
+        return workerSession;
+    }
+
+
+    /*********************HELPER*******************/
+    private void pauseWorkerSession(String workerSesssionId) {
+        WorkerSession workerSession = getWorkerSessionForId(workerSesssionId);
+        workerSession.pause();
+    }
+
+    private void terminateWorkerSession(String workerSesssionId) {
+        WorkerSession workerSesssion = getWorkerSessionForId(workerSesssionId);
+        unassignedWorkerCartQueue.addAll(workerSesssion.closeAndReleaseWorkerCarts());
+        storeIdToWorkerSessionsMap.get(workerSesssion.getWorker().getStoreId()).remove(workerSesssion);
+        idToWorkerSessionMap.remove(workerSesssionId);
+    }
+
+    private void reactivateWorkerSession(String workerSesssionId) {
+        WorkerSession workerSession = getWorkerSessionForId(workerSesssionId);
+        workerSession.restart();
+    }
+
+
+
 }

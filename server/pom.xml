@@ -11,12 +11,29 @@
 
     <artifactId>server</artifactId>
 
-
+    <properties>
+        <jedis.version>2.1.0</jedis.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yammer.dropwizard</groupId>
+            <artifactId>dropwizard-core</artifactId>
+            <version>0.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hubspot.dropwizard</groupId>
+            <artifactId>dropwizard-guice</artifactId>
+            <version>0.8.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>${jedis.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
@@ -150,6 +167,12 @@
         <dependency>
             <groupId>com.neolynks</groupId>
             <artifactId>workerapp</artifactId>
+            <version>0.9.0-rc4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.neolynks</groupId>
+            <artifactId>user-worker-interaction</artifactId>
             <version>0.9.0-rc4</version>
         </dependency>
     </dependencies>
