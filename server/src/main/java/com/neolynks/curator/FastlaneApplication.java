@@ -4,6 +4,8 @@ import com.hubspot.dropwizard.guice.GuiceBundle;
 import com.neolynks.ApplicationModule;
 import com.neolynks.curator.manager.*;
 import com.neolynks.curator.manager.cachesupport.OrderCacheLoader;
+import com.neolynks.signal.ISignalProcessor;
+import com.neolynks.signal.WorkerSignalExchange;
 import com.neolynks.worker.dto.Worker;
 import com.neolynks.worker.resources.OrderResource;
 import com.neolynks.dao.*;
@@ -182,6 +184,8 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final CacheEvaluator cacheEvaluator = new CacheEvaluator(differentialInventoryCache, recentItemsCache, currentInventoryCache);
 			final InventoryEvaluator inventoryEvaluator = new InventoryEvaluator(invMasterDAO, differentialInventoryCache, recentItemsCache, currentInventoryCache);
 
+
+            WorkerSignalExchange workerSignalExchange = new WorkerSignalExchange();
 			/*
 			 * Meant for DB updates, basically setting up new inventory if any
 			 * (since the last similar process) in the master tables for all
@@ -209,7 +213,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			final WorkerSessionHandler workerSessionHandler = new WorkerSessionHandler();
 			final WorkerCartHandler workerCartHandler = new WorkerCartHandler(workerSessionHandler);
 			
-			final OrderHandler cartEvaluator = new OrderHandler(underProcessingOrderDAO, orderDetailDAO, cartCache, vendorVersionCache);
+			final OrderHandler cartHandler = new OrderHandler(underProcessingOrderDAO, orderDetailDAO, cartCache, vendorVersionCache);
 			
 			
 			final PriceEvaluator priceEvaluator = new PriceEvaluator(vendorVersionCache, differentialInventoryCache);
@@ -248,7 +252,7 @@ public class FastlaneApplication extends Application<FastlaneConfiguration> {
 			environment.jersey().register(new CacheResource(cacheEvaluator));
 			environment.jersey().register(new UserResource(inventoryEvaluator));
 			environment.jersey().register(new VendorResource(inventoryEvaluator, inventoryLoader));
-			environment.jersey().register(new OrderResource(cartEvaluator));
+			environment.jersey().register(new OrderResource(cartHandler));
             environment.jersey().register(new WorkerResource(new WorkerSessionHandler()));
 
             //To enable request/response logging

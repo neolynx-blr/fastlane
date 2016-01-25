@@ -5,7 +5,9 @@ import com.neolynks.api.common.Response;
 import com.neolynks.api.userapp.CartRequest;
 import com.neolynks.curator.annotation.UserContextRequired;
 import com.neolynks.curator.exception.CacheException;
-import com.neolynks.curator.exception.InvalidCartIdException;
+import com.neolynks.curator.exception.InvalidOrderIdException;
+import com.neolynks.curator.exception.InvalidStatusIdException;
+import com.neolynks.curator.exception.InvalidStatusTransitionException;
 import com.neolynks.curator.manager.OrderHandler;
 import io.dropwizard.hibernate.UnitOfWork;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +68,29 @@ public class OrderResource {
             this.orderHandler.setToCart(cartId, cartRequest.getItemCount());
             Response successResponse = Response.getSuccessResponse(null);
             return successResponse;
-        }catch (InvalidCartIdException cim){
+        }catch (InvalidOrderIdException cim){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
+            return failureResponse;
+        }catch (Exception e){
+            log.error("Exception:", e);
+            Response failureResponse = Response.getFailureResponse(ErrorCode.UNKNOWN_ERROR);
+            return failureResponse;
+        }
+    }
+
+    @Path("/{id}/close")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @POST
+    @UnitOfWork
+    @UserContextRequired
+    public Response<Void> orderClosed(@PathParam(value = "id")
+                                      @Nonnull String cartId,
+                                      @Valid CartRequest cartRequest) {
+        try {
+            this.orderHandler.orderClosed(cartId, cartRequest.getItemCount());
+            Response successResponse = Response.getSuccessResponse(null);
+            return successResponse;
+        }catch (InvalidOrderIdException cim){
             Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
             return failureResponse;
         }catch (Exception e){
@@ -83,11 +107,17 @@ public class OrderResource {
     public Response<Void> setCartStatus(@PathParam(value = "id") String cartId,
                                         @PathParam(value = "id") Integer statusId) {
         try {
-            this.orderHandler.setCartStatus(cartId, statusId);
+            this.orderHandler.setOrderStatus(cartId, statusId);
             Response successResponse = Response.getSuccessResponse(null);
             return successResponse;
-        }catch (InvalidCartIdException cim){
+        }catch (InvalidOrderIdException cim){
             Response failureResponse = Response.getFailureResponse(ErrorCode.MISSING_ORDER_ID);
+            return failureResponse;
+        }catch (InvalidStatusIdException ise){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.INVALID_STATUS_ID);
+            return failureResponse;
+        }catch (InvalidStatusTransitionException ise){
+            Response failureResponse = Response.getFailureResponse(ErrorCode.INVALID_STATUS_TRANSITION);
             return failureResponse;
         }catch (Exception e){
             log.error("Exception:", e);

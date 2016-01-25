@@ -3,7 +3,6 @@ package com.neolynks.curator.cache.order;
 import com.google.gson.Gson;
 import com.neolynks.curator.dto.Order;
 import com.neolynks.curator.exception.CacheException;
-import com.neolynks.dao.IDAOEssential;
 import lombok.extern.slf4j.Slf4j;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;

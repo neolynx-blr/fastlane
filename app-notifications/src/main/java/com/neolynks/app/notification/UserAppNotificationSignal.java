@@ -1,6 +1,6 @@
 package com.neolynks.app.notification;
 
-import com.neolynks.api.common.CartStatus;
+import com.neolynks.api.common.OrderStatus;
 import lombok.Getter;
 
 /**
@@ -12,7 +12,7 @@ public class UserAppNotificationSignal {
     @Getter
     private static UserAppNotificationSignal userAppNotificationSignal = new UserAppNotificationSignal();
 
-    public void publishUserAppNotification(String userId, String cartId, CartStatus cartStatus){
+    public void publishUserAppNotification(String userId, String cartId, OrderStatus orderStatus){
         //
     }
 

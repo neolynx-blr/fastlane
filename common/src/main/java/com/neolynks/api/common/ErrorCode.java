@@ -47,6 +47,8 @@ public enum ErrorCode {
 	MISSING_UPDATE_OPERATION_REASON ("DVE015", "Update order call is missing whether item list or user details are being updated"),
 	MISSING_OR_INVALID_LAST_SEEN_SERVER_DATA_VERSION_ID ("DVE016", "Update order call is missing last seen server data version id"),
 	MISSING_ORDER_ID ("DVE017", "Update order call is missing the order-id received in the create call"),
+    INVALID_STATUS_ID("DVE018", "Invalid status id"),
+    INVALID_STATUS_TRANSITION("DVE019", "Invalid status id transition"),
 
     UNKNOWN_ERROR ("UNK001", "Some unknown error");
 

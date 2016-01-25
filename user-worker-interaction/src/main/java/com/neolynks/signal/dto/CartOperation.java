@@ -1,6 +1,6 @@
 package com.neolynks.signal.dto;
 
-import com.neolynks.api.common.CartStatus;
+import com.neolynks.api.common.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -17,6 +17,6 @@ public class CartOperation implements Serializable{
 
     private final long vendorId;
 
-    private final CartStatus cartStatus;
+    private final OrderStatus orderStatus;
 
 }

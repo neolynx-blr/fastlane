@@ -3,12 +3,10 @@ package com.neolynks.worker.manager;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+import com.neolynks.api.common.OrderStatus;
 import com.neolynks.signal.CartSignalExchange;
 import com.neolynks.signal.ISignalProcessor;
-import com.neolynks.api.common.CartStatus;
 import com.neolynks.signal.WorkerSignalExchange;
 import com.neolynks.signal.dto.CartDelta;
 import com.neolynks.signal.dto.CartOperation;
@@ -19,7 +17,6 @@ import com.neolynks.worker.dto.WorkerSession;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
-import redis.clients.jedis.Jedis;
 
 /**
  * 
@@ -61,11 +58,11 @@ public class WorkerCartHandler{
         public void process(byte[] message) {
             CartOperation cartOperation = (CartOperation)SerializationUtils.deserialize(message);
             if (cartOperation != null) {
-                if (cartOperation.getCartStatus().equals(CartStatus.OPEN)) {
+                if (cartOperation.getOrderStatus().equals(OrderStatus.OPEN)) {
                     initWorkerCart(cartOperation.getCartId(), cartOperation.getVendorId());
-                } else if (cartOperation.getCartStatus().equals(CartStatus.COMPLETE)){
+                } else if (cartOperation.getOrderStatus().equals(OrderStatus.COMPLETE)){
                     closeCart(cartOperation.getCartId());
-                }else if(cartOperation.getCartStatus().equals(CartStatus.DISCARDED)){
+                }else if(cartOperation.getOrderStatus().equals(OrderStatus.DISCARDED)){
                     discardCart(cartOperation.getCartId());
                 }
             }
@@ -73,7 +70,7 @@ public class WorkerCartHandler{
     }
 
     /***************************************/
-    
+
    	private WorkerCart getWorkerCart(String cartId) {
 		WorkerCart workerCart = idToWorkerCartMap.get(cartId);
 		if (null == workerCart) {
